@@ -10,7 +10,8 @@ use App\Http\Controllers\{
     ProductController,
     ServiceController,
     ServiceTypeController,
-PosController
+    PosController,
+    SystemSettingController
 
 
 };
@@ -76,12 +77,12 @@ Route::get('/pos', [PosController::class, 'index'])->name('pos');
         });
 
         Route::controller(ServiceController::class)->group(function () {
-            Route::get('/list', 'index')->name('services.list');
-            Route::post('/list', 'store')->name('services.store');
-            Route::put('/list', 'update')->name('services.update');
-            Route::delete('/list', 'destroy')->name('services.destroy');
-            
-        });
+    Route::get('/list', 'index')->name('services.list');
+    Route::post('/list', 'store')->name('services.store');
+    Route::put('/list/{id}', 'update')->name('services.update');        // add {id}
+    Route::delete('/list/{id}', 'destroy')->name('services.destroy');    // add {id}
+});
+
 
         Route::view('/addons', 'services-addons')->name('services.addons');
     });
@@ -105,11 +106,18 @@ Route::get('/pos', [PosController::class, 'index'])->name('pos');
     });
 
     // ---------- SETTINGS ----------
-    Route::prefix('settings')->group(function () {
-        Route::view('/filetools', 'settings-filetools')->name('settings.filetools');
-        
-        Route::view('/mastersettings', 'settings-mastersettings')->name('settings.mastersettings');
-    });
+Route::prefix('settings')->group(function () {
+    
+    Route::get('/system', [\App\Http\Controllers\SystemSettingController::class, 'edit'])
+        ->name('settings.system.edit');
+
+    Route::post('/system', [\App\Http\Controllers\SystemSettingController::class, 'update'])
+        ->name('settings.update');
+
+    Route::view('/filetools', 'settings-filetools')->name('settings.filetools');
+    Route::get('/mastersettings', [SystemSettingController::class, 'edit'])->name('settings.mastersettings');
+});
+
 Route::post('/settings/filetools/upload', [App\Http\Controllers\FileToolsController::class, 'upload'])
     ->name('filetools.upload');
 

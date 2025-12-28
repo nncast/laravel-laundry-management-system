@@ -142,10 +142,6 @@ button:hover {
                     <td>Total Payment</td>
                     <td class="blue">11,948.00 USD</td>
                 </tr>
-                <tr>
-                    <td>Total Expense</td>
-                    <td class="red">0.00 USD</td>
-                </tr>
             </tbody>
         </table>
 

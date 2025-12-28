@@ -5,6 +5,8 @@
 @section('active-users-admin', 'active')
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+
 <style>
 /* --- Administrator Page Styles --- */
 .table-container {
@@ -155,7 +157,6 @@ td {
                 <th>Action</th>
             </tr>
         </thead>
-        <tbody>
             <tbody>
                 @forelse($users as $index => $user)
                 <tr class="staff-row"
@@ -187,7 +188,6 @@ td {
                 </tr>
                 @endforelse
             </tbody>
-        </tbody>
     </table>
 </div>
 

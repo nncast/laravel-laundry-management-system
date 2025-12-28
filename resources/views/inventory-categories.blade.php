@@ -6,109 +6,217 @@
 
 @section('content')
 <style>
-/* --- Categories Page Specific Styles --- */
+/* ================================
+   Categories Page – FIXED
+   ================================ */
+
 .table-container {
+    width: 100%;
     background: #fff;
     border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     padding: 25px;
 }
 
+/* Header */
 .header-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .search-box input {
+    width: 240px;
     padding: 10px 15px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-family: 'Poppins', sans-serif;
-    width: 220px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    transition: 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
 }
 
 .add-btn {
     background: var(--blue);
-    color: white;
+    color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 10px 18px;
+    border-radius: 8px;
+    padding: 10px 20px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.add-btn i {
-    margin-right: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .add-btn:hover {
-    opacity: 0.85;
     background: #0056b3;
 }
 
-/* Table */
+/* ================================
+   TABLE
+   ================================ */
+
 table {
     width: 100%;
     border-collapse: collapse;
 }
 
-th, td {
-    text-align: left;
-    padding: 12px 15px;
-    font-size: 14px;
+thead {
+    background: #f8f9fa;
 }
 
 th {
-    background: #f8f9fa;
+    font-size: 14px;
     font-weight: 600;
-    color: #2c3e50;
+    padding: 14px 16px;
+    color: var(--text-dark);
+    text-align: left;
+    border-bottom: 1px solid #eaeaea;
 }
 
 td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text-dark);
     border-bottom: 1px solid #f1f1f1;
-    color: #2c3e50;
 }
 
-/* Status badge */
+tbody tr:hover {
+    background: #f9fbfd;
+}
+
+/* ================================
+   STATUS
+   ================================ */
+
 .status-active {
-    background: #d4edda;
-    color: #155724;
-    padding: 5px 12px;
+    background: #e6f4ea;
+    color: #1e7e34;
+    padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-/* Action buttons */
+.status-inactive {
+    background: #fdecea;
+    color: #a71d2a;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ================================
+   ACTION BUTTONS
+   ================================ */
+
 .action-btns {
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 
 .action-btns i {
+    width: 32px;
+    height: 32px;
     font-size: 14px;
-    padding: 8px;
     border-radius: 50%;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s ease;
 }
 
 .edit {
-    background: rgba(0, 123, 255, 0.1);
+    background: rgba(0,123,255,0.12);
     color: var(--blue);
 }
 
 .delete {
-    background: rgba(255, 0, 0, 0.1);
-    color: red;
+    background: rgba(220,53,69,0.12);
+    color: #dc3545;
 }
 
-.edit:hover, .delete:hover {
-    opacity: 0.8;
+.edit:hover {
+    background: rgba(0,123,255,0.2);
 }
+
+.delete:hover {
+    background: rgba(220,53,69,0.2);
+}
+
+/* ================================
+   MODALS (CLEAN)
+   ================================ */
+
+#addCategoryModal,
+#editCategoryModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#addCategoryModal > div,
+#editCategoryModal > div {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* ================================
+   MOBILE
+   ================================ */
+
+@media (max-width: 768px) {
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box input {
+        width: 100%;
+    }
+
+    table thead {
+        display: none;
+    }
+
+    table tbody tr {
+        display: block;
+        border: 1px solid #eaeaea;
+        border-radius: 8px;
+        margin-bottom: 12px;
+    }
+
+    table tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-bottom: none;
+    }
+
+    table tbody td:last-child {
+        justify-content: flex-start;
+    }
+}
+
 </style>
 
 

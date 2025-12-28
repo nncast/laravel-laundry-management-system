@@ -19,7 +19,7 @@ body {
 
 /* Async Background Loader */
 body.loaded {
-    background: url('{{ asset('laundry.jpeg') }}') no-repeat center/cover;
+    background: url("{{ asset('images/laundry.jpeg') }}") no-repeat center/cover;
 }
 
 body::before {

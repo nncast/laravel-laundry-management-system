@@ -1,0 +1,22 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\SystemSetting;
+use Illuminate\Database\Seeder;
+
+class SystemSettingSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Only create default settings if none exist
+        if (!SystemSetting::exists()) {
+            SystemSetting::create([
+                'business_name' => 'FITTERS LAUNDRY',
+                'address'       => '123 Laundry Street, Clean City, CC 12345',
+                'contact'       => '+63 912 345 6789',
+                'favicon'       => 'favicons/default-favicon.ico', // place a default favicon in storage/app/public/favicons
+            ]);
+        }
+    }
+}

@@ -5,14 +5,19 @@
 
 @section('content')
 <style>
-/* --- Customers Page Specific Styling --- */
+/* ================================
+   Customers Page – FINAL FIX
+   ================================ */
+
 .customers-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
+    width: 100%;
 }
 
+/* Search + Add */
 .search-add-container {
     display: flex;
     gap: 15px;
@@ -26,12 +31,12 @@
 }
 
 .search-box input {
+    width: 250px;
     padding: 10px 15px 10px 40px;
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 14px;
-    width: 250px;
-    transition: all 0.3s;
+    transition: 0.3s;
 }
 
 .search-box input:focus {
@@ -48,7 +53,7 @@
 
 .add-customer-btn {
     background: var(--blue);
-    color: white;
+    color: #fff;
     border: none;
     border-radius: 8px;
     padding: 10px 20px;
@@ -58,96 +63,138 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: background 0.3s;
 }
 
-.add-customer-btn:hover { background: #0056b3; }
+.add-customer-btn:hover {
+    background: #0056b3;
+}
+
+/* ================================
+   TABLE (FULL WIDTH FIX)
+   ================================ */
 
 .customers-table {
-    background: white;
+    width: 100%;
+    background: #fff;
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* Header */
 .table-header {
     display: grid;
-    grid-template-columns: 0.5fr 2fr 1.5fr 2fr 1fr;
-    background: #f8f9fa;
+    grid-template-columns: 60px 2fr 1.5fr 2fr 1fr;
+    width: 100%;
     padding: 15px 20px;
+    background: #f8f9fa;
     font-weight: 600;
-    color: var(--text-dark);
     border-bottom: 1px solid #eaeaea;
-    gap: 10px;
-    text-align: left;
     font-size: 14px;
+    text-align: left;
 }
 
+/* Rows */
 .table-row {
     display: grid;
-    grid-template-columns: 0.5fr 2fr 1.5fr 2fr 1fr;
+    grid-template-columns: 60px 2fr 1.5fr 2fr 1fr;
+    width: 100%;
     padding: 15px 20px;
     border-bottom: 1px solid #f0f0f0;
     align-items: center;
-    gap: 10px;
-    text-align: left;
     font-size: 14px;
 }
 
-.table-row:last-child { border-bottom: none; }
+.table-row:last-child {
+    border-bottom: none;
+}
 
-.customer-name { font-weight: 600; color: var(--text-dark); }
-.customer-contact { color: var(--text-dark); font-weight: 500; }
-.customer-address { color: var(--text-light); font-size: 13px; }
+.customer-name {
+    font-weight: 600;
+}
 
-.action-buttons { display: flex; gap: 6px; justify-content: flex-start; }
+.customer-contact {
+    font-weight: 500;
+}
+
+.customer-address {
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+/* Actions */
+.action-buttons {
+    display: flex;
+    gap: 6px;
+}
+
 .action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
     background: none;
     border: none;
     color: var(--blue);
     cursor: pointer;
-    transition: all 0.2s;
-    width: 30px; height: 30px;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
 }
-.action-btn:hover { color: #0056b3; background: #f0f8ff; }
-.action-btn.delete:hover { color: #dc3545; background: #ffe6e6; }
 
+.action-btn:hover {
+    background: #f0f8ff;
+    color: #0056b3;
+}
+
+.action-btn.delete:hover {
+    background: #ffe6e6;
+    color: #dc3545;
+}
+
+/* ================================
+   MOBILE
+   ================================ */
 @media (max-width: 768px) {
-    .table-header { display: none; }
+    .table-header {
+        display: none;
+    }
+
     .table-row {
         grid-template-columns: 1fr;
         border: 1px solid #eaeaea;
         border-radius: 8px;
         margin-bottom: 10px;
+        padding: 12px;
         gap: 10px;
-        padding: 10px;
     }
-    .action-buttons { justify-content: center; }
+
+    .action-buttons {
+        justify-content: flex-start;
+    }
 }
 
-/* Modal common */
+/* ================================
+   MODAL
+   ================================ */
 .modal {
-    display:none;
+    display: none;
     position: fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background: rgba(0,0,0,0.4);
-    justify-content:center; align-items:center;
-    z-index:1000;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
+
 .modal-content {
-    background:#fff;
-    padding:30px;
-    border-radius:10px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
-    max-width:500px;
-    width:100%;
+    width: 100%;
+    max-width: 500px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
 </style>
 
 <div class="customers-header">

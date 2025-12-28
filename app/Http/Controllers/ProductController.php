@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -27,29 +28,29 @@ class ProductController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'service_type_id' => 'required|exists:service_types,id',
-        'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        'is_active' => 'sometimes|boolean',
-    ]);
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'unit_id' => 'required|exists:units,id',
+            'price' => 'required|numeric|min:0', // NEW
+            'available_stock' => 'required|integer|min:0',
+            'minimum_stock_level' => 'required|integer|min:0',
+            'status' => 'required|in:active,inactive',
+        ]);
 
-    $iconPath = null;
-    if ($request->hasFile('icon_file')) {
-        $iconPath = $request->file('icon_file')->store('services', 'public');
+        $product = Product::create([
+            'name' => $request->name,
+            'category_id' => $request->category_id,
+            'unit_id' => $request->unit_id,
+            'price' => $request->price, // NEW
+            'available_stock' => $request->available_stock,
+            'minimum_stock_level' => $request->minimum_stock_level,
+            'status' => $request->status,
+        ]);
+
+        return response()->json($product, 201);
     }
-
-    $service = Service::create([
-        'name' => $request->name,
-        'service_type_id' => $request->service_type_id,
-        'icon' => $iconPath,
-        'is_active' => $request->is_active ?? true,
-    ]);
-
-    return response()->json($service, 201);
-}
-
 
     public function update(Request $request)
     {
@@ -58,7 +59,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'unit_id' => 'required|exists:units,id',
-            'purchase_price' => 'required|numeric|min:0',
+            'price' => 'required|numeric|min:0', // NEW
             'available_stock' => 'required|integer|min:0',
             'minimum_stock_level' => 'required|integer|min:0',
             'status' => 'required|in:active,inactive',
@@ -66,9 +67,13 @@ class ProductController extends Controller
 
         $product = Product::findOrFail($request->product_id);
         $product->update($request->only([
-            'name', 'category_id', 'unit_id',
-            'purchase_price', 'available_stock',
-            'minimum_stock_level', 'status'
+            'name',
+            'category_id',
+            'unit_id',
+            'price', // NEW
+            'available_stock',
+            'minimum_stock_level',
+            'status'
         ]));
 
         return back()->with('success', 'Product updated.');

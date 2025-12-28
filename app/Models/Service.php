@@ -10,11 +10,13 @@ class Service extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'icon',
-        'service_type_id',
-        'is_active',
-    ];
+    'name',
+    'icon',
+    'service_type_id',
+    'is_active',
+    'price', // added
+];
+
 
     // Automatically append the icon URL
     protected $appends = ['icon_url'];

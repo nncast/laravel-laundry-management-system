@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('icon')->nullable();
             $table->foreignId('service_type_id')->constrained('service_types')->onDelete('cascade');
+            $table->decimal('price', 10, 2)->default(0); // Added price column
             $table->boolean('is_active')->default(1);
             $table->timestamps();
         });

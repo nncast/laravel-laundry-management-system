@@ -35,7 +35,7 @@ body {
 
 /* Async Background Loader */
 body.loaded {
-    background: url('{{ asset('images/laundry.jpeg') }}') no-repeat center/cover;
+    background: url("{{ asset('images/laundry.jpeg') }}") no-repeat center/cover;
 }
 
 body::before {
@@ -157,7 +157,7 @@ body::before {
 
 <script>
 const img = new Image();
-img.src = "{{ asset('laundry.jpeg') }}";
+img.src = "{{ asset('images/laundry.jpeg') }}";
 img.onload = () => document.body.classList.add("loaded");
 </script>
 
