@@ -13,26 +13,24 @@ class Product extends Model
         'name',
         'category_id',
         'unit_id',
-        'purchase_price',
+        'purchase_price',  // Ensure this is here
         'available_stock',
         'minimum_stock_level',
         'status',
     ];
 
     protected $casts = [
-        'purchase_price' => 'decimal:2',
+        'purchase_price' => 'decimal:2',  // Ensure this is here
         'available_stock' => 'integer',
         'minimum_stock_level' => 'integer',
     ];
 
     // Relationships
     public function category() {
-    return $this->belongsTo(Category::class);
-}
+        return $this->belongsTo(Category::class);
+    }
 
-public function unit() {
-    return $this->belongsTo(Unit::class);
+    public function unit() {
+        return $this->belongsTo(Unit::class);
+    }
 }
-
-}
-

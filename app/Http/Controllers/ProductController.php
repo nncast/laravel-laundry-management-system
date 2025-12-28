@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Unit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -33,7 +32,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'unit_id' => 'required|exists:units,id',
-            'price' => 'required|numeric|min:0', // NEW
+            'purchase_price' => 'required|numeric|min:0',  // fixed
             'available_stock' => 'required|integer|min:0',
             'minimum_stock_level' => 'required|integer|min:0',
             'status' => 'required|in:active,inactive',
@@ -43,13 +42,14 @@ class ProductController extends Controller
             'name' => $request->name,
             'category_id' => $request->category_id,
             'unit_id' => $request->unit_id,
-            'price' => $request->price, // NEW
+            'purchase_price' => $request->purchase_price,  // fixed
             'available_stock' => $request->available_stock,
             'minimum_stock_level' => $request->minimum_stock_level,
             'status' => $request->status,
         ]);
 
-        return response()->json($product, 201);
+        return redirect()->route('products.index')
+            ->with('success', 'Product added successfully!');
     }
 
     public function update(Request $request)
@@ -59,22 +59,23 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'unit_id' => 'required|exists:units,id',
-            'price' => 'required|numeric|min:0', // NEW
+            'purchase_price' => 'required|numeric|min:0',  // fixed
             'available_stock' => 'required|integer|min:0',
             'minimum_stock_level' => 'required|integer|min:0',
             'status' => 'required|in:active,inactive',
         ]);
 
         $product = Product::findOrFail($request->product_id);
-        $product->update($request->only([
-            'name',
-            'category_id',
-            'unit_id',
-            'price', // NEW
-            'available_stock',
-            'minimum_stock_level',
-            'status'
-        ]));
+        
+        $product->update([
+            'name' => $request->name,
+            'category_id' => $request->category_id,
+            'unit_id' => $request->unit_id,
+            'purchase_price' => $request->purchase_price,  // fixed
+            'available_stock' => $request->available_stock,
+            'minimum_stock_level' => $request->minimum_stock_level,
+            'status' => $request->status,
+        ]);
 
         return back()->with('success', 'Product updated.');
     }

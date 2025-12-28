@@ -5,6 +5,9 @@
 @section('active-inventory-categories', 'active')
 
 @section('content')
+<!-- Include the reusable modal CSS -->
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+
 <style>
 /* ================================
    Categories Page – FIXED
@@ -156,31 +159,6 @@ tbody tr:hover {
 }
 
 /* ================================
-   MODALS (CLEAN)
-   ================================ */
-
-#addCategoryModal,
-#editCategoryModal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-#addCategoryModal > div,
-#editCategoryModal > div {
-    width: 100%;
-    max-width: 420px;
-    background: #fff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-}
-
-/* ================================
    MOBILE
    ================================ */
 
@@ -215,6 +193,27 @@ tbody tr:hover {
     table tbody td:last-child {
         justify-content: flex-start;
     }
+}
+
+/* Override modal button styles to match your design */
+.modal-footer .btn-cancel {
+    background: #ccc;
+    color: #333;
+    border: none;
+}
+
+.modal-footer .btn-cancel:hover {
+    background: #bbb;
+}
+
+.modal-footer .btn-primary {
+    background: var(--blue);
+    color: white;
+    border: none;
+}
+
+.modal-footer .btn-primary:hover {
+    background: #0056b3;
 }
 
 </style>
@@ -264,52 +263,141 @@ tbody tr:hover {
 </div>
 
 <!-- Add Category Modal -->
-<div id="addCategoryModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; border-radius:10px; width:400px; position:relative;">
-        <h3 style="margin-bottom:15px;">Add New Category</h3>
-        <form method="POST" action="{{ route('categories.store') }}">
+<div id="addCategoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Category</h3>
+            <button type="button" class="close-btn" id="closeAddModal">&times;</button>
+        </div>
+        
+        <form method="POST" action="{{ route('categories.store') }}" id="addCategoryForm">
             @csrf
-            <input type="text" name="name" placeholder="Category Name" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
-
-            <!-- Status Field -->
-            <select name="status" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
-                <option value="1" selected>Active</option>
-                <option value="0">Inactive</option>
-            </select>
-
-            <div style="text-align:right;">
-                <button type="button" id="cancelAdd" style="margin-right:10px; padding:8px 12px; border:none; background:#ccc; border-radius:5px;">Cancel</button>
-                <button type="submit" style="padding:8px 12px; border:none; background:var(--blue); color:#fff; border-radius:5px;">Add</button>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="name">
+                        Category Name <span class="required-star">*</span>
+                    </label>
+                    <input type="text" name="name" id="name" placeholder="Enter category name" required>
+                    <div class="error-message" id="name_error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">
+                        Status <span class="required-star">*</span>
+                    </label>
+                    <select name="status" id="status" required>
+                        <option value="">-- Select Status --</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+                    <div class="error-message" id="status_error"></div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
+                <button type="submit" class="btn-primary">Add Category</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Edit Category Modal -->
-<div id="editCategoryModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
-    <div style="background:#fff; padding:20px; border-radius:10px; width:400px; position:relative;">
-        <h3 style="margin-bottom:15px;">Edit Category</h3>
+<div id="editCategoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Category</h3>
+            <button type="button" class="close-btn" id="closeEditModal">&times;</button>
+        </div>
+        
         <form method="POST" action="{{ route('categories.update') }}" id="editForm">
             @csrf
             @method('PUT')
             <input type="hidden" name="category_id" id="edit_category_id">
-            <input type="text" name="name" id="edit_name" placeholder="Category Name" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
-
-            <!-- Status Field -->
-            <select name="status" id="edit_status" required style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
-            </select>
-
-            <div style="text-align:right;">
-                <button type="button" id="cancelEdit" style="margin-right:10px; padding:8px 12px; border:none; background:#ccc; border-radius:5px;">Cancel</button>
-                <button type="submit" style="padding:8px 12px; border:none; background:var(--blue); color:#fff; border-radius:5px;">Update</button>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="edit_name">
+                        Category Name <span class="required-star">*</span>
+                    </label>
+                    <input type="text" name="name" id="edit_name" placeholder="Enter category name" required>
+                    <div class="error-message" id="edit_name_error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit_status">
+                        Status <span class="required-star">*</span>
+                    </label>
+                    <select name="status" id="edit_status" required>
+                        <option value="">-- Select Status --</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+                    <div class="error-message" id="edit_status_error"></div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
+                <button type="submit" class="btn-primary">Update Category</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+// Modal Utility Functions (can be moved to a separate file later)
+function openModal(modal) {
+    modal.classList.add('active');
+    document.body.classList.add('modal-open');
+}
+
+function closeModal(modal) {
+    modal.classList.remove('active');
+    document.body.classList.remove('modal-open');
+    clearAllErrors();
+}
+
+function clearAllErrors() {
+    document.querySelectorAll('.error-message').forEach(error => {
+        error.style.display = 'none';
+        error.textContent = '';
+    });
+    document.querySelectorAll('input, select').forEach(field => {
+        field.style.borderColor = '#ddd';
+    });
+}
+
+function showError(fieldId, message) {
+    const errorElement = document.getElementById(fieldId);
+    const inputElement = document.querySelector(`[name="${fieldId.replace('_error', '')}"]`);
+    if (errorElement && inputElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        inputElement.style.borderColor = '#dc3545';
+    }
+}
+
+function validateForm(form) {
+    let valid = true;
+    clearAllErrors();
+
+    const nameField = form.querySelector('[name="name"]');
+    const statusField = form.querySelector('[name="status"]');
+
+    if (!nameField || !nameField.value.trim()) {
+        showError(form.id.includes('edit') ? 'edit_name_error' : 'name_error', 'Category name is required');
+        valid = false;
+    }
+
+    if (!statusField || !statusField.value) {
+        showError(form.id.includes('edit') ? 'edit_status_error' : 'status_error', 'Status is required');
+        valid = false;
+    }
+
+    return valid;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     const modalAdd = document.getElementById('addCategoryModal');
@@ -318,21 +406,28 @@ document.addEventListener('DOMContentLoaded', function () {
     const addBtn = document.getElementById('addBtn');
     const cancelAdd = document.getElementById('cancelAdd');
     const cancelEdit = document.getElementById('cancelEdit');
+    const closeAddModal = document.getElementById('closeAddModal');
+    const closeEditModal = document.getElementById('closeEditModal');
 
     const searchInput = document.getElementById('searchInput');
-
 
     /* -------------------------
         OPEN ADD MODAL
     ------------------------- */
     addBtn.addEventListener('click', () => {
-        modalAdd.style.display = 'flex';
+        openModal(modalAdd);
+        // Set default values
+        document.getElementById('name').value = '';
+        document.getElementById('status').value = '1';
     });
 
     cancelAdd.addEventListener('click', () => {
-        modalAdd.style.display = 'none';
+        closeModal(modalAdd);
     });
 
+    closeAddModal.addEventListener('click', () => {
+        closeModal(modalAdd);
+    });
 
     /* -------------------------
         OPEN EDIT MODAL
@@ -345,58 +440,117 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_name').value = row.cells[1].textContent.trim();
 
             const statusText = row.cells[2].textContent.trim().toLowerCase();
-            document.getElementById('edit_status').value = statusText === "active" ? 1 : 0;
+            document.getElementById('edit_status').value = statusText === "active" ? "1" : "0";
 
-            modalEdit.style.display = 'flex';
+            openModal(modalEdit);
         });
     });
 
     cancelEdit.addEventListener('click', () => {
-        modalEdit.style.display = 'none';
+        closeModal(modalEdit);
     });
 
+    closeEditModal.addEventListener('click', () => {
+        closeModal(modalEdit);
+    });
 
     /* -------------------------
-        CLOSE MODALS (CLICK OUTSIDE)
+        CLOSE MODALS (CLICK OUTSIDE & ESCAPE)
     ------------------------- */
     window.addEventListener('click', e => {
-        if (e.target === modalAdd) modalAdd.style.display = 'none';
-        if (e.target === modalEdit) modalEdit.style.display = 'none';
+        if (e.target === modalAdd) closeModal(modalAdd);
+        if (e.target === modalEdit) closeModal(modalEdit);
     });
 
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            closeModal(modalAdd);
+            closeModal(modalEdit);
+        }
+    });
 
     /* -------------------------
         SEARCH FILTER
     ------------------------- */
     searchInput.addEventListener('input', function () {
         const query = this.value.toLowerCase();
-        document.querySelectorAll('#categoryTable tr').forEach(row => {
-            const name = row.cells[1].textContent.toLowerCase();
-            row.style.display = name.includes(query) ? '' : 'none';
-        });
-    });
+        const rows = document.querySelectorAll('#categoryTable tr');
+        let hasVisibleRows = false;
 
+        rows.forEach(row => {
+            // Skip the "no categories" row
+            if (row.cells.length < 2) return;
+            
+            const name = row.cells[1].textContent.toLowerCase();
+            if (name.includes(query)) {
+                row.style.display = '';
+                hasVisibleRows = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Show/hide the "no results" message
+        const noResultsRow = document.querySelector('#categoryTable tr[colspan]');
+        if (noResultsRow) {
+            noResultsRow.style.display = hasVisibleRows ? 'none' : '';
+        }
+    });
 
     /* -------------------------
         RESET NUMBERING
     ------------------------- */
     function resetTableNumbers() {
-        document.querySelectorAll('#categoryTable tr').forEach((row, i) => {
-            row.cells[0].textContent = i + 1;
+        document.querySelectorAll('#categoryTable tr:not([colspan])').forEach((row, i) => {
+            if (row.cells.length > 0) {
+                row.cells[0].textContent = i + 1;
+            }
         });
     }
 
+    /* -------------------------
+        FORM VALIDATION
+    ------------------------- */
+    document.getElementById('addCategoryForm')?.addEventListener('submit', function(e) {
+        if (!validateForm(this)) {
+            e.preventDefault();
+        }
+    });
+
+    document.getElementById('editForm')?.addEventListener('submit', function(e) {
+        if (!validateForm(this)) {
+            e.preventDefault();
+        }
+    });
+
+    // Clear errors on input
+    document.querySelectorAll('#addCategoryForm input, #addCategoryForm select').forEach(field => {
+        field.addEventListener('input', function() {
+            this.style.borderColor = '#ddd';
+            const errorElement = document.getElementById(this.name + '_error');
+            if (errorElement) errorElement.style.display = 'none';
+        });
+    });
+
+    document.querySelectorAll('#editForm input, #editForm select').forEach(field => {
+        field.addEventListener('input', function() {
+            this.style.borderColor = '#ddd';
+            const errorElement = document.getElementById('edit_' + this.name + '_error');
+            if (errorElement) errorElement.style.display = 'none';
+        });
+    });
 
     /* -------------------------
         DELETE CATEGORY (AJAX)
     ------------------------- */
     document.querySelectorAll('.delete').forEach(btn => {
         btn.addEventListener('click', e => {
-
             const categoryId = e.target.dataset.id;
+            const categoryName = e.target.closest('tr').cells[1].textContent.trim();
 
-            if (!confirm("Are you sure you want to delete this category?"))
+            if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
                 return;
+            }
 
             fetch(`{{ route('categories.destroy') }}`, {
                 method: 'DELETE',
@@ -407,25 +561,48 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ category_id: categoryId })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
+                    // Remove the row from the table
                     const row = e.target.closest('tr');
                     row.remove();
+                    
+                    // Reset row numbers
                     resetTableNumbers();
+                    
+                    // If no rows left, show empty message
+                    const remainingRows = document.querySelectorAll('#categoryTable tr:not([colspan])');
+                    const noResultsRow = document.querySelector('#categoryTable tr[colspan]');
+                    
+                    if (remainingRows.length === 0 && !noResultsRow) {
+                        const tbody = document.getElementById('categoryTable');
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No categories found.</td></tr>';
+                    }
                 } else {
-                    alert("Delete failed.");
+                    alert("Delete failed: " + (data.message || "Unknown error"));
                 }
             })
             .catch(err => {
-                console.error(err);
-                alert("Error deleting category.");
+                console.error('Delete error:', err);
+                alert("Error deleting category. Please try again.");
             });
         });
     });
 
-});
+    // Auto-focus on modal open
+    addBtn.addEventListener('click', () => {
+        setTimeout(() => {
+            document.getElementById('name')?.focus();
+        }, 300);
+    });
 
+});
 
 </script>
 
