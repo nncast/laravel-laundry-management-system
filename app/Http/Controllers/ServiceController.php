@@ -5,11 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use App\Models\ServiceType;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Storage;
 class ServiceController extends Controller
 {
-    // Display all services
     public function index()
     {
         $services = Service::with('serviceType')->get();
@@ -17,54 +15,96 @@ class ServiceController extends Controller
         return view('services-list', compact('services', 'serviceTypes'));
     }
 
-    // Store a new service
     public function store(Request $request)
     {
-        $request->validate([
+        $isActive = $request->has('is_active') ? 1 : 0;
+
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'icon' => 'nullable|string|max:255',
             'service_type_id' => 'required|exists:service_types,id',
-            'is_active' => 'sometimes|boolean',
+            'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $service = Service::create([
-            'uuid' => Str::uuid(),
-            'name' => $request->name,
-            'icon' => $request->icon,
-            'service_type_id' => $request->service_type_id,
-            'is_active' => $request->is_active ?? true,
-        ]);
+        $serviceData = [
+            'name' => $validated['name'],
+            'service_type_id' => $validated['service_type_id'],
+            'is_active' => $isActive,
+            'icon' => 'images/services/placeholder.jpg',
+        ];
 
-        return response()->json($service, 201);
+        if ($request->hasFile('icon_file') && $request->file('icon_file')->isValid()) {
+            $file = $request->file('icon_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('services', $filename, 'public');
+            $serviceData['icon'] = 'storage/' . $path;
+        }
+
+        $service = Service::create($serviceData);
+
+        return response()->json([
+            'success' => true,
+            'data' => $service
+        ]);
     }
 
-    // Update a service (ID in payload)
     public function update(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|exists:services,id',
-            'name' => 'sometimes|string|max:255',
-            'icon' => 'sometimes|string|max:255',
-            'service_type_id' => 'sometimes|exists:service_types,id',
-            'is_active' => 'sometimes|boolean',
-        ]);
+{
+    // Find existing service
+    $service = Service::findOrFail($request->id);
 
-        $service = Service::findOrFail($request->id);
-        $service->update($request->only(['name', 'icon', 'service_type_id', 'is_active']));
+    // Determine active status
+    $isActive = $request->has('is_active') ? 1 : 0;
 
-        return response()->json($service);
+    // Validate request
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'service_type_id' => 'required|exists:service_types,id',
+        'icon_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+    ]);
+
+    // Update basic fields
+    $service->name = $validated['name'];
+    $service->service_type_id = $validated['service_type_id'];
+    $service->is_active = $isActive;
+
+    // Handle icon upload
+    if ($request->hasFile('icon_file') && $request->file('icon_file')->isValid()) {
+        // Delete old icon if not placeholder
+        if ($service->icon && $service->icon !== 'images/services/placeholder.jpg') {
+            $oldPath = str_replace('storage/', '', $service->icon);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $file = $request->file('icon_file');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $path = $file->storeAs('services', $filename, 'public');
+        $service->icon = 'storage/' . $path;
+    } elseif (!$service->icon) {
+        // Ensure a default placeholder if icon is null
+        $service->icon = 'images/services/placeholder.jpg';
     }
 
-    // Delete a service (ID in payload)
+    // Save updated service
+    $service->save();
+
+    return response()->json([
+        'success' => true,
+        'data' => $service
+    ]);
+}
+
+
     public function destroy(Request $request)
     {
-        $request->validate([
-            'id' => 'required|exists:services,id',
-        ]);
-
         $service = Service::findOrFail($request->id);
+
+        if ($service->icon && $service->icon !== 'images/services/placeholder.jpg') {
+            $oldPath = str_replace('storage/', '', $service->icon);
+            Storage::disk('public')->delete($oldPath);
+        }
+
         $service->delete();
 
-        return response()->json(['message' => 'Service deleted successfully']);
+        return response()->json(['success' => true]);
     }
 }

@@ -1,9 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Sales Report')
-@section('page-title', 'Sales Report')
-@section('active-reports-sales', 'active')
+@section('title', 'File Tools')
+@section('page-title', 'File Tools')
+@section('settings-filetools', 'active')
 
 @section('content')
 
 @endsection
+

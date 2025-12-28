@@ -95,6 +95,15 @@ td {
     font-weight: 500;
 }
 
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
 /* Action buttons */
 .action-btns {
     display: flex;
@@ -121,6 +130,71 @@ td {
 .edit:hover, .delete:hover {
     opacity: 0.8;
 }
+
+/* --- Modal common styles --- */
+/* --- Modal common styles --- */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-width: 500px;
+    width: 100%;
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.modal-content input[type="text"],
+.modal-content select,
+.modal-content input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: none; /* removed border */
+    margin-bottom: 15px;
+    background: #f8f9fa; /* subtle background for inputs */
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.modal-content label.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* space between checkbox and label text */
+    font-size: 14px;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.modal-content label.checkbox-label input[type="checkbox"] {
+    margin: 0; /* remove default spacing */
+}
+
+.modal-content button {
+    padding:10px 18px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+.modal-content .cancel-btn { background:#f1f1f1; color:#333; }
+.modal-content .save-btn { background:#007bff; color:#fff; }
+
 </style>
 
 <div class="table-container">
@@ -136,7 +210,7 @@ td {
             <tr>
                 <th>#</th>
                 <th>Service Name</th>
-                <th>Service Types</th>
+                <th>Service Type</th>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
@@ -146,19 +220,20 @@ td {
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td>
-                    <img src="{{ $service->icon ?? 'https://via.placeholder.com/32' }}" 
-                         width="32" style="vertical-align:middle;margin-right:10px;">
+                    <img src="{{ $service->icon_url }}" 
+                         width="32" height="32" 
+                         style="vertical-align:middle;margin-right:10px;border-radius:4px;">
                     {{ $service->name }}
                 </td>
                 <td>
-                    @foreach($service->serviceType as $type)
-                        <span class="type-tag">{{ $type->name }}</span>
-                    @endforeach
+                    <span class="type-tag">{{ $service->serviceType->name }}</span>
                 </td>
                 <td>
-                    <span class="{{ $service->is_active ? 'status-active' : 'status-inactive' }}">
-                        {{ $service->is_active ? 'Active' : 'Inactive' }}
-                    </span>
+                    @if($service->is_active)
+                        <span class="status-active">Active</span>
+                    @else
+                        <span class="status-inactive">Inactive</span>
+                    @endif
                 </td>
                 <td>
                     <div class="action-btns">
@@ -172,90 +247,130 @@ td {
     </table>
 </div>
 
-<!-- Modal templates -->
-<div id="serviceModal" style="display:none;">
-    <form id="serviceForm">
+<!-- Add Service Modal -->
+<div id="addServiceModal" class="modal">
+    <form id="addServiceForm" class="modal-content" enctype="multipart/form-data">
         @csrf
-        <input type="hidden" name="id" id="serviceId">
-        <div>
-            <label>Name:</label>
-            <input type="text" name="name" id="serviceName" required>
+        <h3>Add New Service</h3>
+        <input type="text" name="name" placeholder="Service Name" required>
+        <input type="file" name="icon_file" accept="image/*">
+        <select name="service_type_id" required>
+            @foreach($serviceTypes as $type)
+                <option value="{{ $type->id }}">{{ $type->name }}</option>
+            @endforeach
+        </select>
+        <label class="checkbox-label">
+    <input type="checkbox" name="is_active" checked> Active
+</label>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="cancel-btn" onclick="closeAddModal()">Cancel</button>
+            <button type="submit" class="save-btn">Save</button>
         </div>
-        <div>
-            <label>Icon URL:</label>
-            <input type="text" name="icon" id="serviceIcon">
+    </form>
+</div>
+
+<!-- Edit Service Modal -->
+<div id="editServiceModal" class="modal">
+    <form id="editServiceForm" class="modal-content" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
+        <h3>Edit Service</h3>
+        <input type="hidden" name="id" id="editServiceId">
+        <input type="text" name="name" id="editServiceName" placeholder="Service Name" required>
+        <input type="file" name="icon_file" id="editServiceIcon" accept="image/*">
+        <select name="service_type_id" id="editServiceType" required>
+            @foreach($serviceTypes as $type)
+                <option value="{{ $type->id }}">{{ $type->name }}</option>
+            @endforeach
+        </select>
+        <label class="checkbox-label">
+    <input type="checkbox" name="is_active" id="editServiceActive"> Active
+</label>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+            <button type="submit" class="save-btn">Update</button>
         </div>
-        <div>
-            <label>Service Type:</label>
-            <select name="service_type_id" id="serviceTypeId" required>
-                @foreach($serviceTypes as $type)
-                    <option value="{{ $type->id }}">{{ $type->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label>Status:</label>
-            <input type="checkbox" name="is_active" id="serviceActive" checked> Active
-        </div>
-        <button type="submit">Save</button>
     </form>
 </div>
 
 <script>
+// -------------------- Add Modal --------------------
 function openAddModal() {
-    document.getElementById('serviceForm').reset();
-    document.getElementById('serviceId').value = '';
-    document.getElementById('serviceModal').style.display = 'block';
+    document.getElementById('addServiceForm').reset();
+    document.getElementById('addServiceModal').style.display = 'flex';
 }
+function closeAddModal() { document.getElementById('addServiceModal').style.display = 'none'; }
 
+// -------------------- Edit Modal --------------------
 function openEditModal(id) {
-    let service = @json($services->keyBy('id'));
-    let s = service[id];
+    let services = @json($services->keyBy('id'));
+    let s = services[id];
 
-    document.getElementById('serviceId').value = s.id;
-    document.getElementById('serviceName').value = s.name;
-    document.getElementById('serviceIcon').value = s.icon;
-    document.getElementById('serviceTypeId').value = s.service_type_id;
-    document.getElementById('serviceActive').checked = s.is_active;
+    document.getElementById('editServiceId').value = s.id;
+    document.getElementById('editServiceName').value = s.name;
+    document.getElementById('editServiceType').value = s.service_type_id;
+    document.getElementById('editServiceActive').checked = s.is_active;
 
-    document.getElementById('serviceModal').style.display = 'block';
+    document.getElementById('editServiceModal').style.display = 'flex';
 }
+function closeEditModal() { document.getElementById('editServiceModal').style.display = 'none'; }
 
-document.getElementById('serviceForm').addEventListener('submit', function(e) {
+// -------------------- Form Submit --------------------
+document.getElementById('addServiceForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    let formData = new FormData(this);
+
+    fetch(`{{ route('services.store') }}`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: formData
+    }).then(res => res.json())
+      .then(data => { if(data.success) location.reload(); else alert('Error'); })
+      .catch(err => console.error(err));
+});
+
+document.getElementById('editServiceForm').addEventListener('submit', function(e){
     e.preventDefault();
     let formData = new FormData(this);
     let id = formData.get('id');
-    let url = id ? `/services/list` : `/services/list`; // POST or PUT handled by controller
-    let method = id ? 'PUT' : 'POST';
 
-    fetch(url, {
-        method: method,
+    fetch(`/services/list`, { // Use your update route
+        method: 'POST', // You can send POST with _method=PUT
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
         body: formData
-    }).then(res => res.json()).then(data => {
-        location.reload();
+    }).then(res => res.json())
+      .then(data => { if(data.success) location.reload(); else alert('Error'); })
+      .catch(err => console.error(err));
+});
+
+// -------------------- Delete --------------------
+function deleteService(id){
+    if(!confirm('Are you sure you want to delete this service?')) return;
+    fetch(`/services/list`, {
+        method:'DELETE',
+        headers:{
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type':'application/json'
+        },
+        body: JSON.stringify({id})
+    }).then(res=>res.json())
+      .then(data=>{ if(data.success) location.reload(); else alert('Failed'); });
+}
+
+// -------------------- Search --------------------
+document.getElementById('searchInput').addEventListener('input', function(){
+    let filter = this.value.toLowerCase();
+    document.querySelectorAll('#servicesTable tbody tr').forEach(tr=>{
+        tr.style.display = tr.innerText.toLowerCase().includes(filter)? '' : 'none';
     });
 });
 
-function deleteService(id) {
-    if(!confirm('Are you sure you want to delete this service?')) return;
-
-    fetch(`/services/list`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id })
-    }).then(res => res.json()).then(data => location.reload());
-}
-
-// Simple search filter
-document.getElementById('searchInput').addEventListener('input', function() {
-    let filter = this.value.toLowerCase();
-    document.querySelectorAll('#servicesTable tbody tr').forEach(tr => {
-        tr.style.display = tr.innerText.toLowerCase().includes(filter) ? '' : 'none';
-    });
+// -------------------- Close modal on outside click --------------------
+window.addEventListener('click', function(e){
+    if(e.target === document.getElementById('addServiceModal')) closeAddModal();
+    if(e.target === document.getElementById('editServiceModal')) closeEditModal();
 });
 </script>
 @endsection

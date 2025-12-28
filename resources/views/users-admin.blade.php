@@ -158,7 +158,7 @@ td {
         <tbody>
             <tbody>
                 @forelse($users as $index => $user)
-                <<tr class="staff-row" 
+                <tr class="staff-row"
                 data-id="{{ $user->id }}" 
                 data-phone="{{ $user->phone }}" 
                 data-role="{{ $user->role }}" 

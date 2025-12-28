@@ -1,8 +1,13 @@
+@php
+use Illuminate\Support\Str;
+@endphp
+
+
 @extends('layouts.app')
 
-@section('title', 'Customers')
-@section('page-title', 'Customers')
-@section('active-customers', 'active')
+@section('title', 'POS')
+@section('page-title', 'POS')
+@section('active-pos', 'active')
 
 @section('content')
 <style>
@@ -105,32 +110,29 @@
         </div>
 
         <div class="product-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px;">
-            <div class="product-item" style="text-align: center; border: 1px solid #eee; border-radius: 10px; padding: 15px;">
-                <img src="https://via.placeholder.com/80" alt="Dry cl" style="width: 80px; height: 80px; border-radius: 6px; object-fit: cover;">
-                <p style="margin-top: 10px; font-size: 14px;">Dry Clean</p>
-            </div>
-            <div class="product-item" style="text-align: center; border: 1px solid #eee; border-radius: 10px; padding: 15px;">
-                <i class="fas fa-basket-shopping" style="font-size: 40px; color: #333;"></i>
-                <p style="margin-top: 10px; font-size: 14px;">Valet</p>
-            </div>
-            <div class="product-item" style="text-align: center; border: 1px solid #eee; border-radius: 10px; padding: 15px;">
-                <i class="fas fa-tshirt" style="font-size: 40px; color: #333;"></i>
-                <p style="margin-top: 10px; font-size: 14px;">Shirt</p>
-            </div>
-            <div class="product-item" style="text-align: center; border: 1px solid #eee; border-radius: 10px; padding: 15px;">
-                <i class="fas fa-user-tie" style="font-size: 40px; color: #333;"></i>
-                <p style="margin-top: 10px; font-size: 14px;">Coat</p>
-            </div>
+            @foreach($services as $service)
+<div class="product-item" style="text-align: center; border: 1px solid #eee; border-radius: 10px; padding: 15px; cursor:pointer;" onclick="addToOrder({{ $service->id }})">
+    @if($service->icon_url)
+        <img src="{{ $service->icon_url }}" alt="{{ $service->name }}" style="width: 80px; height: 80px; border-radius: 6px; object-fit: cover;">
+    @else
+        <i class="fas fa-box" style="font-size: 40px; color: #333;"></i>
+    @endif
+    <p style="margin-top: 10px; font-size: 14px;" title="{{ $service->name }}">
+        {{ Str::limit($service->name, 10, '...') }}
+    </p>
+</div>
+@endforeach
         </div>
     </div>
+
 
     <!-- Order Section -->
     <div class="order-section" style="flex: 1.2; background: #fff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
             <div>
-                <p style="font-size: 13px;">Order: <strong>#ORD-3739</strong></p>
-                <p style="font-size: 13px;">Date: <strong>2025-10-28</strong></p>
-                <p style="font-size: 13px;">Delivery Date: <strong>2025-10-28</strong></p>
+                <p style="font-size: 13px;">Order: <strong>#ORD-1</strong></p>
+                <p style="font-size: 13px;">Date: <strong>2025-11-19</strong></p>
+                <p style="font-size: 13px;">Delivery Date: <strong>2025-11-19</strong></p>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <input type="text" placeholder="Select A Customer" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; width: 180px;">
@@ -144,11 +146,9 @@
             <thead>
                 <tr style="background: #f8f9fa;">
                     <th style="padding: 10px; text-align: left;">Service</th>
-                    <th style="padding: 10px;">Color</th>
                     <th style="padding: 10px;">Price</th>
                     <th style="padding: 10px;">Rate</th>
                     <th style="padding: 10px;">QTY</th>
-                    <th style="padding: 10px;">Tax (16%)</th>
                     <th style="padding: 10px;">Total</th>
                 </tr>
             </thead>
@@ -162,7 +162,6 @@
         <div style="margin-top: 20px; font-size: 14px;">
             <div style="display: flex; justify-content: space-between;"><span>Add-on:</span><strong>0.00 USD</strong></div>
             <div style="display: flex; justify-content: space-between;"><span>Sub Total:</span><strong>0.00 USD</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span>Tax (16%):</span><strong>0.00 USD</strong></div>
             <div style="display: flex; justify-content: space-between;"><span>Discount:</span><strong>0.00 USD</strong></div>
             <div style="display: flex; justify-content: space-between; margin-top: 5px;"><span><strong>Gross Total:</strong></span><strong>0.00 USD</strong></div>
         </div>
