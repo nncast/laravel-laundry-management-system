@@ -4,17 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
     use HasFactory;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'order_items';
 
     /**
      * The attributes that are mass assignable.
@@ -38,102 +32,71 @@ class OrderItem extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'rate' => 'decimal:2',
-        'qty' => 'integer',
         'total' => 'decimal:2',
+        'qty' => 'integer',
     ];
 
     /**
-     * Relationship with Order
+     * Get the order that owns the item.
      */
-    public function order()
+    public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
     /**
-     * Relationship with Service
+     * Get the service for the item.
      */
-    public function service()
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
     }
 
     /**
-     * Relationship with OrderAddons (if you want to get addons for this specific item)
+     * Update the total when attributes change.
      */
-    public function addons()
+    protected static function booted(): void
     {
-        return $this->hasMany(OrderAddon::class);
-    }
-
-    /**
-     * Get formatted price attribute
-     */
-    public function getFormattedPriceAttribute()
-    {
-        return '₱' . number_format($this->price, 2);
-    }
-
-    /**
-     * Get formatted total attribute
-     */
-    public function getFormattedTotalAttribute()
-    {
-        return '₱' . number_format($this->total, 2);
-    }
-
-    /**
-     * Get formatted rate attribute (if rate is percentage or multiplier)
-     */
-    public function getFormattedRateAttribute()
-    {
-        if ($this->rate == 1) {
-            return '100%';
-        }
-        return ($this->rate * 100) . '%';
-    }
-
-    /**
-     * Get service name through relationship
-     */
-    public function getServiceNameAttribute()
-    {
-        return $this->service ? $this->service->name : 'N/A';
-    }
-
-    /**
-     * Calculate total automatically before saving
-     */
-    public static function boot()
-    {
-        parent::boot();
-
-        static::saving(function ($model) {
-            $model->calculateTotal();
+        static::saving(function (OrderItem $item) {
+            $item->total = $item->price * $item->rate * $item->qty;
         });
     }
 
     /**
-     * Calculate the total based on price, rate, and quantity
+     * Increase quantity.
      */
-    public function calculateTotal()
+    public function increaseQty(int $amount = 1): self
     {
-        $this->total = ($this->price * $this->rate) * $this->qty;
+        $this->qty += $amount;
+        $this->save();
+        return $this;
     }
 
     /**
-     * Scope to get items with their service
+     * Decrease quantity.
      */
-    public function scopeWithService($query)
+    public function decreaseQty(int $amount = 1): self
     {
-        return $query->with('service');
+        $this->qty = max(1, $this->qty - $amount);
+        $this->save();
+        return $this;
     }
 
     /**
-     * Scope to get items for a specific order
+     * Update quantity.
      */
-    public function scopeForOrder($query, $orderId)
+    public function updateQty(int $quantity): self
     {
-        return $query->where('order_id', $orderId);
+        $this->qty = max(1, $quantity);
+        $this->save();
+        return $this;
+    }
+
+    /**
+     * Get the item name from service.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->service->name ?? 'Unknown Service';
     }
 }

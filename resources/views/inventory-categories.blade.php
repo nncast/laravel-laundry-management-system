@@ -237,28 +237,32 @@ tbody tr:hover {
             </tr>
         </thead>
         <tbody id="categoryTable">
-            @forelse($categories as $index => $category)
-                <tr data-id="{{ $category->id }}">
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $category->name }}</td>
-                    <td>
-                        <span class="status-{{ $category->status ? 'active' : 'inactive' }}">
-                            {{ $category->status ? 'Active' : 'Inactive' }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="action-btns">
-                            <i class="fas fa-pen edit" data-id="{{ $category->id }}"></i>
-                            <i class="fas fa-trash delete" data-id="{{ $category->id }}"></i>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="4" style="text-align:center; color:#888;">No categories found.</td>
-                </tr>
-            @endforelse
-        </tbody>
+    @forelse($categories as $index => $category)
+        <tr data-id="{{ $category->id }}">
+            <td>{{ $index + 1 }}</td>
+            <td>{{ $category->name }}</td>
+            <td>
+                <span class="status-{{ $category->status ? 'active' : 'inactive' }}">
+                    {{ $category->status ? 'Active' : 'Inactive' }}
+                </span>
+            </td>
+            <td>
+                <div class="action-btns">
+                    <i class="fas fa-pen edit" data-id="{{ $category->id }}" title="Edit"></i>
+                    <i class="fas fa-trash delete" data-id="{{ $category->id }}" title="Delete"></i>
+                </div>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="4" style="text-align:center; color:#888; padding:20px;">
+                <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+                No categories found.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
+
     </table>
 </div>
 

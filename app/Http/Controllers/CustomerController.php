@@ -54,5 +54,16 @@ public function update(Request $request, Customer $customer)
 
     return redirect()->route('customers.index')->with('success', 'Customer updated.');
 }
+public function destroy(Customer $customer)
+{
+    try {
+        $customer->delete();
+        return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
+    } catch (\Exception $e) {
+        return redirect()->route('customers.index')->with('error', 'Failed to delete customer.');
+    }
+}
+
+
 
 }

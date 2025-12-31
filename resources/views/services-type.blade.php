@@ -180,27 +180,33 @@ tbody tr:hover {
         </thead>
         <tbody id="serviceTableBody">
             @forelse($serviceTypes as $index => $service)
-            <tr class="service-row" data-id="{{ $service->id }}">
-                <td>{{ $index + 1 }}</td>
-                <td class="service-name">{{ $service->name }}</td>
-                <td>
-                    @if($service->is_active)
-                        <span class="status-active">Active</span>
-                    @else
-                        <span class="status-inactive">Inactive</span>
-                    @endif
-                </td>
-                <td>
-                    <div class="action-btns">
-                        <i class="fas fa-pen edit"></i>
-                        <i class="fas fa-trash delete"></i>
-                    </div>
-                </td>
-            </tr>
+                <tr class="service-row" data-id="{{ $service->id }}">
+                    <td>{{ $index + 1 }}</td>
+                    <td class="service-name">{{ $service->name }}</td>
+                    <td>
+                        @if($service->is_active)
+                            <span class="status-active">Active</span>
+                        @else
+                            <span class="status-inactive">Inactive</span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <i class="fas fa-pen edit"></i>
+                            <i class="fas fa-trash delete"></i>
+                        </div>
+                    </td>
+                </tr>
             @empty
-            <tr id="noServiceFound"><td colspan="4" style="text-align:center; color:#999;">No records found.</td></tr>
+                <tr id="noServiceFound">
+                    <td colspan="4" style="text-align:center; color:#999; padding:20px;">
+                        <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+                        No records found.
+                    </td>
+                </tr>
             @endforelse
         </tbody>
+
     </table>
 </div>
 

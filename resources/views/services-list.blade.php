@@ -188,33 +188,41 @@ tbody tr:hover {
             </tr>
         </thead>
         <tbody>
-            @foreach($services as $index => $service)
-            <tr data-service-id="{{ $service->id }}">
-                <td>{{ $index + 1 }}</td>
-                <td>
-                    @if($service->icon_url)
-                    <img src="{{ $service->icon_url }}" width="32" height="32" class="service-icon">
-                    @endif
-                    {{ $service->name }}
-                </td>
-                <td><span class="type-tag">{{ $service->serviceType->name }}</span></td>
-                <td class="price-cell">₱{{ number_format($service->price, 2) }}</td>
-                <td>
-                    @if($service->is_active)
-                        <span class="status-active">Active</span>
-                    @else
-                        <span class="status-inactive">Inactive</span>
-                    @endif
-                </td>
-                <td>
-                    <div class="action-btns">
-                        <i class="fas fa-pen edit" onclick="openEditModal({{ $service->id }})"></i>
-                        <i class="fas fa-trash delete" onclick="deleteService({{ $service->id }})"></i>
-                    </div>
-                </td>
-            </tr>
-            @endforeach
+            @forelse($services as $index => $service)
+                <tr data-service-id="{{ $service->id }}">
+                    <td>{{ $index + 1 }}</td>
+                    <td>
+                        @if($service->icon_url)
+                            <img src="{{ $service->icon_url }}" width="32" height="32" class="service-icon">
+                        @endif
+                        {{ $service->name }}
+                    </td>
+                    <td><span class="type-tag">{{ $service->serviceType->name }}</span></td>
+                    <td class="price-cell">₱{{ number_format($service->price, 2) }}</td>
+                    <td>
+                        @if($service->is_active)
+                            <span class="status-active">Active</span>
+                        @else
+                            <span class="status-inactive">Inactive</span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <i class="fas fa-pen edit" onclick="openEditModal({{ $service->id }})"></i>
+                            <i class="fas fa-trash delete" onclick="deleteService({{ $service->id }})"></i>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" style="text-align:center;color:#999;padding:20px;">
+                        <i class="fas fa-box-open" style="font-size:24px;margin-bottom:10px;display:block;"></i>
+                        No services found.
+                    </td>
+                </tr>
+            @endforelse
         </tbody>
+
     </table>
 </div>
 

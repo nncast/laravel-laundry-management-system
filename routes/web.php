@@ -11,9 +11,8 @@ use App\Http\Controllers\{
     ServiceController,
     ServiceTypeController,
     PosController,
-    SystemSettingController
-
-
+    SystemSettingController,
+    AddonController
 };
 use App\Http\Middleware\AuthStaff;
 
@@ -30,15 +29,14 @@ Route::middleware(AuthStaff::class)->group(function () {
 
     // ---------- SALES ----------
     Route::view('/orders', 'orders')->name('sales.orders');
-    Route::view('/pos', 'pos')->name('sales.pos');
-    
-Route::get('/pos', [PosController::class, 'index'])->name('pos');
+    Route::get('/pos', [PosController::class, 'index'])->name('pos');
 
     // ---------- CUSTOMERS ----------
     Route::controller(CustomerController::class)->group(function () {
         Route::get('/customers', 'index')->name('customers.index');
         Route::post('/customers', 'store')->name('customers.store');
         Route::put('/customers/{customer}', 'update')->name('customers.update');
+        Route::delete('/customers/{customer}', 'destroy')->name('customers.destroy');
     });
 
     // ---------- INVENTORY ----------
@@ -77,14 +75,23 @@ Route::get('/pos', [PosController::class, 'index'])->name('pos');
         });
 
         Route::controller(ServiceController::class)->group(function () {
-    Route::get('/list', 'index')->name('services.list');
-    Route::post('/list', 'store')->name('services.store');
-    Route::put('/list/{id}', 'update')->name('services.update');        // add {id}
-    Route::delete('/list/{id}', 'destroy')->name('services.destroy');    // add {id}
-});
+            Route::get('/list', 'index')->name('services.list');
+            Route::post('/list', 'store')->name('services.store');
+            Route::put('/list/{id}', 'update')->name('services.update');
+            Route::delete('/list/{id}', 'destroy')->name('services.destroy');
+        });
 
-
-        Route::view('/addons', 'services-addons')->name('services.addons');
+        // ADDON ROUTES
+        Route::controller(AddonController::class)->group(function () {
+            Route::get('/addons', 'index')->name('services.addons');
+            Route::post('/addons', 'store')->name('services.addons.store');
+            Route::put('/addons/{id}', 'update')->name('services.addons.update');
+            Route::delete('/addons/{id}', 'destroy')->name('services.addons.destroy');
+            
+            // Add these API routes for POS
+            Route::get('/addons/active', 'getActiveAddons')->name('addons.active');
+            Route::get('/addons/all', 'getAllAddons')->name('addons.all');
+        });
     });
 
     // ---------- STAFF ----------
@@ -106,19 +113,17 @@ Route::get('/pos', [PosController::class, 'index'])->name('pos');
     });
 
     // ---------- SETTINGS ----------
-Route::prefix('settings')->group(function () {
-    
-    Route::get('/system', [\App\Http\Controllers\SystemSettingController::class, 'edit'])
-        ->name('settings.system.edit');
+    Route::prefix('settings')->group(function () {
+        Route::get('/system', [SystemSettingController::class, 'edit'])
+            ->name('settings.system.edit');
 
-    Route::post('/system', [\App\Http\Controllers\SystemSettingController::class, 'update'])
-        ->name('settings.update');
+        Route::post('/system', [SystemSettingController::class, 'update'])
+            ->name('settings.update');
 
-    Route::view('/filetools', 'settings-filetools')->name('settings.filetools');
-    Route::get('/mastersettings', [SystemSettingController::class, 'edit'])->name('settings.mastersettings');
-});
+        Route::view('/filetools', 'settings-filetools')->name('settings.filetools');
+        Route::get('/mastersettings', [SystemSettingController::class, 'edit'])->name('settings.mastersettings');
+    });
 
-Route::post('/settings/filetools/upload', [App\Http\Controllers\FileToolsController::class, 'upload'])
-    ->name('filetools.upload');
-
+    Route::post('/settings/filetools/upload', [App\Http\Controllers\FileToolsController::class, 'upload'])
+        ->name('filetools.upload');
 });

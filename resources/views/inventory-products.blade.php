@@ -195,36 +195,39 @@ tbody tr:hover {
             </tr>
         </thead>
         <tbody id="productTable">
-            @forelse($products as $index => $product)
-                <tr data-id="{{ $product->id }}"
-                    data-category-id="{{ $product->category_id }}"
-                    data-unit-id="{{ $product->unit_id }}">
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $product->name }}</td>
-                    <td>{{ $product->category->name ?? '-' }}</td>
-                    <td>{{ $product->unit->name ?? '-' }}</td>
-                    <!-- CHANGED: from $product->price to $product->purchase_price -->
-                    <td class="price-cell">₱{{ number_format($product->purchase_price, 2) }}</td>
-                    <td>{{ $product->available_stock }}</td>
-                    <td>{{ $product->minimum_stock_level }}</td>
-                    <td>
-                        <span class="status-{{ $product->status === 'active' ? 'active' : 'inactive' }}">
-                            {{ ucfirst($product->status) }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="action-btns">
-                            <i class="fas fa-pen edit" data-id="{{ $product->id }}"></i>
-                            <i class="fas fa-trash delete" data-id="{{ $product->id }}"></i>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="10" style="text-align:center; color:#888;">No products found.</td>
-                </tr>
-            @endforelse
-        </tbody>
+    @forelse($products as $index => $product)
+        <tr data-id="{{ $product->id }}"
+            data-category-id="{{ $product->category_id }}"
+            data-unit-id="{{ $product->unit_id }}">
+            <td>{{ $index + 1 }}</td>
+            <td>{{ $product->name }}</td>
+            <td>{{ $product->category->name ?? '-' }}</td>
+            <td>{{ $product->unit->name ?? '-' }}</td>
+            <td class="price-cell">₱{{ number_format($product->purchase_price, 2) }}</td>
+            <td>{{ $product->available_stock }}</td>
+            <td>{{ $product->minimum_stock_level }}</td>
+            <td>
+                <span class="status-{{ $product->status === 'active' ? 'active' : 'inactive' }}">
+                    {{ ucfirst($product->status) }}
+                </span>
+            </td>
+            <td>
+                <div class="action-btns">
+                    <i class="fas fa-pen edit" data-id="{{ $product->id }}" title="Edit"></i>
+                    <i class="fas fa-trash delete" data-id="{{ $product->id }}" title="Delete"></i>
+                </div>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="10" style="text-align:center; color:#888; padding:20px;">
+                <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+                No products found.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
+
     </table>
 </div>
 

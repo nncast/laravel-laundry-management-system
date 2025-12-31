@@ -182,26 +182,34 @@ td {
             </tr>
         </thead>
         <tbody>
-        @foreach($units as $index => $unit)
-        <tr class="unit-row" data-unit='@json($unit)'>
-            <td>{{ $index + 1 }}</td>
-            <td class="unit-name">{{ $unit->name }}</td>
-            <td class="unit-short-form">{{ $unit->short_form }}</td>
-            <td class="unit-description">{{ $unit->description ?? '-' }}</td>
-            <td>
-                <span class="status-{{ $unit->status }}">
-                    {{ ucfirst($unit->status) }}
-                </span>
-            </td>
-            <td>
-                <div class="action-btns">
-                    <i class="fas fa-pen edit" data-id="{{ $unit->id }}" title="Edit"></i>
-                    <i class="fas fa-trash delete" data-id="{{ $unit->id }}" title="Delete"></i>
-                </div>
-            </td>
-        </tr>
-        @endforeach
-        </tbody>
+@forelse($units as $index => $unit)
+    <tr class="unit-row" data-unit='@json($unit)'>
+        <td>{{ $index + 1 }}</td>
+        <td class="unit-name">{{ $unit->name }}</td>
+        <td class="unit-short-form">{{ $unit->short_form }}</td>
+        <td class="unit-description">{{ $unit->description ?? '-' }}</td>
+        <td>
+            <span class="status-{{ $unit->status }}">
+                {{ ucfirst($unit->status) }}
+            </span>
+        </td>
+        <td>
+            <div class="action-btns">
+                <i class="fas fa-pen edit" data-id="{{ $unit->id }}" title="Edit"></i>
+                <i class="fas fa-trash delete" data-id="{{ $unit->id }}" title="Delete"></i>
+            </div>
+        </td>
+    </tr>
+@empty
+    <tr>
+        <td colspan="6" style="text-align:center; color:#999; padding:20px;">
+            <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
+            No units found.
+        </td>
+    </tr>
+@endforelse
+</tbody>
+
     </table>
 </div>
 
