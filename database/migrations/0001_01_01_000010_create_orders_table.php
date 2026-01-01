@@ -12,14 +12,15 @@ return new class extends Migration
             $table->id();
             $table->string('order_number')->unique();
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('order_type', ['pickup', 'delivery'])->default('pickup');
+            
+            $table->foreignId('staff_id')->constrained('staffs')->cascadeOnDelete();
+            
             $table->date('order_date');
             $table->decimal('subtotal', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('total', 10, 2)->default(0);
             $table->decimal('paid_amount', 10, 2)->default(0);
-            $table->enum('status', ['pending', 'processing', 'ready', 'delivered'])->default('pending');
+            $table->enum('status', ['pending', 'processing', 'ready'])->default('pending');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

@@ -12,8 +12,10 @@ use App\Http\Controllers\{
     ServiceTypeController,
     PosController,
     SystemSettingController,
-    AddonController
+    AddonController,
+    OrderController
 };
+
 use App\Http\Middleware\AuthStaff;
 
 // ---------- PUBLIC ROUTES ----------
@@ -29,7 +31,22 @@ Route::middleware(AuthStaff::class)->group(function () {
 
     // ---------- SALES ----------
     Route::view('/orders', 'orders')->name('sales.orders');
-    Route::get('/pos', [PosController::class, 'index'])->name('pos');
+    
+    // Order Management Routes
+    Route::controller(OrderController::class)->group(function () {
+        Route::get('/orders/list', 'index')->name('orders.index');
+        Route::get('/orders/{order}', 'show')->name('orders.show');
+        Route::post('/orders/{order}/update-status', 'updateStatus')->name('orders.update.status');
+        Route::post('/orders/{order}/add-payment', 'addPayment')->name('orders.add.payment');
+    });
+
+    // ---------- POS ----------
+    Route::controller(PosController::class)->group(function () {
+        Route::get('/pos', 'index')->name('pos');
+        Route::post('/pos/orders', 'createOrder')->name('pos.orders.store');
+        Route::get('/pos/addons/active', 'getActiveAddons')->name('pos.addons.active');
+        Route::get('/pos/check-auth', 'checkAuth')->name('pos.check.auth');
+    });
 
     // ---------- CUSTOMERS ----------
     Route::controller(CustomerController::class)->group(function () {
@@ -81,16 +98,12 @@ Route::middleware(AuthStaff::class)->group(function () {
             Route::delete('/list/{id}', 'destroy')->name('services.destroy');
         });
 
-        // ADDON ROUTES
+        // ADDON MANAGEMENT ROUTES (Admin Panel)
         Route::controller(AddonController::class)->group(function () {
             Route::get('/addons', 'index')->name('services.addons');
             Route::post('/addons', 'store')->name('services.addons.store');
             Route::put('/addons/{id}', 'update')->name('services.addons.update');
             Route::delete('/addons/{id}', 'destroy')->name('services.addons.destroy');
-            
-            // Add these API routes for POS
-            Route::get('/addons/active', 'getActiveAddons')->name('addons.active');
-            Route::get('/addons/all', 'getAllAddons')->name('addons.all');
         });
     });
 
@@ -101,9 +114,6 @@ Route::middleware(AuthStaff::class)->group(function () {
         Route::put('/{staff}', 'update')->name('staff.update');
         Route::delete('/{staff}', 'destroy')->name('staff.destroy');
     });
-
-    Route::view('/staff/cashier', 'users-cashier')->name('staff.cashier');
-    Route::view('/staff/manager', 'users-manager')->name('staff.manager');
 
     // ---------- REPORTS ----------
     Route::prefix('reports')->group(function () {

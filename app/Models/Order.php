@@ -20,8 +20,7 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'customer_id',
-        'user_id',
-        'order_type',
+        'staff_id',
         'order_date',
         'subtotal',
         'discount',
@@ -45,6 +44,18 @@ class Order extends Model
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'balance',
+        'is_paid',
+        'status_label',
+        'can_edit',
+    ];
+
+    /**
      * Bootstrap the model and its traits.
      */
     protected static function booted(): void
@@ -65,6 +76,13 @@ class Order extends Model
             // Calculate totals before saving
             $order->calculateTotals();
         });
+
+        static::created(function ($order) {
+            // Ensure totals are calculated after creation if needed
+            if ($order->wasChanged(['subtotal', 'discount', 'total'])) {
+                $order->saveQuietly(); // Save without firing events again
+            }
+        });
     }
 
     /**
@@ -76,11 +94,11 @@ class Order extends Model
     }
 
     /**
-     * Get the user (staff) who created the order.
+     * Get the staff member who created the order.
      */
-    public function user(): BelongsTo
+    public function staff(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Staff::class);
     }
 
     /**
@@ -111,18 +129,22 @@ class Order extends Model
 
     /**
      * Calculate all totals for the order.
+     * Use query methods instead of loaded relationships to avoid N+1 issues.
      */
     public function calculateTotals(): void
     {
-        // Calculate items subtotal
-        $itemsTotal = $this->items->sum('total');
+        // If order doesn't exist yet, skip calculation (will be done after creation)
+        if (!$this->exists) {
+            return;
+        }
+
+        // Calculate items subtotal using query (not loaded relationships)
+        $itemsTotal = $this->items()->sum('total');
         
-        // Calculate addons total
-        $addonsTotal = $this->addons->sum(function ($addon) {
-            return $addon->pivot->price;
-        });
+        // Calculate addons total using query
+        $addonsTotal = $this->addons()->sum('order_addons.price');
         
-        $this->subtotal = $itemsTotal + $addonsTotal;
+        $this->subtotal = (float) $itemsTotal + (float) $addonsTotal;
         $this->total = $this->subtotal - $this->discount;
         
         // Ensure total is not negative
@@ -167,6 +189,10 @@ class Order extends Model
         $this->addons()->attach($addon->id, [
             'price' => $addon->price
         ]);
+        
+        // Recalculate totals after adding addon
+        $this->calculateTotals();
+        $this->save();
     }
 
     /**
@@ -175,22 +201,22 @@ class Order extends Model
     public function applyDiscount(float $discount): void
     {
         $this->discount = $discount;
-        $this->calculateTotals();
-        $this->save();
+        $this->save(); // calculateTotals() will be called by the saving event
     }
 
     /**
      * Add a payment to the order.
      */
-    public function addPayment(float $amount): Payment
+    public function addPayment(float $amount, string $method = 'cash'): Payment
     {
         $payment = $this->payments()->create([
-            'amount' => $amount
+            'amount' => $amount,
+            'payment_method' => $method,
         ]);
         
-        // Update paid amount
-        $this->paid_amount = $this->payments()->sum('amount');
-        $this->save();
+        // Update paid amount by querying the database
+        $this->paid_amount = (float) $this->payments()->sum('amount');
+        $this->saveQuietly(); // Save without firing events
         
         return $payment;
     }
@@ -200,7 +226,10 @@ class Order extends Model
      */
     public function getBalanceAttribute(): float
     {
-        return (float) $this->total - (float) $this->paid_amount;
+        // Use actual database values, not the ones that might be in memory
+        $total = $this->getAttribute('total');
+        $paid = $this->getAttribute('paid_amount');
+        return (float) $total - (float) $paid;
     }
 
     /**
@@ -220,7 +249,6 @@ class Order extends Model
             'pending' => 'Pending',
             'processing' => 'Processing',
             'ready' => 'Ready',
-            'delivered' => 'Delivered',
             default => ucfirst($this->status)
         };
     }
@@ -231,5 +259,45 @@ class Order extends Model
     public function getCanEditAttribute(): bool
     {
         return in_array($this->status, ['pending', 'processing']);
+    }
+
+    /**
+     * Scope a query to only include orders from today.
+     */
+    public function scopeToday($query)
+    {
+        return $query->whereDate('order_date', today());
+    }
+
+    /**
+     * Scope a query to only include orders from a specific staff.
+     */
+    public function scopeByStaff($query, $staffId)
+    {
+        return $query->where('staff_id', $staffId);
+    }
+
+    /**
+     * Scope a query to only include pending orders.
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope a query to only include processing orders.
+     */
+    public function scopeProcessing($query)
+    {
+        return $query->where('status', 'processing');
+    }
+
+    /**
+     * Scope a query to only include ready orders.
+     */
+    public function scopeReady($query)
+    {
+        return $query->where('status', 'ready');
     }
 }

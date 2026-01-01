@@ -150,7 +150,6 @@ button.qty-btn:hover {
     margin: 0;
     font-weight: 600;
     color: var(--text-dark);
-
     font-size: 12px;
     white-space: nowrap;
 }
@@ -629,7 +628,8 @@ button.qty-btn:hover {
     <div class="order-section">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; font-size:12px;">
             <div>
-                <p>Order: <strong>#ORD-1</strong></p>
+                <!-- Updated Order Number Display -->
+                <p>Order: <strong id="orderNumber">#ORD-{{ $last_order_number ?? '1' }}</strong></p>
                 <div class="date-picker-wrapper">
                 <span class="date-picker-label"><p style="color:#2c3e50;">Date: </p></span>
 
@@ -916,67 +916,32 @@ button.qty-btn:hover {
 // ============================================
 let servicesData = @json($services);
 let customersData = @json($customers);
-let addonsData = []; // Will be populated from backend
+let addonsData = [];
 let orderItems = [];
-let selectedAddons = []; // Array to store selected addons {id, name, price}
+let selectedAddons = [];
 let orderData = {
     paymentAmount: null,
     totalAmount: 0,
     customerId: null
 };
 
+// Order number tracking
+let currentOrderNumber = {{ $last_order_number ?? '1' }};
+
 // ============================================
-// CUSTOMER SELECTION VALIDATION FUNCTIONS
+// HELPER FUNCTIONS
 // ============================================
-function validateCustomerSelection() {
-    const customerSelect = document.getElementById('selectCustomer');
-    const customerError = document.getElementById('customerError');
-    const customerId = customerSelect.value;
-    
-    // Reset error state
-    customerSelect.classList.remove('customer-select-error');
-    customerError.style.display = 'none';
-    
-    // Check if customer is selected
-    if (!customerId || customerId.trim() === '') {
-        customerSelect.classList.add('customer-select-error');
-        customerError.style.display = 'flex';
-        
-        // Scroll to customer select if it's not in view
-        const customerContainer = document.querySelector('.customer-select-wrapper');
-        if (customerContainer) {
-            customerContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
-        return false;
-    }
-    
-    return true;
+function getNextOrderNumber() {
+    return currentOrderNumber;
 }
 
-function showCustomerError() {
-    const customerSelect = document.getElementById('selectCustomer');
-    const customerError = document.getElementById('customerError');
-    
-    customerSelect.classList.add('customer-select-error');
-    customerError.style.display = 'flex';
-    
-    // Focus on the select element
-    customerSelect.focus();
-    
-    // Scroll to customer select
-    const customerContainer = document.querySelector('.customer-select-wrapper');
-    if (customerContainer) {
-        customerContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+function updateOrderNumberDisplay() {
+    document.getElementById('orderNumber').textContent = `#ORD-${getNextOrderNumber()}`;
 }
 
-function clearCustomerError() {
-    const customerSelect = document.getElementById('selectCustomer');
-    const customerError = document.getElementById('customerError');
-    
-    customerSelect.classList.remove('customer-select-error');
-    customerError.style.display = 'none';
+function incrementOrderNumber() {
+    currentOrderNumber++;
+    updateOrderNumberDisplay();
 }
 
 // ============================================
@@ -990,11 +955,6 @@ function openModal(modal) {
 function closeModal(modal) {
     modal.classList.remove('active');
     document.body.classList.remove('modal-open');
-    if (modal.id === 'addCustomerModal') {
-        clearCustomerErrors();
-    } else if (modal.id === 'paymentModal') {
-        resetPaymentModalErrors();
-    }
 }
 
 // ============================================
@@ -1006,75 +966,67 @@ function initOrderDate() {
     const text = document.getElementById('orderDateText');
 
     input.value = today;
-    text.textContent = today;
+    text.textContent = formatDate(today);
 }
 
-// ============================================
-// CUSTOMER MODAL FUNCTIONS
-// ============================================
-function clearCustomerErrors() {
-    document.querySelectorAll('#addCustomerForm .error-message').forEach(error => {
-        error.style.display = 'none';
-        error.textContent = '';
-    });
-    document.querySelectorAll('#addCustomerForm input, #addCustomerForm textarea').forEach(field => {
-        field.style.borderColor = '#ddd';
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
     });
 }
 
-function showCustomerError(fieldId, message) {
-    const errorElement = document.getElementById(fieldId);
-    const inputElement = document.querySelector(`#addCustomerForm [name="${fieldId.replace('customer_', '').replace('_error', '')}"]`);
-    if (errorElement && inputElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        inputElement.style.borderColor = '#dc3545';
-    }
-}
-
-function validatePhone(phone) {
-    if (!phone) return true;
-    return /^[0-9]{10,15}$/.test(phone.replace(/\s/g, ''));
-}
-
-function validateCustomerForm() {
-    let valid = true;
-    clearCustomerErrors();
+// ============================================
+// CUSTOMER FUNCTIONS
+// ============================================
+function validateCustomerSelection() {
+    const customerSelect = document.getElementById('selectCustomer');
+    const customerError = document.getElementById('customerError');
     
-    const nameField = document.getElementById('customer_name');
-    const contactField = document.getElementById('customer_contact');
+    customerSelect.classList.remove('customer-select-error');
+    customerError.style.display = 'none';
     
-    if (!nameField || !nameField.value.trim()) {
-        showCustomerError('customer_name_error', 'Customer name is required');
-        valid = false;
+    if (!customerSelect.value) {
+        customerSelect.classList.add('customer-select-error');
+        customerError.style.display = 'flex';
+        customerSelect.focus();
+        return false;
     }
     
-    if (contactField && contactField.value && !validatePhone(contactField.value)) {
-        showCustomerError('customer_contact_error', 'Contact number must be 10-15 digits');
-        valid = false;
-    }
-    
-    return valid;
+    return true;
 }
 
+function clearCustomerError() {
+    const customerSelect = document.getElementById('selectCustomer');
+    const customerError = document.getElementById('customerError');
+    
+    customerSelect.classList.remove('customer-select-error');
+    customerError.style.display = 'none';
+}
+
+// ============================================
+// ADD CUSTOMER MODAL FUNCTIONS
+// ============================================
 function openAddCustomerModal() {
     document.getElementById('addCustomerForm').reset();
     clearCustomerErrors();
     openModal(document.getElementById("addCustomerModal"));
-    
-    setTimeout(() => {
-        document.getElementById('customer_name')?.focus();
-    }, 300);
 }
 
 function closeCustomerModal() {
     closeModal(document.getElementById("addCustomerModal"));
 }
 
+function clearCustomerErrors() {
+    document.querySelectorAll('#addCustomerForm .error-message').forEach(error => {
+        error.style.display = 'none';
+    });
+}
+
 async function handleAddCustomer(event) {
     event.preventDefault();
-    
-    if (!validateCustomerForm()) return;
     
     const formData = new FormData(event.target);
     
@@ -1099,18 +1051,17 @@ async function handleAddCustomer(event) {
             select.value = data.customer.id;
             customersData.push(data.customer);
             closeCustomerModal();
-            
-            // Clear any customer selection errors
             clearCustomerError();
-            
             alert('Customer added successfully!');
         } else {
             if (data.errors) {
-                if (data.errors.name) showCustomerError('customer_name_error', data.errors.name[0]);
-                if (data.errors.contact) showCustomerError('customer_contact_error', data.errors.contact[0]);
-                if (data.errors.address) showCustomerError('customer_address_error', data.errors.address[0]);
-            } else {
-                alert('Error adding customer: ' + (data.message || 'Unknown error'));
+                Object.keys(data.errors).forEach(field => {
+                    const errorElement = document.getElementById(`customer_${field}_error`);
+                    if (errorElement) {
+                        errorElement.textContent = data.errors[field][0];
+                        errorElement.style.display = 'block';
+                    }
+                });
             }
         }
     } catch (error) {
@@ -1120,19 +1071,11 @@ async function handleAddCustomer(event) {
 }
 
 // ============================================
-// ADDON MODAL FUNCTIONS (Using actual data) - FIXED VERSION
+// ADDON MODAL FUNCTIONS
 // ============================================
 function openAddonModal() {
-    // Load addons data from backend
     loadAddons();
-    
-    // Show modal
     openModal(document.getElementById("addonModal"));
-    
-    // Focus on search input
-    setTimeout(() => {
-        document.getElementById('addonSearchInput')?.focus();
-    }, 300);
 }
 
 function closeAddonModal() {
@@ -1140,39 +1083,28 @@ function closeAddonModal() {
 }
 
 function loadAddons() {
-    console.log('Loading addons from:', '/services/addons/active');
-    
-    fetch('/services/addons/active', {
+    fetch('/pos/addons/active', {
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
             'Accept': 'application/json'
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Addons data received:', data);
         if (data.success) {
-            // Process addons data to ensure prices are numbers
             addonsData = data.addons.map(addon => ({
                 ...addon,
                 price: parseFloat(addon.price) || 0
             }));
-            console.log('Processed addons loaded:', addonsData);
             displayAddons(addonsData);
         } else {
             console.error('Error loading addons:', data.message);
             showNoAddonsMessage();
-            alert('Error loading addons: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Fetch error:', error);
         showNoAddonsMessage();
-        alert('Failed to load addons. Check console for details.');
     });
 }
 
@@ -1191,12 +1123,10 @@ function displayAddons(addons) {
     let html = '';
     addons.forEach(addon => {
         const isSelected = selectedAddons.some(selected => selected.id == addon.id);
-        
-        // Ensure price is a number
         const price = parseFloat(addon.price) || 0;
         
         html += `
-            <div class="addon-item" data-id="${addon.id}" data-name="${addon.name}" data-price="${price}">
+            <div class="addon-item" data-id="${addon.id}">
                 <div class="addon-info">
                     <div class="addon-name">${addon.name}</div>
                     <div class="addon-price">${price.toFixed(2)} USD</div>
@@ -1210,53 +1140,30 @@ function displayAddons(addons) {
     
     addonsList.innerHTML = html;
     
-    // Add event listeners to all addon items
     document.querySelectorAll('.addon-item').forEach(item => {
         item.addEventListener('click', function() {
             const id = parseInt(this.dataset.id);
-            const name = this.dataset.name;
-            const price = parseFloat(this.dataset.price);
+            const name = this.querySelector('.addon-name').textContent;
+            const price = parseFloat(this.querySelector('.addon-price').textContent);
             toggleAddon(id, name, price);
         });
     });
-}
-
-function showNoAddonsMessage() {
-    const addonsList = document.getElementById('addonsList');
-    const noAddonsMessage = document.getElementById('noAddonsMessage');
-    
-    addonsList.innerHTML = '';
-    noAddonsMessage.style.display = 'block';
 }
 
 function toggleAddon(id, name, price) {
     const index = selectedAddons.findIndex(addon => addon.id == id);
     
     if (index === -1) {
-        // Add to selected - ensure price is a number
-        selectedAddons.push({ 
-            id, 
-            name, 
-            price: parseFloat(price) || 0 
-        });
+        selectedAddons.push({ id, name, price });
     } else {
-        // Remove from selected
         selectedAddons.splice(index, 1);
     }
     
-    // Update checkbox UI
     const addonItem = document.querySelector(`.addon-item[data-id="${id}"]`);
     if (addonItem) {
         const checkbox = addonItem.querySelector('.addon-checkbox');
-        if (checkbox) {
-            if (index === -1) {
-                checkbox.classList.add('checked');
-                checkbox.innerHTML = '<i class="fas fa-check"></i>';
-            } else {
-                checkbox.classList.remove('checked');
-                checkbox.innerHTML = '';
-            }
-        }
+        checkbox.classList.toggle('checked');
+        checkbox.innerHTML = checkbox.classList.contains('checked') ? '<i class="fas fa-check"></i>' : '';
     }
 }
 
@@ -1270,7 +1177,6 @@ function updateAddonDisplay() {
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
     document.getElementById('addonTotal').textContent = addonTotal.toFixed(2) + " USD";
     
-    // Update selected addons list
     const container = document.getElementById('selectedAddonsContainer');
     const listContainer = document.getElementById('selectedAddonsList');
     
@@ -1307,7 +1213,7 @@ function removeAddon(id) {
 }
 
 // ============================================
-// PAYMENT MODAL FUNCTIONS - REAL-TIME UPDATE
+// PAYMENT MODAL FUNCTIONS
 // ============================================
 function openPaymentModal() {
     if (orderItems.length === 0 && selectedAddons.length === 0) {
@@ -1319,17 +1225,10 @@ function openPaymentModal() {
     orderData.totalAmount = total;
     document.getElementById('paymentTotalAmount').textContent = total.toFixed(2) + ' USD';
     
-    // If payment amount already exists, show it
-    if (orderData.paymentAmount !== null) {
-        document.getElementById('paymentAmount').value = orderData.paymentAmount.toFixed(2);
-    } else {
-        document.getElementById('paymentAmount').value = total.toFixed(2);
-    }
+    document.getElementById('paymentAmount').value = orderData.paymentAmount ? orderData.paymentAmount.toFixed(2) : total.toFixed(2);
     
     resetPaymentModalErrors();
     openModal(document.getElementById("paymentModal"));
-    
-    // Calculate initial change/shortfall
     calculatePaymentStatus();
 }
 
@@ -1337,202 +1236,62 @@ function closePaymentModal() {
     closeModal(document.getElementById("paymentModal"));
 }
 
-function resetPaymentModalErrors() {
-    document.getElementById('payment_amount_error').style.display = 'none';
-    document.getElementById('payment_amount_error').textContent = '';
-    
-    // Reset real-time displays
-    document.getElementById('paymentChangeDisplay').style.display = 'none';
-    document.getElementById('paymentShortfallDisplay').style.display = 'none';
-    
-    // Reset input styling
-    const paymentInput = document.getElementById('paymentAmount');
-    paymentInput.classList.remove('payment-valid', 'payment-invalid');
-}
-
-// Real-time calculation of change/shortfall
 function calculatePaymentStatus() {
     const paymentInput = document.getElementById('paymentAmount');
     const paymentAmount = parseFloat(paymentInput.value) || 0;
     const total = orderData.totalAmount;
     
-    // Reset styles and displays
     paymentInput.classList.remove('payment-valid', 'payment-invalid');
     document.getElementById('paymentChangeDisplay').style.display = 'none';
     document.getElementById('paymentShortfallDisplay').style.display = 'none';
     
-    // Clear error message if amount is valid
-    if (paymentAmount >= total) {
-        document.getElementById('payment_amount_error').style.display = 'none';
-    }
-    
-    if (paymentAmount === 0) {
-        // No amount entered
-        return;
-    }
+    if (paymentAmount === 0) return;
     
     if (paymentAmount > total) {
-        // Payment exceeds total - show change
         const change = paymentAmount - total;
         document.getElementById('paymentChangeAmount').textContent = change.toFixed(2);
         document.getElementById('paymentChangeDisplay').style.display = 'block';
         paymentInput.classList.add('payment-valid');
     } else if (paymentAmount < total && paymentAmount > 0) {
-        // Payment less than total - show shortfall
         const shortfall = total - paymentAmount;
         document.getElementById('paymentShortfallAmount').textContent = shortfall.toFixed(2);
         document.getElementById('paymentShortfallDisplay').style.display = 'block';
         paymentInput.classList.add('payment-invalid');
     } else if (paymentAmount === total) {
-        // Exact payment
         paymentInput.classList.add('payment-valid');
     }
 }
 
-function validatePaymentForm() {
-    let valid = true;
-    
-    resetPaymentModalErrors();
-    
+function processPayment() {
     const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-    const netTotal = calculateTotal();  // This already includes discount
+    const netTotal = calculateTotal();
     
     if (paymentAmount <= 0) {
         document.getElementById('payment_amount_error').textContent = 'Please enter payment amount';
         document.getElementById('payment_amount_error').style.display = 'block';
-        valid = false;
-    } else if (paymentAmount < netTotal) {
-        document.getElementById('payment_amount_error').textContent = 'Amount is less than total after discount. Please enter full amount.';
-        document.getElementById('payment_amount_error').style.display = 'block';
-        valid = false;
+        return;
     }
     
-    return valid;
-}
-
-function processPayment() {
-    if (!validatePaymentForm()) return;
+    if (paymentAmount < netTotal) {
+        if (!confirm(`Payment amount (${paymentAmount.toFixed(2)} USD) is less than total (${netTotal.toFixed(2)} USD). Do you want to save as partial payment?`)) {
+            return;
+        }
+    }
     
-    const paymentAmount = parseFloat(document.getElementById('paymentAmount').value);
-    const netTotal = calculateTotal();
-    
-    // Store the ACTUAL payment amount
     orderData.paymentAmount = paymentAmount;
     
     const change = paymentAmount - netTotal;
-    
     if (change > 0) {
-        alert(`Payment recorded!\nNet Amount Due: ${netTotal.toFixed(2)} USD\nAmount Paid: ${paymentAmount.toFixed(2)} USD\nChange: ${change.toFixed(2)} USD`);
+        alert(`Payment recorded!\nNet Amount: ${netTotal.toFixed(2)} USD\nAmount Paid: ${paymentAmount.toFixed(2)} USD\nChange: ${change.toFixed(2)} USD`);
     } else {
-        alert(`Payment recorded!\nNet Amount Due: ${netTotal.toFixed(2)} USD\nAmount Paid: ${paymentAmount.toFixed(2)} USD`);
+        alert(`Payment recorded!\nNet Amount: ${netTotal.toFixed(2)} USD\nAmount Paid: ${paymentAmount.toFixed(2)} USD`);
     }
-    
-    console.log('Payment Data:', {
-        net_amount_due: netTotal,
-        amount_paid: paymentAmount,
-        change_given: change
-    });
     
     closePaymentModal();
 }
 
 // ============================================
-// EVENT LISTENERS FOR REAL-TIME CALCULATION
-// ============================================
-document.addEventListener("DOMContentLoaded", () => {
-    // Initialize date
-    initOrderDate();
-    
-    // Update displayed date when calendar changes
-    document.getElementById('orderDateInput').addEventListener('change', function() {
-        document.getElementById('orderDateText').textContent = this.value;
-    });
-    
-    // Clear customer error when customer is selected
-    document.getElementById('selectCustomer').addEventListener('change', function() {
-        if (this.value) {
-            clearCustomerError();
-        }
-    });
-    
-    // Real-time payment calculation
-    document.getElementById('paymentAmount')?.addEventListener('input', function() {
-        calculatePaymentStatus();
-    });
-    
-    // Real-time payment calculation on keyup
-    document.getElementById('paymentAmount')?.addEventListener('keyup', function() {
-        calculatePaymentStatus();
-    });
-    
-    // Real-time payment calculation on change
-    document.getElementById('paymentAmount')?.addEventListener('change', function() {
-        calculatePaymentStatus();
-    });
-    
-    // Product search functionality
-    document.getElementById("searchInput").addEventListener("input", function() {
-        const query = this.value.toLowerCase();
-        document.querySelectorAll(".product-item").forEach(item => {
-            const itemName = item.dataset.name || '';
-            item.style.display = itemName.includes(query) ? "block" : "none";
-        });
-    });
-    
-
-    // Addon search functionality
-    document.getElementById('addonSearchInput')?.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const addonItems = document.querySelectorAll('.addon-item');
-        
-        addonItems.forEach(item => {
-            const addonName = item.querySelector('.addon-name')?.textContent.toLowerCase() || '';
-            item.style.display = addonName.includes(searchTerm) ? 'flex' : 'none';
-        });
-    });
-    
-    // Discount input - update payment modal in real-time
-    document.getElementById("discountInput").addEventListener("input", function() {
-        updateTotals();
-        
-        // Update payment modal if open
-        if (document.getElementById('paymentModal').classList.contains('active')) {
-            const total = calculateTotal();
-            orderData.totalAmount = total;
-            document.getElementById('paymentTotalAmount').textContent = total.toFixed(2) + ' USD';
-            
-            // Recalculate payment status with new total
-            calculatePaymentStatus();
-            
-            // If payment amount is less than new total, clear it
-            const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            if (orderData.paymentAmount !== null && orderData.paymentAmount < total) {
-                document.getElementById('paymentAmount').value = '';
-                orderData.paymentAmount = null;
-                resetPaymentModalErrors();
-            }
-        }
-    });
-    
-    // Customer form input validation
-    document.querySelectorAll('#addCustomerForm input, #addCustomerForm textarea').forEach(field => {
-        field.addEventListener('input', function() {
-            this.style.borderColor = '#ddd';
-            const errorElement = document.getElementById('customer_' + this.name + '_error');
-            if (errorElement) errorElement.style.display = 'none';
-        });
-    });
-    
-    // Phone validation
-    document.getElementById('customer_contact')?.addEventListener('blur', function() {
-        if (this.value && !validatePhone(this.value)) {
-            showCustomerError('customer_contact_error', 'Contact number must be 10-15 digits');
-        }
-    });
-});
-
-// ============================================
-// SERVICE MODAL FUNCTIONS
+// ORDER ITEM FUNCTIONS
 // ============================================
 function addToOrder(id) {
     const service = servicesData.find(s => s.id == id);
@@ -1571,26 +1330,23 @@ function confirmAddService() {
     closeAddModal();
 }
 
-// ============================================
-// ORDER MANAGEMENT FUNCTIONS
-// ============================================
 function updateOrderTable() {
     const tbody = document.querySelector("table tbody");
     tbody.innerHTML = "";
 
     if (orderItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">No items added yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No items added yet.</td></tr>';
     } else {
-        orderItems.forEach(i => {
+        orderItems.forEach(item => {
             tbody.innerHTML += `<tr>
-                <td>${i.name}</td>
-                <td>${i.price.toFixed(2)}</td>
+                <td>${item.name}</td>
+                <td>${item.price.toFixed(2)}</td>
                 <td>
-                    <button type="button" class="qty-btn" onclick="changeQty(${i.id}, -1)">-</button>
-                    <span id="qty-${i.id}">${i.qty}</span>
-                    <button type="button" class="qty-btn" onclick="changeQty(${i.id}, 1)">+</button>
+                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                    <span id="qty-${item.id}">${item.qty}</span>
+                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
                 </td>
-                <td>${i.total.toFixed(2)}</td>
+                <td>${item.total.toFixed(2)}</td>
             </tr>`;
         });
     }
@@ -1603,7 +1359,7 @@ function changeQty(id, delta) {
     if (!item) return;
 
     if (delta === -1 && item.qty === 1) {
-        if (confirm(`Quantity is 1. Do you want to remove "${item.name}" from the order?`)) {
+        if (confirm(`Remove "${item.name}" from order?`)) {
             orderItems = orderItems.filter(i => i.id != id);
         }
     } else {
@@ -1631,15 +1387,9 @@ function updateTotals() {
     document.getElementById("subTotal").textContent = subtotal.toFixed(2) + " USD";
     document.getElementById("grossTotal").textContent = total.toFixed(2) + " USD";
     
-    // Update payment modal if open
     if (document.getElementById('paymentModal').classList.contains('active')) {
         document.getElementById('paymentTotalAmount').textContent = total.toFixed(2) + ' USD';
-        
-        // If payment amount is less than new total, clear it
-        if (orderData.paymentAmount !== null && orderData.paymentAmount < total) {
-            document.getElementById('paymentAmount').value = '';
-            orderData.paymentAmount = null;
-        }
+        calculatePaymentStatus();
     }
 }
 
@@ -1649,7 +1399,7 @@ function cancelOrder() {
         return;
     }
 
-    if (confirm("Are you sure you want to cancel the order? This will clear the cart, add-ons, and payment information.")) {
+    if (confirm("Are you sure you want to cancel the order? This will clear the cart.")) {
         orderItems = [];
         selectedAddons = [];
         orderData = {
@@ -1659,109 +1409,182 @@ function cancelOrder() {
         };
         updateAddonDisplay();
         updateOrderTable();
+        document.getElementById('notes').value = '';
+        document.getElementById('discountInput').value = 0;
+        document.getElementById('selectCustomer').value = '';
+        clearCustomerError();
     }
 }
 
 // ============================================
-// VALIDATE AND SAVE ORDER (WITH CUSTOMER VALIDATION)
+// SAVE ORDER FUNCTION - FIXED
 // ============================================
-function validateAndSaveOrder() {
-    // First, validate customer selection
-    if (!validateCustomerSelection()) {
-        return;
-    }
-    
-    // Then proceed with original save order logic
-    saveOrder();
-}
-
-function saveOrder() {
+async function saveOrder() {
     if (orderItems.length === 0 && selectedAddons.length === 0) {
         alert('No items or add-ons in the order to save.');
         return;
     }
     
-    if (orderData.paymentAmount === null) {
-        if (!confirm('Payment has not been recorded. Do you want to save as draft instead?')) {
-            return;
-        }
+    // Validate customer selection
+    if (!validateCustomerSelection()) {
+        return;
     }
     
+    // Check if payment is made
+    if (orderData.paymentAmount === null) {
+        const proceed = confirm('Payment has not been recorded. Save as unpaid order?');
+        if (!proceed) return;
+    }
+    
+    // Prepare order data
     const netTotal = calculateTotal();
     const discount = parseFloat(document.getElementById('discountInput').value) || 0;
     const subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
     
-    // Get selected customer
-    const customerSelect = document.getElementById('selectCustomer');
-    const customerId = customerSelect.value;
-    const customerName = customerSelect.options[customerSelect.selectedIndex].text;
-    
-    const orderToSave = {
-        items: orderItems,
-        addons: selectedAddons,
-        subtotal: subtotal,
-        addon_total: addonTotal,
-        discount: discount,
-        net_total: netTotal,
-        customerId: customerId,
-        customerName: customerName,
+    const orderDataToSend = {
+        customer_id: document.getElementById('selectCustomer').value,
+        order_date: document.getElementById('orderDateInput').value,
         notes: document.getElementById('notes').value,
-        payment: orderData.paymentAmount !== null ? {
-            amount: orderData.paymentAmount,
-            net_amount_due: netTotal,
-            change: orderData.paymentAmount > netTotal ? orderData.paymentAmount - netTotal : 0
-        } : null
+        discount: discount,
+        items: orderItems.map(item => ({
+            service_id: item.id,
+            qty: item.qty,
+            price: item.price
+        })),
+        addons: selectedAddons.map(addon => ({
+            addon_id: addon.id,
+            price: addon.price
+        })),
+        payment_amount: orderData.paymentAmount || 0,
+        payment_method: 'cash'
     };
     
-    console.log('Saving order:', orderToSave);
+    console.log('Sending order data:', orderDataToSend);
     
-    if (orderToSave.payment) {
-        alert(`Order saved!\nCustomer: ${customerName}\nSubtotal: ${orderToSave.subtotal.toFixed(2)} USD\nAdd-ons: ${orderToSave.addon_total.toFixed(2)} USD\nDiscount: ${orderToSave.discount.toFixed(2)} USD\nNet Total: ${orderToSave.net_total.toFixed(2)} USD\nPayment Received: ${orderToSave.payment.amount.toFixed(2)} USD`);
-    } else {
-        alert(`Order saved as draft (no payment recorded).\nCustomer: ${customerName}`);
+    // Show loading state
+    const saveButton = document.querySelector('.btn-save');
+    const originalText = saveButton.textContent;
+    saveButton.textContent = 'Saving...';
+    saveButton.disabled = true;
+    
+    try {
+        // Use the correct route
+        const response = await fetch('/pos/orders', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderDataToSend)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`✅ Order #${data.order_number} created successfully!`);
+            
+            // Reset for next order
+            orderItems = [];
+            selectedAddons = [];
+            orderData = { paymentAmount: null, totalAmount: 0, customerId: null };
+            updateAddonDisplay();
+            updateOrderTable();
+            document.getElementById('notes').value = '';
+            document.getElementById('discountInput').value = 0;
+            document.getElementById('selectCustomer').value = '';
+            clearCustomerError();
+            
+            // Increment order number
+            incrementOrderNumber();
+            
+        } else {
+            let errorMessage = 'Error creating order';
+            if (data.message) errorMessage += ': ' + data.message;
+            if (data.error_details) errorMessage += '\n' + data.error_details;
+            alert('❌ ' + errorMessage);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Network error. Please check your connection and try again.');
+    } finally {
+        // Restore button state
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
+    }
+}
+
+function validateAndSaveOrder() {
+    // First validate customer
+    if (!validateCustomerSelection()) {
+        return;
     }
     
-    // Reset for next order
-    orderItems = [];
-    selectedAddons = [];
-    orderData = {
-        paymentAmount: null,
-        totalAmount: 0,
-        customerId: null
-    };
-    updateAddonDisplay();
-    updateOrderTable();
-    document.getElementById('notes').value = '';
-    document.getElementById('discountInput').value = 0;
-    document.getElementById('selectCustomer').value = '';
-    
-    // Clear customer error if present
-    clearCustomerError();
+    // Then save order
+    saveOrder();
 }
 
 // ============================================
-// CLOSE MODALS
+// INITIALIZATION
 // ============================================
-window.addEventListener('click', function(e) {
-    const serviceModal = document.getElementById('addServiceModal');
-    const customerModal = document.getElementById('addCustomerModal');
-    const paymentModal = document.getElementById('paymentModal');
-    const addonModal = document.getElementById('addonModal');
+document.addEventListener("DOMContentLoaded", () => {
+    initOrderDate();
+    updateOrderNumberDisplay();
     
-    if (e.target === serviceModal) closeAddModal();
-    if (e.target === customerModal) closeCustomerModal();
-    if (e.target === paymentModal) closePaymentModal();
-    if (e.target === addonModal) closeAddonModal();
+    // Date picker event
+    document.getElementById('orderDateInput').addEventListener('change', function() {
+        document.getElementById('orderDateText').textContent = formatDate(this.value);
+    });
+    
+    // Customer select event
+    document.getElementById('selectCustomer').addEventListener('change', function() {
+        if (this.value) clearCustomerError();
+    });
+    
+    // Payment amount real-time calculation
+    document.getElementById('paymentAmount')?.addEventListener('input', calculatePaymentStatus);
+    document.getElementById('paymentAmount')?.addEventListener('keyup', calculatePaymentStatus);
+    document.getElementById('paymentAmount')?.addEventListener('change', calculatePaymentStatus);
+    
+    // Product search
+    document.getElementById("searchInput").addEventListener("input", function() {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll(".product-item").forEach(item => {
+            const itemName = item.dataset.name || '';
+            item.style.display = itemName.includes(query) ? "block" : "none";
+        });
+    });
+    
+    // Addon search
+    document.getElementById('addonSearchInput')?.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        document.querySelectorAll('.addon-item').forEach(item => {
+            const addonName = item.querySelector('.addon-name')?.textContent.toLowerCase() || '';
+            item.style.display = addonName.includes(searchTerm) ? 'flex' : 'none';
+        });
+    });
+    
+    // Discount input
+    document.getElementById("discountInput").addEventListener("input", updateTotals);
+});
+
+// Close modals on outside click
+window.addEventListener('click', function(e) {
+    const modals = ['addServiceModal', 'addCustomerModal', 'paymentModal', 'addonModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (e.target === modal) {
+            closeModal(modal);
+        }
+    });
 });
 
 // Close modals on escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        closeAddModal();
-        closeCustomerModal();
-        closePaymentModal();
-        closeAddonModal();
+        const modals = document.querySelectorAll('.modal.active');
+        modals.forEach(modal => closeModal(modal));
     }
 });
 </script>
