@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', 'POS')</title>
 
-<!-- Include the reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
-
 <!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -26,6 +23,170 @@
 
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-dark); }
+
+/* --- Modal Styles --- */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background: #f8f9fa;
+    color: #dc3545;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+
+.helper-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.required-star {
+    color: #dc3545;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #545b62;
+}
+
+.modal-sm .modal-content {
+    max-width: 400px;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
 
 /* --- Topbar --- */
 .topbar {
@@ -910,6 +1071,7 @@ button.qty-btn:hover {
         </div>
 </div>
 </div>
+
 <script>
 // ============================================
 // GLOBAL VARIABLES
@@ -1215,6 +1377,14 @@ function removeAddon(id) {
 // ============================================
 // PAYMENT MODAL FUNCTIONS
 // ============================================
+function resetPaymentModalErrors() {
+    const errorElement = document.getElementById('payment_amount_error');
+    if (errorElement) {
+        errorElement.style.display = 'none';
+        errorElement.textContent = '';
+    }
+}
+
 function openPaymentModal() {
     if (orderItems.length === 0 && selectedAddons.length === 0) {
         alert('Please add items or add-ons to the order first.');
@@ -1225,7 +1395,8 @@ function openPaymentModal() {
     orderData.totalAmount = total;
     document.getElementById('paymentTotalAmount').textContent = total.toFixed(2) + ' USD';
     
-    document.getElementById('paymentAmount').value = orderData.paymentAmount ? orderData.paymentAmount.toFixed(2) : total.toFixed(2);
+    const paymentAmount = orderData.paymentAmount ? orderData.paymentAmount.toFixed(2) : total.toFixed(2);
+    document.getElementById('paymentAmount').value = paymentAmount;
     
     resetPaymentModalErrors();
     openModal(document.getElementById("paymentModal"));
@@ -1267,8 +1438,9 @@ function processPayment() {
     const netTotal = calculateTotal();
     
     if (paymentAmount <= 0) {
-        document.getElementById('payment_amount_error').textContent = 'Please enter payment amount';
-        document.getElementById('payment_amount_error').style.display = 'block';
+        const errorElement = document.getElementById('payment_amount_error');
+        errorElement.textContent = 'Please enter payment amount';
+        errorElement.style.display = 'block';
         return;
     }
     
@@ -1417,7 +1589,7 @@ function cancelOrder() {
 }
 
 // ============================================
-// SAVE ORDER FUNCTION - FIXED
+// SAVE ORDER FUNCTION
 // ============================================
 async function saveOrder() {
     if (orderItems.length === 0 && selectedAddons.length === 0) {
@@ -1439,8 +1611,6 @@ async function saveOrder() {
     // Prepare order data
     const netTotal = calculateTotal();
     const discount = parseFloat(document.getElementById('discountInput').value) || 0;
-    const subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
-    const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
     
     const orderDataToSend = {
         customer_id: document.getElementById('selectCustomer').value,
@@ -1469,7 +1639,6 @@ async function saveOrder() {
     saveButton.disabled = true;
     
     try {
-        // Use the correct route
         const response = await fetch('/pos/orders', {
             method: 'POST',
             headers: {
@@ -1543,9 +1712,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Payment amount real-time calculation
-    document.getElementById('paymentAmount')?.addEventListener('input', calculatePaymentStatus);
-    document.getElementById('paymentAmount')?.addEventListener('keyup', calculatePaymentStatus);
-    document.getElementById('paymentAmount')?.addEventListener('change', calculatePaymentStatus);
+    const paymentAmountInput = document.getElementById('paymentAmount');
+    if (paymentAmountInput) {
+        paymentAmountInput.addEventListener('input', calculatePaymentStatus);
+        paymentAmountInput.addEventListener('keyup', calculatePaymentStatus);
+        paymentAmountInput.addEventListener('change', calculatePaymentStatus);
+    }
     
     // Product search
     document.getElementById("searchInput").addEventListener("input", function() {
@@ -1557,13 +1729,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Addon search
-    document.getElementById('addonSearchInput')?.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        document.querySelectorAll('.addon-item').forEach(item => {
-            const addonName = item.querySelector('.addon-name')?.textContent.toLowerCase() || '';
-            item.style.display = addonName.includes(searchTerm) ? 'flex' : 'none';
+    const addonSearchInput = document.getElementById('addonSearchInput');
+    if (addonSearchInput) {
+        addonSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            document.querySelectorAll('.addon-item').forEach(item => {
+                const addonName = item.querySelector('.addon-name')?.textContent.toLowerCase() || '';
+                item.style.display = addonName.includes(searchTerm) ? 'flex' : 'none';
+            });
         });
-    });
+    }
     
     // Discount input
     document.getElementById("discountInput").addEventListener("input", updateTotals);

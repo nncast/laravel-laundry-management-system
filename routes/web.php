@@ -29,21 +29,28 @@ Route::middleware(AuthStaff::class)->group(function () {
     Route::view('/home', 'dashboard')->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // ---------- SALES ----------
-    Route::view('/orders', 'orders')->name('sales.orders');
-    
-    // Order Management Routes
+    // ---------- ORDERS MANAGEMENT ----------
     Route::controller(OrderController::class)->group(function () {
-        Route::get('/orders/list', 'index')->name('orders.index');
+        Route::get('/orders', 'index')->name('orders.index');
         Route::get('/orders/{order}', 'show')->name('orders.show');
+        Route::get('/orders/{order}/details', 'details')->name('orders.details'); // ADDED THIS LINE
+        Route::get('/orders/{order}/print', 'print')->name('orders.print');
         Route::post('/orders/{order}/update-status', 'updateStatus')->name('orders.update.status');
         Route::post('/orders/{order}/add-payment', 'addPayment')->name('orders.add.payment');
+        Route::delete('/orders/{order}', 'destroy')->name('orders.destroy');
     });
 
     // ---------- POS ----------
     Route::controller(PosController::class)->group(function () {
-        Route::get('/pos', 'index')->name('pos');
-        Route::post('/pos/orders', 'createOrder')->name('pos.orders.store');
+        Route::get('/pos', 'index')->name('pos.index');
+        Route::get('/pos/{order}/edit', 'edit')->name('pos.edit');
+        
+        // FIXED: Changed from 'store' to 'createOrder'
+        Route::post('/pos/orders', 'createOrder')->name('pos.orders.create');
+        
+        // Also need a route for just /pos with POST for the form
+        Route::post('/pos', 'createOrder')->name('pos.store'); 
+        
         Route::get('/pos/addons/active', 'getActiveAddons')->name('pos.addons.active');
         Route::get('/pos/check-auth', 'checkAuth')->name('pos.check.auth');
     });

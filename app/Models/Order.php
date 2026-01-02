@@ -248,7 +248,8 @@ class Order extends Model
         return match($this->status) {
             'pending' => 'Pending',
             'processing' => 'Processing',
-            'ready' => 'Ready',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
             default => ucfirst($this->status)
         };
     }

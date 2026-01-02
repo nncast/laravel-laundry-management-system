@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('total', 10, 2)->default(0);
             $table->decimal('paid_amount', 10, 2)->default(0);
-            $table->enum('status', ['pending', 'processing', 'ready'])->default('pending');
+            $table->enum('status', ['pending', 'processing', 'completed', 'cancelled'])->default('pending');
             $table->text('notes')->nullable();
             $table->timestamps();
         });
