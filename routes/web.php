@@ -67,30 +67,31 @@ Route::middleware(AuthStaff::class)->group(function () {
         Route::post('/customers', 'store')->name('customers.store');
         Route::put('/customers/{customer}', 'update')->name('customers.update');
         Route::delete('/customers/{customer}', 'destroy')->name('customers.destroy');
-        Route::get('/customers/search', 'search')->name('customers.search');
+        Route::get('/customers/search', 'search')->name('customers.search'); // Added search route
     });
 
     // ---------- INVENTORY ----------
     Route::prefix('inventory')->group(function () {
+
         Route::controller(ProductController::class)->group(function () {
             Route::get('/products', 'index')->name('products.index');
             Route::post('/products', 'store')->name('products.store');
-            Route::put('/products/{product}', 'update')->name('products.update');
-            Route::delete('/products/{product}', 'destroy')->name('products.destroy');
+            Route::put('/products', 'update')->name('products.update');
+            Route::delete('/products', 'destroy')->name('products.destroy');
         });
 
         Route::controller(CategoryController::class)->group(function () {
             Route::get('/categories', 'index')->name('categories.index');
             Route::post('/categories', 'store')->name('categories.store');
-            Route::put('/categories/{category}', 'update')->name('categories.update');
-            Route::delete('/categories/{category}', 'destroy')->name('categories.destroy');
+            Route::put('/categories', 'update')->name('categories.update');
+            Route::delete('/categories', 'destroy')->name('categories.destroy');
         });
 
         Route::controller(UnitController::class)->group(function () {
             Route::get('/units', 'index')->name('units.index');
             Route::post('/units', 'store')->name('units.store');
-            Route::put('/units/{unit}', 'update')->name('units.update');
-            Route::delete('/units/{unit}', 'destroy')->name('units.destroy');
+            Route::put('/units', 'update')->name('units.update');
+            Route::delete('/units', 'destroy')->name('units.destroy');
         });
     });
 

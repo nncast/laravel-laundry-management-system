@@ -598,7 +598,7 @@ hr {
                         <th>Service</th>
                         <th>Orders</th>
                         <th>Revenue</th>
-                        <th>Avg Price</th>
+                        <th>Price</th>
                     </tr>
                 </thead>
                 <tbody>

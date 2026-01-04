@@ -58,13 +58,14 @@ class DashboardController extends Controller
         $topServices = Service::select(
                 'services.id',
                 'services.name',
+                'services.price', // ADD THIS LINE
                 DB::raw('COUNT(order_items.id) as order_count'),
                 DB::raw('SUM(order_items.total) as total_revenue')
             )
             ->leftJoin('order_items', 'services.id', '=', 'order_items.service_id')
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed')
-            ->groupBy('services.id', 'services.name')
+            ->groupBy('services.id', 'services.name', 'services.price') // ADD 'services.price' here
             ->orderByDesc('order_count')
             ->take(10)
             ->get();
