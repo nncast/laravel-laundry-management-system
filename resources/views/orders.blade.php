@@ -171,6 +171,8 @@
     align-items: center;
     gap: 4px;
     white-space: nowrap;
+    min-width: 100px;
+    justify-content: center;
 }
 
 .status-pending {
@@ -183,12 +185,6 @@
     background: #cce5ff;
     color: #004085;
     border: 1px solid #b8daff;
-}
-
-.status-ready {
-    background: #e7f4e4;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
 }
 
 .status-completed {
@@ -293,15 +289,6 @@
     background: #e7f4e4;
 }
 
-.btn-print {
-    color: #6f42c1;
-}
-
-.btn-print:hover {
-    color: #5a32a3;
-    background: #f0e8ff;
-}
-
 .btn-delete {
     color: #dc3545;
 }
@@ -404,6 +391,11 @@
     .status-container { justify-content: flex-start; }
     .action-buttons { justify-content: flex-start; }
     .search-box input { width: 200px; }
+    
+    .status-badge {
+        min-width: auto;
+        justify-content: flex-start;
+    }
 }
 </style>
 
@@ -444,18 +436,20 @@
             <div class="customer-info">
                 {{ $order->customer ? $order->customer->name : 'Walk In Customer' }}
             </div>
-            <div class="order-amount">{{ number_format($order->total, 2) }} USD</div>
+            <div class="order-amount">{{ number_format($order->total, 2) }} PHP</div>
             <div class="status-container">
                 @php
                     $statusClasses = [
                         'pending' => 'status-pending',
                         'processing' => 'status-processing',
-                        'ready' => 'status-ready'
+                        'completed' => 'status-completed',
+                        'cancelled' => 'status-cancelled'
                     ];
                     $statusIcons = [
                         'pending' => 'fa-clock',
                         'processing' => 'fa-cog',
-                        'ready' => 'fa-check-circle'
+                        'completed' => 'fa-check-circle',
+                        'cancelled' => 'fa-times-circle'
                     ];
                 @endphp
                 <span class="status-badge {{ $statusClasses[$order->status] ?? 'status-pending' }}">
@@ -464,8 +458,8 @@
                 </span>
             </div>
             <div class="payment-info">
-                <div class="payment-total">Total: {{ number_format($order->total, 2) }} USD</div>
-                <div class="payment-paid">Paid: {{ number_format($order->paid_amount, 2) }} USD</div>
+                <div class="payment-total">Total: {{ number_format($order->total, 2) }} PHP</div>
+                <div class="payment-paid">Paid: {{ number_format($order->paid_amount, 2) }} PHP</div>
                 @php
                     $paymentStatus = 'unpaid';
                     $paymentClass = 'payment-unpaid';
@@ -486,9 +480,6 @@
                 </a>
                 <a href="{{ route('pos.edit', $order) }}" class="action-btn btn-edit" title="Edit">
                     <i class="fas fa-edit"></i>
-                </a>
-                <a href="{{ route('orders.print', $order) }}" target="_blank" class="action-btn btn-print" title="Print">
-                    <i class="fas fa-print"></i>
                 </a>
                 <form action="{{ route('orders.destroy', $order) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this order?')">
                     @csrf

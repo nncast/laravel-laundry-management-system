@@ -100,24 +100,30 @@ class OrderController extends Controller
     /**
      * Add payment to order.
      */
-     public function addPayment(Request $request, Order $order)
-    {
-        $request->validate([
-            'amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|max:50'
-        ]);
+    /**
+ * Add payment to order.
+ */
+public function addPayment(Request $request, Order $order)
+{
+    $request->validate([
+        'amount' => 'required|numeric|min:0',
+        'payment_method' => 'required|string|max:50'
+    ]);
 
-        $order->payments()->create([
-            'amount' => $request->amount,
-            'payment_method' => $request->payment_method
-        ]);
+    $order->payments()->create([
+        'amount' => $request->amount,
+        'payment_method' => $request->payment_method
+    ]);
 
-        $order->update([
-            'paid_amount' => $order->paid_amount + $request->amount
-        ]);
+    $order->update([
+        'paid_amount' => $order->paid_amount + $request->amount
+    ]);
 
-        return back()->with('success', 'Payment added successfully.');
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Payment added successfully.'
+    ]);
+}
     /**
      * Remove the specified order.
      */

@@ -646,6 +646,11 @@ button.qty-btn:hover {
 .btn-cancel { background:#dc3545; }
 .payment-buttons button:hover { opacity:0.9; transform:translateY(-1px); }
 
+/* Add to your existing CSS */
+.btn-payment[data-edit-mode="true"] {
+    display: none !important;
+}
+
 /* --- Payment Modal Specific Styles --- */
 .payment-amount-display {
     background: #f8f9fa;
@@ -719,6 +724,27 @@ button.qty-btn:hover {
     background-color: #fff8f8;
 }
 
+/* Overpayment warning style */
+.payment-overpayment-display {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 6px;
+    border: 1px solid #ffeaa7;
+}
+
+.overpayment-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #856404;
+    font-size: 14px;
+}
+
+.overpayment-info i {
+    color: #856404;
+}
+
 /* --- Responsive --- */
 @media(min-width:769px){
     .pos-container { flex-wrap:nowrap; padding:80px 20px 20px; }
@@ -762,7 +788,7 @@ button.qty-btn:hover {
 <body>
 
 <div class="topbar">
-    <h2>POS</h2>
+    <h2>{{ isset($order) ? 'Edit Order' : 'POS' }}</h2>
     <button onclick="window.history.back()"><i class="fas fa-arrow-left"></i> Back</button>
 </div>
 
@@ -789,8 +815,8 @@ button.qty-btn:hover {
     <div class="order-section">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; font-size:12px;">
             <div>
-                <!-- Updated Order Number Display -->
-                <p>Order: <strong id="orderNumber">#ORD-{{ $last_order_number ?? '1' }}</strong></p>
+                <!-- Order Number Display -->
+                <p>Order: <strong id="orderNumber">@if(isset($order))#ORD-{{ $order->id }}@else#ORD-{{ $last_order_number ?? '1' }}@endif</strong></p>
                 <div class="date-picker-wrapper">
                 <span class="date-picker-label"><p style="color:#2c3e50;">Date: </p></span>
 
@@ -799,7 +825,7 @@ button.qty-btn:hover {
                     <button type="button" class="date-picker-button">
                         <i class="fas fa-calendar-alt"></i>
                     </button>
-                    <input type="date" id="orderDateInput" class="date-picker-input">
+                    <input type="date" id="orderDateInput" class="date-picker-input" value="@if(isset($order)){{ \Carbon\Carbon::parse($order->order_date)->format('Y-m-d') }}@endif">
                 </div>
             </div>
 
@@ -809,7 +835,9 @@ button.qty-btn:hover {
                     <select id="selectCustomer">
                         <option value="">Select Customer</option>
                         @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}">{{ $customer->name }}</option>
+                            <option value="{{ $customer->id }}" @if(isset($order) && $order->customer_id == $customer->id) selected @endif>
+                                {{ $customer->name }}
+                            </option>
                         @endforeach
                     </select>
                     <button type="button"
@@ -829,7 +857,7 @@ button.qty-btn:hover {
                     <i class="fas fa-user-plus"></i>
                 </button>
                 </div>
-                <!-- Customer Error Message - Below the dropdown -->
+                <!-- Customer Error Message -->
                 <div class="customer-error-message" id="customerError">
                     <i class="fas fa-exclamation-circle"></i>
                     <span>Please select a customer before saving</span>
@@ -846,13 +874,27 @@ button.qty-btn:hover {
                     <th>Total</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="orderItemsBody">
+                @if(isset($order) && $order->items->count() > 0)
+                    @foreach($order->items as $item)
+                    <tr id="item-{{ $item->id }}" data-item-id="{{ $item->id }}" data-service-id="{{ $item->service_id }}">
+                        <td>{{ $item->service->name ?? 'N/A' }}</td>
+                        <td class="item-price">{{ number_format($item->price, 2) }}</td>
+                        <td>
+                            <button type="button" class="qty-btn" onclick="changeQty({{ $item->service_id }}, -1, {{ $item->id }})">-</button>
+                            <span id="qty-{{ $item->service_id }}">{{ $item->qty }}</span>
+                            <button type="button" class="qty-btn" onclick="changeQty({{ $item->service_id }}, 1, {{ $item->id }})">+</button>
+                        </td>
+                        <td class="item-total" id="total-{{ $item->service_id }}">{{ number_format($item->price * $item->qty, 2) }}</td>
+                    </tr>
+                    @endforeach
+                @else
                 <tr>
-                    <td colspan="5" style="text-align:center; padding:20px; color:#999;">No items added yet.</td>
+                    <td colspan="4" style="text-align:center; padding:20px; color:#999;">No items added yet.</td>
                 </tr>
+                @endif
             </tbody>
         </table>
-
         <div style="margin-top:10px; font-size:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <div style="display:flex; align-items:center; gap:5px;">
@@ -875,38 +917,72 @@ button.qty-btn:hover {
 </button>
 
                 </div>
-                <strong id="addonTotal">0.00 USD</strong>
+                <strong id="addonTotal">@if(isset($order)){{ number_format($order->addons->sum('price'), 2) }}@else 0.00 @endif PHP</strong>
             </div>
             
-            <!-- Selected Addons List (hidden when empty) -->
-            <div id="selectedAddonsList" style="margin-top:5px; margin-bottom:10px; display:none;">
+            <!-- Selected Addons List -->
+            <div id="selectedAddonsList" style="margin-top:5px; margin-bottom:10px; @if(!isset($order) || $order->addons->count() == 0) display:none; @endif">
                 <div style="font-size:11px; color:#666; margin-bottom:3px;">Selected Add-ons:</div>
-                <div id="selectedAddonsContainer"></div>
+                <div id="selectedAddonsContainer">
+                    @if(isset($order))
+                        @foreach($order->addons as $addon)
+                        <div class="selected-addon-item" id="addon-{{ $addon->id }}" data-addon-id="{{ $addon->id }}">
+                            <span class="selected-addon-name">{{ $addon->name }}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="selected-addon-price">{{ number_format($addon->pivot->price, 2) }} PHP</span>
+                                <button type="button" class="remove-addon-btn" onclick="removeAddon({{ $addon->id }})">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @endforeach
+                    @endif
+                </div>
             </div>
             
             <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                 <span>Sub Total:</span>
-                <strong id="subTotal">0.00 USD</strong>
+                <strong id="subTotal">0.00 PHP</strong>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <span>Discount:</span>
-                <input type="number" id="discountInput" value="0" min="0" style="width:80px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+                <input type="number" id="discountInput" value="{{ isset($order) ? number_format($order->discount, 2) : '0' }}" min="0" style="width:80px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:5px;">
                 <span><strong>Gross Total:</strong></span>
-                <strong id="grossTotal">0.00 USD</strong>
+                <strong id="grossTotal">0.00 PHP</strong>
             </div>
+            
+            <!-- Payment Info (for edit mode) -->
+            @if(isset($order) && $order->payments->count() > 0)
+            <div style="margin-top:10px; padding:8px; background:#f8f9fa; border-radius:6px; border:1px solid #e9ecef;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                    <span style="color:#6c757d; font-size:11px;">Paid Amount:</span>
+                    <strong style="color:#28a745; font-size:11px;">{{ number_format($order->paid_amount, 2) }} PHP</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#6c757d; font-size:11px;">Balance:</span>
+                    <strong style="color:@if($order->balance > 0)#dc3545 @else #28a745 @endif; font-size:11px;">
+                        {{ number_format($order->balance, 2) }} PHP
+                    </strong>
+                </div>
+            </div>
+            @endif
         </div>
 
         <div style="margin-top:10px;">
             <label for="notes" style="font-size:12px;">Notes:</label>
-            <textarea id="notes" placeholder="Enter notes here..." style="width:100%; height:50px; border-radius:6px; border:1px solid #ccc; padding:5px; font-size:12px;"></textarea>
+            <textarea id="notes" placeholder="Enter notes here..." style="width:100%; height:50px; border-radius:6px; border:1px solid #ccc; padding:5px; font-size:12px;">{{ isset($order) ? $order->notes : '' }}</textarea>
         </div>
 
         <div class="payment-buttons">
-            <button class="btn-payment" onclick="openPaymentModal()">Payment</button>
-            <button class="btn-save" onclick="validateAndSaveOrder()">Save</button>
-            <button class="btn-cancel" onclick="cancelOrder()">Cancel</button>
+            <button class="btn-payment" 
+                    onclick="openPaymentModal()"
+                    @if(isset($order)) data-edit-mode="true" @endif>
+                Payment
+            </button>
+            <button class="btn-save" onclick="validateAndSaveOrder()">{{ isset($order) ? 'Update Order' : 'Save' }}</button>
+            <button class="btn-cancel" onclick="cancelOrder()">{{ isset($order) ? 'Cancel Edit' : 'Cancel' }}</button>
         </div>
     </div>
 
@@ -940,7 +1016,7 @@ button.qty-btn:hover {
     </div>
 </div>
 
-<!-- Add Customer Modal for POS -->
+<!-- Add Customer Modal -->
 <div id="addCustomerModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -997,7 +1073,12 @@ button.qty-btn:hover {
             <!-- Amount Display -->
             <div class="payment-amount-display">
                 <div class="amount-label">Total Amount Due</div>
-                <div class="amount-value" id="paymentTotalAmount">0.00 USD</div>
+                <div class="amount-value" id="paymentTotalAmount">0.00 PHP</div>
+                @if(isset($order) && $order->payments->count() > 0)
+                <div style="font-size:12px; color:#6c757d; margin-top:5px;">
+                    Previously paid: <strong>{{ number_format($order->paid_amount, 2) }} PHP</strong>
+                </div>
+                @endif
             </div>
             
             <!-- Amount Input -->
@@ -1017,7 +1098,7 @@ button.qty-btn:hover {
                 <div class="payment-change-display" id="paymentChangeDisplay" style="display: none;">
                     <div class="change-info">
                         <i class="fas fa-exchange-alt"></i>
-                        <span>Change: <strong id="paymentChangeAmount">0.00</strong> USD</span>
+                        <span>Change: <strong id="paymentChangeAmount">0.00</strong> PHP</span>
                     </div>
                 </div>
                 
@@ -1025,10 +1106,19 @@ button.qty-btn:hover {
                 <div class="payment-shortfall-display" id="paymentShortfallDisplay" style="display: none;">
                     <div class="shortfall-info">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <span>Shortfall: <strong id="paymentShortfallAmount">0.00</strong> USD</span>
+                        <span>Shortfall: <strong id="paymentShortfallAmount">0.00</strong> PHP</span>
+                    </div>
+                </div>
+                
+                <!-- Overpayment warning -->
+                <div class="payment-overpayment-display" id="paymentOverpaymentDisplay" style="display: none;">
+                    <div class="overpayment-info">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Overpayment: <strong id="paymentOverpaymentAmount">0.00</strong> PHP (Order already paid)</span>
                     </div>
                 </div>
             </div>
+            
             
         </div>
         
@@ -1069,9 +1159,8 @@ button.qty-btn:hover {
             <button type="button" class="btn-cancel" onclick="closeAddonModal()">Cancel</button>
             <button type="button" class="btn-primary" onclick="saveSelectedAddons()">Apply Selected</button>
         </div>
+    </div>
 </div>
-</div>
-
 <script>
 // ============================================
 // GLOBAL VARIABLES
@@ -1079,31 +1168,66 @@ button.qty-btn:hover {
 let servicesData = @json($services);
 let customersData = @json($customers);
 let addonsData = [];
-let orderItems = [];
-let selectedAddons = [];
-let orderData = {
-    paymentAmount: null,
-    totalAmount: 0,
-    customerId: null
-};
 
-// Order number tracking
-let currentOrderNumber = {{ $last_order_number ?? '1' }};
+// Order Items - Using inline PHP to avoid Blade parsing issues
+let orderItems = <?php 
+    if(isset($order)) {
+        $items = $order->items->map(function($item) {
+            return [
+                'id' => $item->service_id,
+                'name' => $item->service->name ?? 'N/A',
+                'price' => floatval($item->price),
+                'qty' => $item->qty,
+                'total' => floatval($item->price * $item->qty), // Calculate total dynamically
+                'item_id' => $item->id
+            ];
+        })->toArray();
+        echo json_encode($items);
+    } else {
+        echo '[]';
+    }
+?>;
+
+// Selected Addons - Using inline PHP
+let selectedAddons = <?php 
+    if(isset($order)) {
+        $addons = $order->addons->map(function($addon) {
+            return [
+                'id' => $addon->id,
+                'name' => $addon->name,
+                'price' => floatval($addon->pivot->price)
+            ];
+        })->toArray();
+        echo json_encode($addons);
+    } else {
+        echo '[]';
+    }
+?>;
+
+// Order Data
+let orderData = {
+    paymentAmount: null, // New payment amount (set when processing payment)
+    totalAmount: <?php echo isset($order) ? $order->total : '0'; ?>,
+    customerId: <?php echo isset($order) && $order->customer_id ? $order->customer_id : 'null'; ?>,
+    orderId: <?php echo isset($order) ? $order->id : 'null'; ?>,
+    isEditMode: <?php echo isset($order) ? 'true' : 'false'; ?>,
+    paidAmount: <?php echo isset($order) ? $order->paid_amount : '0'; ?>
+};
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-function getNextOrderNumber() {
-    return currentOrderNumber;
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
 }
 
-function updateOrderNumberDisplay() {
-    document.getElementById('orderNumber').textContent = `#ORD-${getNextOrderNumber()}`;
-}
-
-function incrementOrderNumber() {
-    currentOrderNumber++;
-    updateOrderNumberDisplay();
+function getTotalPaidAmount() {
+    return orderData.paidAmount || 0;
 }
 
 // ============================================
@@ -1123,21 +1247,16 @@ function closeModal(modal) {
 // DATE PICKER FUNCTIONS
 // ============================================
 function initOrderDate() {
-    const today = new Date().toISOString().split('T')[0];
-    const input = document.getElementById('orderDateInput');
-    const text = document.getElementById('orderDateText');
-
-    input.value = today;
-    text.textContent = formatDate(today);
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-    });
+    const dateInput = document.getElementById('orderDateInput');
+    const dateText = document.getElementById('orderDateText');
+    
+    if (dateInput.value) {
+        dateText.textContent = formatDate(dateInput.value);
+    } else {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        dateText.textContent = formatDate(today);
+    }
 }
 
 // ============================================
@@ -1291,7 +1410,7 @@ function displayAddons(addons) {
             <div class="addon-item" data-id="${addon.id}">
                 <div class="addon-info">
                     <div class="addon-name">${addon.name}</div>
-                    <div class="addon-price">${price.toFixed(2)} USD</div>
+                    <div class="addon-price">${price.toFixed(2)} PHP</div>
                 </div>
                 <div class="addon-checkbox ${isSelected ? 'checked' : ''}">
                     ${isSelected ? '<i class="fas fa-check"></i>' : ''}
@@ -1337,7 +1456,7 @@ function saveSelectedAddons() {
 
 function updateAddonDisplay() {
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-    document.getElementById('addonTotal').textContent = addonTotal.toFixed(2) + " USD";
+    document.getElementById('addonTotal').textContent = addonTotal.toFixed(2) + " PHP";
     
     const container = document.getElementById('selectedAddonsContainer');
     const listContainer = document.getElementById('selectedAddonsList');
@@ -1353,10 +1472,10 @@ function updateAddonDisplay() {
     let html = '';
     selectedAddons.forEach(addon => {
         html += `
-            <div class="selected-addon-item">
+            <div class="selected-addon-item" data-addon-id="${addon.id}">
                 <span class="selected-addon-name">${addon.name}</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="selected-addon-price">${addon.price.toFixed(2)} USD</span>
+                    <span class="selected-addon-price">${addon.price.toFixed(2)} PHP</span>
                     <button type="button" class="remove-addon-btn" onclick="removeAddon(${addon.id})">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1375,7 +1494,7 @@ function removeAddon(id) {
 }
 
 // ============================================
-// PAYMENT MODAL FUNCTIONS
+// PAYMENT MODAL FUNCTIONS (FIXED)
 // ============================================
 function resetPaymentModalErrors() {
     const errorElement = document.getElementById('payment_amount_error');
@@ -1386,17 +1505,42 @@ function resetPaymentModalErrors() {
 }
 
 function openPaymentModal() {
+    if (orderData.isEditMode) {
+        alert('Please use the dedicated payment screen to process payments for existing orders.');
+        return;
+    }
+
     if (orderItems.length === 0 && selectedAddons.length === 0) {
         alert('Please add items or add-ons to the order first.');
         return;
     }
     
     const total = calculateTotal();
-    orderData.totalAmount = total;
-    document.getElementById('paymentTotalAmount').textContent = total.toFixed(2) + ' USD';
+    const paid = getTotalPaidAmount();
+    const remainingBalance = total - paid;
     
-    const paymentAmount = orderData.paymentAmount ? orderData.paymentAmount.toFixed(2) : total.toFixed(2);
-    document.getElementById('paymentAmount').value = paymentAmount;
+    console.log('Opening payment modal:', {
+        total: total,
+        paid: paid,
+        remainingBalance: remainingBalance,
+        orderData: orderData
+    });
+    
+    orderData.totalAmount = total;
+    
+    // Display the remaining balance (can be negative if overpaid)
+    if (remainingBalance > 0) {
+        document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
+        document.getElementById('paymentAmount').value = remainingBalance.toFixed(2);
+    } else if (remainingBalance === 0) {
+        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#6c757d; font-size:12px;">(Order already fully paid)</small>';
+        document.getElementById('paymentAmount').value = '0.00';
+    } else {
+        // Overpaid case
+        const overpayment = Math.abs(remainingBalance);
+        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#856404; font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
+        document.getElementById('paymentAmount').value = '0.00';
+    }
     
     resetPaymentModalErrors();
     openModal(document.getElementById("paymentModal"));
@@ -1410,25 +1554,48 @@ function closePaymentModal() {
 function calculatePaymentStatus() {
     const paymentInput = document.getElementById('paymentAmount');
     const paymentAmount = parseFloat(paymentInput.value) || 0;
-    const total = orderData.totalAmount;
+    const total = calculateTotal();
+    const paid = getTotalPaidAmount();
+    const remainingBalance = total - paid;
     
+    // Reset all displays
     paymentInput.classList.remove('payment-valid', 'payment-invalid');
     document.getElementById('paymentChangeDisplay').style.display = 'none';
     document.getElementById('paymentShortfallDisplay').style.display = 'none';
+    document.getElementById('paymentOverpaymentDisplay').style.display = 'none';
     
     if (paymentAmount === 0) return;
     
-    if (paymentAmount > total) {
-        const change = paymentAmount - total;
-        document.getElementById('paymentChangeAmount').textContent = change.toFixed(2);
-        document.getElementById('paymentChangeDisplay').style.display = 'block';
+    // If order is already overpaid (remainingBalance < 0)
+    if (remainingBalance < 0) {
+        // Any payment is considered overpayment
+        const overpayment = paymentAmount;
+        document.getElementById('paymentOverpaymentAmount').textContent = overpayment.toFixed(2);
+        document.getElementById('paymentOverpaymentDisplay').style.display = 'block';
         paymentInput.classList.add('payment-valid');
-    } else if (paymentAmount < total && paymentAmount > 0) {
-        const shortfall = total - paymentAmount;
-        document.getElementById('paymentShortfallAmount').textContent = shortfall.toFixed(2);
-        document.getElementById('paymentShortfallDisplay').style.display = 'block';
-        paymentInput.classList.add('payment-invalid');
-    } else if (paymentAmount === total) {
+    } 
+    // If there's still balance to pay (remainingBalance > 0)
+    else if (remainingBalance > 0) {
+        if (paymentAmount > remainingBalance) {
+            const change = paymentAmount - remainingBalance;
+            document.getElementById('paymentChangeAmount').textContent = change.toFixed(2);
+            document.getElementById('paymentChangeDisplay').style.display = 'block';
+            paymentInput.classList.add('payment-valid');
+        } else if (paymentAmount < remainingBalance && paymentAmount > 0) {
+            const shortfall = remainingBalance - paymentAmount;
+            document.getElementById('paymentShortfallAmount').textContent = shortfall.toFixed(2);
+            document.getElementById('paymentShortfallDisplay').style.display = 'block';
+            paymentInput.classList.add('payment-invalid');
+        } else if (paymentAmount === remainingBalance) {
+            paymentInput.classList.add('payment-valid');
+        }
+    }
+    // If order is exactly paid (remainingBalance === 0)
+    else {
+        // Any payment is overpayment
+        const overpayment = paymentAmount;
+        document.getElementById('paymentOverpaymentAmount').textContent = overpayment.toFixed(2);
+        document.getElementById('paymentOverpaymentDisplay').style.display = 'block';
         paymentInput.classList.add('payment-valid');
     }
 }
@@ -1436,29 +1603,56 @@ function calculatePaymentStatus() {
 function processPayment() {
     const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
     const netTotal = calculateTotal();
+    const paid = getTotalPaidAmount();
+    const remainingBalance = netTotal - paid;
     
-    if (paymentAmount <= 0) {
+    if (paymentAmount < 0) {
         const errorElement = document.getElementById('payment_amount_error');
-        errorElement.textContent = 'Please enter payment amount';
+        errorElement.textContent = 'Payment amount cannot be negative';
         errorElement.style.display = 'block';
         return;
     }
     
-    if (paymentAmount < netTotal) {
-        if (!confirm(`Payment amount (${paymentAmount.toFixed(2)} USD) is less than total (${netTotal.toFixed(2)} USD). Do you want to save as partial payment?`)) {
+    // Warn if trying to pay when order is already overpaid
+    if (remainingBalance < 0 && paymentAmount > 0) {
+        if (!confirm('This order is already overpaid by ' + Math.abs(remainingBalance).toFixed(2) + ' PHP. Adding more payment will increase the overpayment. Continue?')) {
             return;
         }
     }
     
-    orderData.paymentAmount = paymentAmount;
-    
-    const change = paymentAmount - netTotal;
-    if (change > 0) {
-        alert(`Payment recorded!\nNet Amount: ${netTotal.toFixed(2)} USD\nAmount Paid: ${paymentAmount.toFixed(2)} USD\nChange: ${change.toFixed(2)} USD`);
-    } else {
-        alert(`Payment recorded!\nNet Amount: ${netTotal.toFixed(2)} USD\nAmount Paid: ${paymentAmount.toFixed(2)} USD`);
+    // Warn if payment is 0 but there's still balance
+    if (paymentAmount === 0 && remainingBalance > 0) {
+        if (!confirm('Payment amount is 0, but there is still a balance of ' + remainingBalance.toFixed(2) + ' PHP. Record as no additional payment?')) {
+            return;
+        }
     }
     
+    // For edit mode, store the new payment amount
+    orderData.paymentAmount = paymentAmount;
+    
+    const newPaidAmount = paid + paymentAmount;
+    const newBalance = netTotal - newPaidAmount;
+    
+    let message = `Payment recorded!\n`;
+    message += `Current Order Total: ${netTotal.toFixed(2)} PHP\n`;
+    message += `Previously Paid: ${paid.toFixed(2)} PHP\n`;
+    message += `New Payment: ${paymentAmount.toFixed(2)} PHP\n`;
+    message += `Total Paid: ${newPaidAmount.toFixed(2)} PHP\n`;
+    
+    if (paymentAmount > Math.max(0, remainingBalance)) {
+        const change = paymentAmount - Math.max(0, remainingBalance);
+        message += `Change Due: ${change.toFixed(2)} PHP\n`;
+    }
+    
+    if (newBalance > 0) {
+        message += `Remaining Balance: ${newBalance.toFixed(2)} PHP`;
+    } else if (newBalance < 0) {
+        message += `Overpayment: ${Math.abs(newBalance).toFixed(2)} PHP`;
+    } else {
+        message += `Order is fully paid!`;
+    }
+    
+    alert(message);
     closePaymentModal();
 }
 
@@ -1469,9 +1663,12 @@ function addToOrder(id) {
     const service = servicesData.find(s => s.id == id);
     if (!service) return;
     
+    // Check if item already exists
+    const existingItem = orderItems.find(item => item.id == id);
+    
     document.getElementById("modal_service_id").value = service.id;
     document.getElementById("modal_service_name").textContent = service.name;
-    document.getElementById("modal_service_qty").value = 1;
+    document.getElementById("modal_service_qty").value = existingItem ? existingItem.qty : 1;
     
     openModal(document.getElementById("addServiceModal"));
 }
@@ -1490,57 +1687,95 @@ function confirmAddService() {
     const price = parseFloat(service.price) || 0;
     const total = price * qty;
 
-    const existing = orderItems.find(i => i.id == id);
-    if (existing) {
-        existing.qty += qty;
-        existing.total = existing.price * existing.qty;
+    const existingIndex = orderItems.findIndex(i => i.id == id);
+    if (existingIndex !== -1) {
+        // Update existing item
+        orderItems[existingIndex].qty = qty;
+        orderItems[existingIndex].total = total;
     } else {
-        orderItems.push({id, name, price, qty, total});
+        // Add new item
+        orderItems.push({
+            id, 
+            name, 
+            price, 
+            qty, 
+            total,
+            item_id: null // Will be set when updating existing order
+        });
     }
 
     updateOrderTable();
     closeAddModal();
 }
 
+function changeQty(id, delta, itemId = null) {
+    console.log('changeQty called:', id, delta, itemId);
+    
+    // Try to find item by item_id first (for existing items in edit mode)
+    let itemIndex = orderItems.findIndex(i => i.item_id == itemId);
+    
+    // If not found by item_id, try by service id
+    if (itemIndex === -1) {
+        itemIndex = orderItems.findIndex(i => i.id == id);
+    }
+    
+    if (itemIndex === -1) {
+        console.error('Item not found:', id, itemId);
+        return;
+    }
+
+    const item = orderItems[itemIndex];
+    
+    if (delta === -1 && item.qty === 1) {
+        if (confirm(`Remove "${item.name}" from order?`)) {
+            orderItems.splice(itemIndex, 1);
+        }
+    } else {
+        item.qty += delta;
+        if (item.qty < 1) item.qty = 1;
+        item.total = item.price * item.qty;
+        
+        // Update the quantity display in the table
+        const qtySpan = document.getElementById(`qty-${item.id}`);
+        if (qtySpan) {
+            qtySpan.textContent = item.qty;
+        }
+        
+        // Update the total display in the table
+        const totalElement = document.getElementById(`total-${item.id}`);
+        if (totalElement) {
+            totalElement.textContent = item.total.toFixed(2);
+        }
+    }
+
+    updateTotals();
+}
+
 function updateOrderTable() {
-    const tbody = document.querySelector("table tbody");
+    const tbody = document.getElementById("orderItemsBody");
     tbody.innerHTML = "";
 
     if (orderItems.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No items added yet.</td></tr>';
     } else {
         orderItems.forEach(item => {
-            tbody.innerHTML += `<tr>
+            const itemId = item.item_id || item.id;
+            const total = item.price * item.qty;
+            
+            tbody.innerHTML += `<tr id="item-${itemId}" data-item-id="${itemId}" data-service-id="${item.id}">
                 <td>${item.name}</td>
-                <td>${item.price.toFixed(2)}</td>
+                <td class="item-price">${item.price.toFixed(2)}</td>
                 <td>
-                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, -1, ${itemId})">-</button>
                     <span id="qty-${item.id}">${item.qty}</span>
-                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, 1, ${itemId})">+</button>
                 </td>
-                <td>${item.total.toFixed(2)}</td>
+                <td class="item-total" id="total-${item.id}">${total.toFixed(2)}</td>
             </tr>`;
         });
     }
 
     updateTotals();
-}
-
-function changeQty(id, delta) {
-    const item = orderItems.find(i => i.id == id);
-    if (!item) return;
-
-    if (delta === -1 && item.qty === 1) {
-        if (confirm(`Remove "${item.name}" from order?`)) {
-            orderItems = orderItems.filter(i => i.id != id);
-        }
-    } else {
-        item.qty += delta;
-        if (item.qty < 1) item.qty = 1;
-        item.total = item.price * item.qty;
-    }
-
-    updateOrderTable();
 }
 
 function calculateTotal() {
@@ -1556,35 +1791,58 @@ function updateTotals() {
     orderData.totalAmount = total;
     
     const subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
-    document.getElementById("subTotal").textContent = subtotal.toFixed(2) + " USD";
-    document.getElementById("grossTotal").textContent = total.toFixed(2) + " USD";
+    const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
+    const discount = parseFloat(document.getElementById("discountInput").value) || 0;
+    
+    document.getElementById("subTotal").textContent = subtotal.toFixed(2) + " PHP";
+    document.getElementById("grossTotal").textContent = total.toFixed(2) + " PHP";
     
     if (document.getElementById('paymentModal').classList.contains('active')) {
-        document.getElementById('paymentTotalAmount').textContent = total.toFixed(2) + ' USD';
+        const paid = getTotalPaidAmount();
+        const remainingBalance = total - paid;
+        
+        if (remainingBalance > 0) {
+            document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
+        } else if (remainingBalance === 0) {
+            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#6c757d; font-size:12px;">(Order already fully paid)</small>';
+        } else {
+            const overpayment = Math.abs(remainingBalance);
+            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#856404; font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
+        }
+        
         calculatePaymentStatus();
     }
 }
 
 function cancelOrder() {
-    if (orderItems.length === 0 && selectedAddons.length === 0) {
-        alert("Cart is already empty.");
-        return;
-    }
+    if (orderData.isEditMode) {
+        if (confirm('Are you sure you want to cancel editing? All unsaved changes will be lost.')) {
+            window.location.href = `/orders/${orderData.orderId}/details`;
+        }
+    } else {
+        if (orderItems.length === 0 && selectedAddons.length === 0) {
+            alert("Cart is already empty.");
+            return;
+        }
 
-    if (confirm("Are you sure you want to cancel the order? This will clear the cart.")) {
-        orderItems = [];
-        selectedAddons = [];
-        orderData = {
-            paymentAmount: null,
-            totalAmount: 0,
-            customerId: null
-        };
-        updateAddonDisplay();
-        updateOrderTable();
-        document.getElementById('notes').value = '';
-        document.getElementById('discountInput').value = 0;
-        document.getElementById('selectCustomer').value = '';
-        clearCustomerError();
+        if (confirm("Are you sure you want to cancel the order? This will clear the cart.")) {
+            orderItems = [];
+            selectedAddons = [];
+            orderData = {
+                paymentAmount: null,
+                totalAmount: 0,
+                customerId: null,
+                isEditMode: false,
+                orderId: null,
+                paidAmount: 0
+            };
+            updateAddonDisplay();
+            updateOrderTable();
+            document.getElementById('notes').value = '';
+            document.getElementById('discountInput').value = 0;
+            document.getElementById('selectCustomer').value = '';
+            clearCustomerError();
+        }
     }
 }
 
@@ -1602,8 +1860,14 @@ async function saveOrder() {
         return;
     }
     
-    // Check if payment is made
-    if (orderData.paymentAmount === null) {
+    // For edit mode, check if payment is being added
+    if (orderData.isEditMode && orderData.paymentAmount === null) {
+        const proceed = confirm('No new payment recorded. Update order without payment?');
+        if (!proceed) return;
+    }
+    
+    // For new order, check if payment is made
+    if (!orderData.isEditMode && orderData.paymentAmount === null) {
         const proceed = confirm('Payment has not been recorded. Save as unpaid order?');
         if (!proceed) return;
     }
@@ -1620,27 +1884,34 @@ async function saveOrder() {
         items: orderItems.map(item => ({
             service_id: item.id,
             qty: item.qty,
-            price: item.price
+            price: item.price,
+            id: item.item_id // Send existing item ID if editing
         })),
         addons: selectedAddons.map(addon => ({
             addon_id: addon.id,
             price: addon.price
         })),
         payment_amount: orderData.paymentAmount || 0,
-        payment_method: 'cash'
+        payment_method: 'cash', // Default payment method
+        _method: orderData.isEditMode ? 'PUT' : 'POST'
     };
     
     console.log('Sending order data:', orderDataToSend);
     
+    // Determine the endpoint
+    const endpoint = orderData.isEditMode 
+        ? `/pos/${orderData.orderId}`  // Update endpoint for editing
+        : '/pos/orders';  // Create endpoint for new order
+    
     // Show loading state
     const saveButton = document.querySelector('.btn-save');
     const originalText = saveButton.textContent;
-    saveButton.textContent = 'Saving...';
+    saveButton.textContent = orderData.isEditMode ? 'Updating...' : 'Saving...';
     saveButton.disabled = true;
     
     try {
-        const response = await fetch('/pos/orders', {
-            method: 'POST',
+        const response = await fetch(endpoint, {
+            method: 'POST', // Use POST for both, with _method parameter
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json',
@@ -1652,26 +1923,44 @@ async function saveOrder() {
         const data = await response.json();
         
         if (data.success) {
-            alert(`✅ Order #${data.order_number} created successfully!`);
+            const action = orderData.isEditMode ? 'updated' : 'created';
+            alert(`✅ Order #${data.order?.order_number || data.order_number} ${action} successfully!`);
             
-            // Reset for next order
-            orderItems = [];
-            selectedAddons = [];
-            orderData = { paymentAmount: null, totalAmount: 0, customerId: null };
-            updateAddonDisplay();
-            updateOrderTable();
-            document.getElementById('notes').value = '';
-            document.getElementById('discountInput').value = 0;
-            document.getElementById('selectCustomer').value = '';
-            clearCustomerError();
-            
-            // Increment order number
-            incrementOrderNumber();
+            if (orderData.isEditMode) {
+                // Redirect to order details after successful update
+                setTimeout(() => {
+                    window.location.href = `/orders/${orderData.orderId}/details`;
+                }, 1000);
+            } else {
+                // Reset for next order
+                orderItems = [];
+                selectedAddons = [];
+                orderData = { 
+                    paymentAmount: null, 
+                    totalAmount: 0, 
+                    customerId: null,
+                    isEditMode: false,
+                    orderId: null,
+                    paidAmount: 0
+                };
+                updateAddonDisplay();
+                updateOrderTable();
+                document.getElementById('notes').value = '';
+                document.getElementById('discountInput').value = 0;
+                document.getElementById('selectCustomer').value = '';
+                clearCustomerError();
+                
+                // Redirect to order details for new order
+                if (data.order && data.order.id) {
+                    setTimeout(() => {
+                        window.location.href = `/orders/${data.order.id}/details`;
+                    }, 1000);
+                }
+            }
             
         } else {
-            let errorMessage = 'Error creating order';
+            let errorMessage = orderData.isEditMode ? 'Error updating order' : 'Error creating order';
             if (data.message) errorMessage += ': ' + data.message;
-            if (data.error_details) errorMessage += '\n' + data.error_details;
             alert('❌ ' + errorMessage);
         }
     } catch (error) {
@@ -1699,7 +1988,6 @@ function validateAndSaveOrder() {
 // ============================================
 document.addEventListener("DOMContentLoaded", () => {
     initOrderDate();
-    updateOrderNumberDisplay();
     
     // Date picker event
     document.getElementById('orderDateInput').addEventListener('change', function() {
@@ -1742,6 +2030,13 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Discount input
     document.getElementById("discountInput").addEventListener("input", updateTotals);
+    
+    // Initialize if in edit mode - calculate initial totals
+    if (orderData.isEditMode) {
+        console.log('Edit mode initialized, calculating initial totals');
+        updateTotals();
+        updateAddonDisplay();
+    }
 });
 
 // Close modals on outside click
@@ -1763,6 +2058,5 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
-
 </body>
 </html>

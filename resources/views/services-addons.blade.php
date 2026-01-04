@@ -320,7 +320,7 @@
                 <tr data-id="{{ $addon->id }}">
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $addon->name }}</td>
-                    <td class="price-cell">{{ number_format($addon->price, 2) }} USD</td>
+                    <td class="price-cell">₱{{ number_format($addon->price, 2) }}</td>
                     <td>
                         <span class="status {{ $addon->is_active ? 'status-active' : 'status-inactive' }}">
                             {{ $addon->is_active ? 'Active' : 'Inactive' }}

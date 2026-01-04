@@ -5,7 +5,6 @@
 
 @section('content')
 <style>
-<style>
 /* Reset & Base - Mobile First */
 * { 
     margin: 0; 
@@ -395,7 +394,14 @@ body {
 .btn-action i {
     font-size: 13px;
 }
-
+.btn-payment { 
+    background: #6f42c1; 
+    color: white; 
+}
+.btn-payment:hover { 
+    background: #5a32a3; 
+    color: white; 
+}
 .btn-edit { background: #007bff; color: white; }
 .btn-edit:hover { background: #0056b3; color: white; }
 
@@ -423,17 +429,48 @@ body {
 
 /* Footer */
 .order-footer {
-    text-align: center;
+    background: white;
+    border-radius: 10px;
     padding: 15px;
     margin-top: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     color: #666;
     font-size: 12px;
-    border-top: 1px solid #eee;
 }
 
-.order-footer strong {
+.footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+}
+
+.footer-row:last-child {
+    border-bottom: none;
+}
+
+.footer-label {
+    color: #6c757d;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-label i {
     color: #007bff;
-    font-weight: 600;
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+}
+
+.footer-value {
+    color: #2c3e50;
+    font-weight: 500;
 }
 
 /* Tablet Styles (min-width: 600px) */
@@ -519,6 +556,17 @@ body {
     
     .order-footer {
         font-size: 13px;
+        padding: 20px;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 20px;
+    }
+    
+    .footer-row {
+        flex: 1;
+        border-bottom: none;
+        padding: 0;
+        justify-content: center;
     }
 }
 
@@ -570,126 +618,6 @@ body {
         align-self: flex-start;
     }
 }
-
-/* Large Desktop (min-width: 992px) */
-@media (min-width: 992px) {
-    .order-container {
-        max-width: 1200px;
-    }
-    
-    .order-header {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 20px;
-    }
-    
-    .order-number {
-        font-size: 24px;
-    }
-    
-    .order-meta {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-    }
-    
-    .meta-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-        border-bottom: none;
-        padding: 0;
-    }
-    
-    .meta-label {
-        font-size: 13px;
-    }
-    
-    .meta-value {
-        font-size: 13px;
-        text-align: left;
-    }
-    
-    .status-selector {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .status-dropdown {
-        width: 100%;
-    }
-    
-    .order-table {
-        min-width: 100%;
-    }
-}
-
-/* Extra Large Screens (min-width: 1200px) */
-@media (min-width: 1200px) {
-    .order-container {
-        padding: 20px 15px;
-    }
-    
-    .box-section {
-        padding: 20px;
-    }
-    
-    .section-title {
-        font-size: 17px;
-    }
-    
-    .store-name {
-        font-size: 22px;
-    }
-}
-
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .btn-action,
-    .btn-save,
-    .status-dropdown {
-        min-height: 44px; /* Minimum touch target size */
-    }
-    
-    .notes-textarea {
-        font-size: 16px; /* Prevent iOS zoom on focus */
-    }
-    
-    select.status-dropdown {
-        font-size: 16px; /* Prevent iOS zoom on focus */
-    }
-}
-
-/* Print Styles */
-@media print {
-    body {
-        background: white !important;
-        font-size: 12pt !important;
-    }
-    
-    .order-container {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    
-    .btn-action,
-    .btn-save,
-    .status-dropdown,
-    .notes-textarea,
-    .order-footer {
-        display: none !important;
-    }
-    
-    .content-box,
-    .store-info-box {
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-        page-break-inside: avoid;
-    }
-}
-
 
 /* Large Desktop (min-width: 992px) */
 @media (min-width: 992px) {
@@ -775,6 +703,11 @@ body {
     .order-table {
         min-width: 100%;
     }
+    
+    .order-footer {
+        justify-content: space-around;
+        padding: 20px 40px;
+    }
 }
 
 /* Extra Large Screens (min-width: 1200px) */
@@ -811,6 +744,56 @@ body {
     
     .store-name {
         font-size: 22px;
+    }
+    
+    .order-footer {
+        padding: 20px 50px;
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .btn-action,
+    .btn-save,
+    .status-dropdown {
+        min-height: 44px; /* Minimum touch target size */
+    }
+    
+    .notes-textarea {
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+    
+    select.status-dropdown {
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white !important;
+        font-size: 12pt !important;
+    }
+    
+    .order-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .btn-action,
+    .btn-save,
+    .status-dropdown,
+    .notes-textarea,
+    .order-footer {
+        display: none !important;
+    }
+    
+    .content-box,
+    .store-info-box {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        page-break-inside: avoid;
     }
 }
 </style>
@@ -879,9 +862,9 @@ body {
                                             @endif
                                         </div>
                                     </td>
-                                    <td>{{ number_format($item->price, 2) }} USD</td>
+                                    <td>{{ number_format($item->price, 2) }} PHP</td>
                                     <td>{{ $item->qty }}</td>
-                                    <td>{{ number_format($item->total, 2) }} USD</td>
+                                    <td>{{ number_format($item->total, 2) }} PHP</td>
                                 </tr>
                                 @empty
                                 <tr>
@@ -932,36 +915,36 @@ body {
                     <div class="payment-details">
                         <div class="payment-row">
                             <span class="payment-label">Sub Total:</span>
-                            <span class="payment-value">{{ number_format($order->subtotal, 2) }} USD</span>
+                            <span class="payment-value">{{ number_format($order->subtotal, 2) }} PHP</span>
                         </div>
                         @if($order->addons->count() > 0)
                         <div class="payment-row">
                             <span class="payment-label">Addons:</span>
-                            <span class="payment-value">{{ number_format($order->addons->sum('price'), 2) }} USD</span>
+                            <span class="payment-value">{{ number_format($order->addons->sum('price'), 2) }} PHP</span>
                         </div>
                         @endif
                         <div class="payment-row">
                             <span class="payment-label">Discount:</span>
-                            <span class="payment-value">{{ number_format($order->discount, 2) }} USD</span>
+                            <span class="payment-value">{{ number_format($order->discount, 2) }} PHP</span>
                         </div>
                         @if($order->tax > 0)
                         <div class="payment-row">
                             <span class="payment-label">Tax:</span>
-                            <span class="payment-value">{{ number_format($order->tax, 2) }} USD</span>
+                            <span class="payment-value">{{ number_format($order->tax, 2) }} PHP</span>
                         </div>
                         @endif
                         <div class="payment-row total">
                             <span class="payment-label">Gross Total:</span>
-                            <strong class="payment-value">{{ number_format($order->total, 2) }} USD</strong>
+                            <strong class="payment-value">{{ number_format($order->total, 2) }} PHP</strong>
                         </div>
                         <div class="payment-row">
                             <span class="payment-label">Paid Amount:</span>
-                            <span class="payment-value">{{ number_format($order->paid_amount, 2) }} USD</span>
+                            <span class="payment-value">{{ number_format($order->paid_amount, 2) }} PHP</span>
                         </div>
                         <div class="payment-row total">
                             <span class="payment-label">Balance:</span>
                             <strong class="payment-value {{ ($order->total - $order->paid_amount) > 0 ? 'balance-negative' : 'balance-positive' }}">
-                                {{ number_format($order->total - $order->paid_amount, 2) }} USD
+                                {{ number_format($order->total - $order->paid_amount, 2) }} PHP
                             </strong>
                         </div>
                     </div>
@@ -1004,7 +987,11 @@ body {
                     <h2 class="store-name"><i class="fas fa-cogs"></i> Actions</h2>
                 </div>
                 <div class="action-buttons">
-
+                    <!-- Payment Button - Add this -->
+                    <button class="btn-action btn-payment" data-order-id="{{ $order->id }}">
+                        <i class="fas fa-credit-card"></i> Add Payment
+                    </button>
+                    
                     <a href="{{ route('pos.edit', $order) }}" class="btn-action btn-edit">
                         <i class="fas fa-edit"></i> Edit Order
                     </a>
@@ -1019,6 +1006,25 @@ body {
         </div>
     </div>
 
+    <!-- Footer with Created and Updated Dates -->
+    <div class="order-footer">
+        <div class="footer-row">
+            <span class="footer-label">
+                <i class="fas fa-calendar-plus"></i> Created:
+            </span>
+            <span class="footer-value">
+                {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}
+            </span>
+        </div>
+        <div class="footer-row">
+            <span class="footer-label">
+                <i class="fas fa-calendar-check"></i> Last Updated:
+            </span>
+            <span class="footer-value">
+                {{ \Carbon\Carbon::parse($order->updated_at)->format('d/m/Y H:i') }}
+            </span>
+        </div>
+    </div>
 
 </div>
 
@@ -1054,7 +1060,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ 
                     status: status
-                    // REMOVED _method: 'PUT' - route only accepts POST
                 })
             })
             .then(async response => {
@@ -1206,7 +1211,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ 
                         status: 'completed'
-                        // REMOVED _method: 'PUT'
                     })
                 })
                 .then(response => response.json())
@@ -1261,7 +1265,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ 
                         status: 'cancelled'
-                        // REMOVED _method: 'PUT'
                     })
                 })
                 .then(response => response.json())
@@ -1394,5 +1397,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 });
+
+
 </script>
 @endsection
