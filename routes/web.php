@@ -97,26 +97,27 @@ Route::middleware(AuthStaff::class)->group(function () {
 
     // ---------- SERVICES ----------
     Route::prefix('services')->group(function () {
+
         Route::controller(ServiceTypeController::class)->group(function () {
             Route::get('/type', 'index')->name('services.type');
             Route::post('/type', 'store')->name('services.type.store');
-            Route::put('/type/{serviceType}', 'update')->name('services.type.update');
-            Route::delete('/type/{serviceType}', 'destroy')->name('services.type.destroy');
+            Route::put('/type', 'update')->name('services.type.update');
+            Route::delete('/type', 'destroy')->name('services.type.destroy');
         });
 
         Route::controller(ServiceController::class)->group(function () {
             Route::get('/list', 'index')->name('services.list');
             Route::post('/list', 'store')->name('services.store');
-            Route::put('/list/{service}', 'update')->name('services.update');
-            Route::delete('/list/{service}', 'destroy')->name('services.destroy');
+            Route::put('/list/{id}', 'update')->name('services.update');
+            Route::delete('/list/{id}', 'destroy')->name('services.destroy');
         });
 
-        // ADDON MANAGEMENT ROUTES
+        // ADDON MANAGEMENT ROUTES (Admin Panel)
         Route::controller(AddonController::class)->group(function () {
             Route::get('/addons', 'index')->name('services.addons');
             Route::post('/addons', 'store')->name('services.addons.store');
-            Route::put('/addons/{addon}', 'update')->name('services.addons.update');
-            Route::delete('/addons/{addon}', 'destroy')->name('services.addons.destroy');
+            Route::put('/addons/{id}', 'update')->name('services.addons.update');
+            Route::delete('/addons/{id}', 'destroy')->name('services.addons.destroy');
         });
     });
 
