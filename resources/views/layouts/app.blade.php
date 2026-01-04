@@ -68,7 +68,6 @@
             <span class="menu-label">Account</span>
             <a href="#" class="has-sub {{ request()->is('settings-*') ? 'active' : '' }}"><i class="fas fa-gear"></i><span>Settings</span><i class="fas fa-chevron-right toggle-icon"></i></a>
             <div class="submenu" style="{{ request()->is('settings-*') ? 'max-height:500px;' : '' }}">
-                <a href="{{ url('settings/filetools') }}" class="{{ request()->is('settings/filetools*') ? 'active-sub' : '' }}">File Tools</a>
                 <a href="{{ url('staff/admin') }}" class="{{ request()->is('staff/admin*') ? 'active-sub' : '' }}">Staff</a>
                 <a href="{{ url('settings/mastersettings') }}" class="{{ request()->is('settings/mastersettings*') ? 'active-sub' : '' }}">Master Setting</a>
             </div>
@@ -84,12 +83,7 @@
     <!-- Desktop Topbar -->
     <header class="desktop-topbar">
         <h2>@yield('page-title', 'Dashboard Overview')</h2>
-        <div class="desktop-top-icons">
-            <i class="fas fa-user-plus"></i>
-            <i class="fas fa-concierge-bell"></i>
-            <i class="fas fa-users"></i>
-            <i class="fas fa-user-circle"></i>
-        </div>
+        
     </header>
 
     <!-- Mobile Topbar -->

@@ -9,15 +9,16 @@ class Payment extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'order_id',
-        'amount',
+        'amount'
+
     ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 
     /**
      * The attributes that should be cast.
@@ -27,14 +28,6 @@ class Payment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
     ];
-
-    /**
-     * Relationship with Order
-     */
-    public function order()
-    {
-        return $this->belongsTo(Order::class);
-    }
 
     /**
      * Get formatted amount attribute

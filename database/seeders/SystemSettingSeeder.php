@@ -14,7 +14,7 @@ class SystemSettingSeeder extends Seeder
             SystemSetting::create([
                 'business_name' => 'LAUNDRY',
                 'address'       => '123 Laundry Street, Clean City, CC 12345',
-                'contact'       => '+63 912 345 6789',
+                'contact'       => '09123456789',
                 'favicon'       => 'favicons.ico', // place a default favicon in storage/app/public/favicons
             ]);
         }

@@ -5,6 +5,180 @@
 
 @section('content')
 <style>
+/* Add CSS for the simple modal system */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.close-btn:hover {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #eaeaea;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.required-star {
+    color: #dc3545;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Original styles remain the same */
 /* Reset & Base - Mobile First */
 * { 
     margin: 0; 
@@ -987,8 +1161,11 @@ body {
                     <h2 class="store-name"><i class="fas fa-cogs"></i> Actions</h2>
                 </div>
                 <div class="action-buttons">
-                    <!-- Payment Button - Add this -->
-                    <button class="btn-action btn-payment" data-order-id="{{ $order->id }}">
+                    <!-- Payment Button - FIXED: Added correct data attributes -->
+                    <button class="btn-action btn-payment add-payment-btn" 
+                            data-order-id="{{ $order->id }}"
+                            data-order-total="{{ $order->total }}"
+                            data-paid-amount="{{ $order->paid_amount }}">
                         <i class="fas fa-credit-card"></i> Add Payment
                     </button>
                     
@@ -1028,7 +1205,178 @@ body {
 
 </div>
 
+<!-- Payment Modal HTML - SIMPLE VERSION -->
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Payment</h3>
+            <button type="button" class="close-btn" id="closePaymentModal">&times;</button>
+        </div>
+        
+        <form method="POST" id="paymentForm">
+            @csrf
+            <input type="hidden" id="paymentOrderId" name="order_id">
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="amount">
+                        Amount <span class="required-star">*</span>
+                    </label>
+                    <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
+                    <div class="error-message" id="amount_error"></div>
+                </div>
+                
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelPayment">Cancel</button>
+                <button type="submit" class="btn-primary" id="submitPayment">Add Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+// Modal Utility Functions
+function openModal(modal) {
+    modal.classList.add('active');
+    document.body.classList.add('modal-open');
+}
+
+function closeModal(modal) {
+    modal.classList.remove('active');
+    document.body.classList.remove('modal-open');
+    clearPaymentErrors();
+}
+
+function clearPaymentErrors() {
+    document.querySelectorAll('#paymentForm .error-message').forEach(error => {
+        error.style.display = 'none';
+        error.textContent = '';
+    });
+    document.querySelectorAll('#paymentForm input').forEach(field => {
+        field.style.borderColor = '#ddd';
+    });
+}
+
+function showPaymentError(fieldId, message) {
+    const errorElement = document.getElementById(fieldId);
+    const inputElement = document.querySelector(`#${fieldId.replace('_error', '')}`);
+    if (errorElement && inputElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        inputElement.style.borderColor = '#dc3545';
+    }
+}
+
+// Helper function to show notifications
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            ${message}
+        </div>
+        <button class="notification-close">&times;</button>
+    `;
+    
+    // Add styles
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 300px;
+        max-width: 400px;
+        z-index: 9999;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    
+    // Set background color based on type
+    if (type === 'success') {
+        notification.style.backgroundColor = '#28a745';
+    } else if (type === 'error') {
+        notification.style.backgroundColor = '#dc3545';
+    } else if (type === 'warning') {
+        notification.style.backgroundColor = '#ffc107';
+        notification.style.color = '#212529';
+    } else {
+        notification.style.backgroundColor = '#007bff';
+    }
+    
+    // Add close button styles
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.style.cssText = `
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 20px;
+        cursor: pointer;
+        margin-left: 10px;
+        padding: 0;
+        line-height: 1;
+    `;
+    
+    // Add close functionality
+    closeBtn.addEventListener('click', () => {
+        notification.style.animation = 'slideOut 0.3s ease-in forwards';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    });
+    
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOut 0.3s ease-in forwards';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Status dropdown change handler
     const statusDropdown = document.querySelector('.status-dropdown');
@@ -1064,13 +1412,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(async response => {
                 const text = await response.text();
-                console.log('Raw response:', text);
                 
                 try {
                     const data = JSON.parse(text);
                     return { response: response, data: data };
                 } catch (e) {
-                    console.error('JSON parse error:', e);
                     throw new Error('Server returned invalid JSON');
                 }
             })
@@ -1098,7 +1444,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     showNotification(data.message || 'Failed to update status', 'error');
                     
                     // Revert to original status
-                    revertStatus(originalStatus);
+                    if (statusDropdown && statusBadge) {
+                        statusDropdown.value = originalStatus;
+                        statusBadge.textContent = originalStatus.charAt(0).toUpperCase() + originalStatus.slice(1);
+                        statusBadge.className = 'status-badge ' + originalStatus;
+                    }
                 }
             })
             .catch(error => {
@@ -1109,24 +1459,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 showNotification('Error: ' + error.message, 'error');
                 
                 // Revert to original status
-                revertStatus(originalStatus);
-                
-                // Check if update actually succeeded by reloading after 2 seconds
-                setTimeout(() => {
-                    if (confirm('There was an error. Reload the page to see current status?')) {
-                        location.reload();
-                    }
-                }, 2000);
-            });
-            
-            // Helper function to revert status
-            function revertStatus(originalStatus) {
                 if (statusDropdown && statusBadge) {
                     statusDropdown.value = originalStatus;
                     statusBadge.textContent = originalStatus.charAt(0).toUpperCase() + originalStatus.slice(1);
                     statusBadge.className = 'status-badge ' + originalStatus;
                 }
-            }
+            });
         });
     }
     
@@ -1167,7 +1505,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (data.success) {
                     alert('Notes saved successfully!');
-                    location.reload(); // Reload to show updated notes
+                    location.reload();
                 } else {
                     alert('Failed to save notes: ' + data.message);
                 }
@@ -1274,7 +1612,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (data.success) {
                         alert('Order cancelled successfully!');
-                        location.reload(); // Reload to show updated status
+                        location.reload();
                     } else {
                         alert('Failed to cancel order: ' + data.message);
                     }
@@ -1288,116 +1626,167 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // ============================
+    // PAYMENT MODAL FUNCTIONALITY
+    // ============================
+    const paymentModal = document.getElementById('paymentModal');
+    const paymentForm = document.getElementById('paymentForm');
+    const submitPaymentBtn = document.getElementById('submitPayment');
+    const cancelPaymentBtn = document.getElementById('cancelPayment');
+    const closePaymentModal = document.getElementById('closePaymentModal');
     
-    // Helper function to show notifications
-    function showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                ${message}
-            </div>
-            <button class="notification-close">&times;</button>
-        `;
+    // Check if CSRF token exists, create if not
+    if (!document.querySelector('meta[name="csrf-token"]')) {
+        const csrfMeta = document.createElement('meta');
+        csrfMeta.name = 'csrf-token';
+        csrfMeta.content = '{{ csrf_token() }}';
+        document.head.appendChild(csrfMeta);
+        console.log('CSRF meta tag added dynamically');
+    }
+    
+    // Open payment modal
+    document.addEventListener('click', function(e) {
+        const paymentBtn = e.target.closest('.add-payment-btn');
+        if (paymentBtn) {
+            e.preventDefault();
+            const orderId = paymentBtn.getAttribute('data-order-id');
+            const orderTotal = parseFloat(paymentBtn.getAttribute('data-order-total') || 0);
+            const paidAmount = parseFloat(paymentBtn.getAttribute('data-paid-amount') || 0);
+            const remaining = orderTotal - paidAmount;
+            
+            // Set order ID
+            const orderIdField = document.getElementById('paymentOrderId');
+            if (orderIdField) {
+                orderIdField.value = orderId;
+            }
+            
+            // Set amount to remaining balance
+            const amountField = document.getElementById('amount');
+            if (amountField) {
+                if (remaining > 0) {
+                    amountField.value = remaining.toFixed(2);
+                } else {
+                    amountField.value = '';
+                }
+            }
+            
+            // Clear previous errors
+            clearPaymentErrors();
+            
+            // Open modal
+            openModal(paymentModal);
+            
+            // Auto-focus on amount field
+            setTimeout(() => {
+                amountField?.focus();
+                amountField?.select();
+            }, 300);
+        }
+    });
+    
+    // Close payment modal
+    cancelPaymentBtn.addEventListener('click', () => closeModal(paymentModal));
+    closePaymentModal.addEventListener('click', () => closeModal(paymentModal));
+    
+    // Handle form submission
+    paymentForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        // Add styles
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            min-width: 300px;
-            max-width: 400px;
-            z-index: 9999;
-            animation: slideIn 0.3s ease-out;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
+        // Simple validation
+        const amountField = document.getElementById('amount');
+        const orderIdField = document.getElementById('paymentOrderId');
         
-        // Set background color based on type
-        if (type === 'success') {
-            notification.style.backgroundColor = '#28a745';
-        } else if (type === 'error') {
-            notification.style.backgroundColor = '#dc3545';
-        } else if (type === 'warning') {
-            notification.style.backgroundColor = '#ffc107';
-            notification.style.color = '#212529';
-        } else {
-            notification.style.backgroundColor = '#007bff';
+        if (!amountField || !amountField.value) {
+            showPaymentError('amount_error', 'Please enter an amount');
+            amountField?.focus();
+            return;
         }
         
-        // Add close button styles
-        const closeBtn = notification.querySelector('.notification-close');
-        closeBtn.style.cssText = `
-            background: none;
-            border: none;
-            color: inherit;
-            font-size: 20px;
-            cursor: pointer;
-            margin-left: 10px;
-            padding: 0;
-            line-height: 1;
-        `;
+        const amount = parseFloat(amountField.value);
+        if (isNaN(amount) || amount <= 0) {
+            showPaymentError('amount_error', 'Please enter a valid amount greater than 0');
+            amountField?.focus();
+            return;
+        }
         
-        // Add close functionality
-        closeBtn.addEventListener('click', () => {
-            notification.style.animation = 'slideOut 0.3s ease-in forwards';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        });
+        if (!orderIdField || !orderIdField.value) {
+            alert('Error: Order ID is missing');
+            return;
+        }
         
-        // Add CSS animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
+        const orderId = orderIdField.value;
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('amount', amount);
+        formData.append('_token', csrfToken);
+        
+        // Disable button and show loading
+        const originalText = submitPaymentBtn.innerHTML;
+        submitPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+        submitPaymentBtn.disabled = true;
+        
+        try {
+            // Submit via AJAX
+            const response = await fetch(`/orders/${orderId}/add-payment`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            @keyframes slideOut {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Add to page
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.style.animation = 'slideOut 0.3s ease-in forwards';
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Payment added successfully!', 'success');
+                closeModal(paymentModal);
+                paymentForm.reset();
+                
+                // Reload page after a short delay
                 setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
+                    window.location.reload();
+                }, 1500);
+            } else {
+                alert('Error: ' + (data.message || 'Something went wrong'));
             }
-        }, 5000);
-    }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('Network error: ' + error.message);
+        } finally {
+            // Reset button state
+            submitPaymentBtn.innerHTML = originalText;
+            submitPaymentBtn.disabled = false;
+        }
+    });
+    
+    // Clear errors on input
+    document.getElementById('amount')?.addEventListener('input', function() {
+        this.style.borderColor = '#ddd';
+        const errorElement = document.getElementById('amount_error');
+        if (errorElement) errorElement.style.display = 'none';
+    });
+    
+    // Close modal on outside click
+    window.addEventListener('click', e => {
+        if(e.target === paymentModal) closeModal(paymentModal);
+    });
+    
+    // Close modal on escape key
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            closeModal(paymentModal);
+        }
+    });
 });
-
-
 </script>
 @endsection

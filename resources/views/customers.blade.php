@@ -250,8 +250,6 @@
         <div class="customer-address">{{ $customer->address }}</div>
         <div class="action-buttons">
             <button class="action-btn edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
-            <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-            <button class="action-btn" title="Print"><i class="fas fa-print"></i></button>
             <button class="action-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
         </div>
     </div>
