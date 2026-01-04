@@ -54,7 +54,10 @@ class Order extends Model
         'status_label',
         'can_edit',
     ];
-
+    public function orderItems(): HasMany
+{
+    return $this->hasMany(OrderItem::class);
+}
     /**
      * Bootstrap the model and its traits.
      */

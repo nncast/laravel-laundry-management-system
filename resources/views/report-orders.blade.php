@@ -143,7 +143,7 @@
 /* FIXED: Add more space between amount and status columns */
 .table-header {
     display: grid;
-    grid-template-columns: 1fr 1fr 1.5fr 1.5fr 120px 120px; /* Fixed widths for amount and status */
+    grid-template-columns: 1fr 1fr 1.5fr 1.5fr 120px 120px;
     width: 100%;
     padding: 15px 20px;
     background: #f8f9fa;
@@ -151,33 +151,33 @@
     border-bottom: 1px solid #eaeaea;
     font-size: 14px;
     text-align: left;
-    gap: 10px; /* Add gap between columns */
+    gap: 10px;
 }
 
 .table-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1.5fr 1.5fr 120px 120px; /* Same fixed widths */
+    grid-template-columns: 1fr 1fr 1.5fr 1.5fr 120px 120px;
     width: 100%;
     padding: 15px 20px;
     border-bottom: 1px solid #f0f0f0;
     align-items: center;
     font-size: 14px;
-    gap: 10px; /* Add gap between columns */
+    gap: 10px;
 }
 
 .table-row:last-child {
     border-bottom: none;
 }
 
-/* Column alignments - FIXED spacing */
+/* Column alignments */
 .table-row .text-right {
     text-align: right;
     font-weight: 600;
     color: #2c3e50;
-    padding-right: 15px; /* Add right padding for amount */
+    padding-right: 15px;
 }
 
-/* Status cell - add left padding for spacing */
+/* Status cell */
 .status-cell {
     padding-left: 10px;
 }
@@ -257,6 +257,20 @@
 .btn-print:hover {
     background: #c3e6cb;
     transform: translateY(-1px);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #dee2e6;
 }
 
 /* ================================
@@ -357,7 +371,7 @@
     }
     
     .table-header, .table-row {
-        min-width: 850px; /* Increased minimum width for better spacing */
+        min-width: 850px;
     }
 }
 
@@ -390,14 +404,24 @@
     opacity: 1;
 }
 
-/* Table header adjustments for better spacing */
-.table-header div:nth-child(5) { /* Amount column */
-    text-align: right;
-    padding-right: 15px;
+/* Loading overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: 10px;
 }
 
-.table-header div:nth-child(6) { /* Status column */
-    padding-left: 10px;
+.loading-spinner {
+    font-size: 24px;
+    color: var(--blue);
 }
 </style>
 
@@ -406,35 +430,48 @@
     <p class="text-muted">Track and analyze order performance</p>
 </div>
 
-<div class="report-container">
-    <!-- Filter controls -->
-    <div class="filter-controls">
-        <div class="filter-group">
-            <label for="start-date">Start Date</label>
-            <input type="date" id="start-date" value="{{ date('Y-m-01') }}">
+<div class="report-container" id="reportContainer">
+    <!-- Filter controls form -->
+    <form method="GET" action="{{ route('reports.orders') }}" id="filterForm">
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="start_date">Start Date</label>
+                <input type="date" id="start_date" name="start_date" value="{{ $filters['start_date'] }}">
+            </div>
+            <div class="filter-group">
+                <label for="end_date">End Date</label>
+                <input type="date" id="end_date" name="end_date" value="{{ $filters['end_date'] }}">
+            </div>
+            <div class="filter-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="">All Status</option>
+                    <option value="pending" {{ $filters['status'] == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="processing" {{ $filters['status'] == 'processing' ? 'selected' : '' }}>Processing</option>
+                    <option value="completed" {{ $filters['status'] == 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="cancelled" {{ $filters['status'] == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+            </div>
+            <button type="submit" class="generate-btn" id="generateReport">
+                <i class="fas fa-chart-line"></i> Generate Report
+            </button>
         </div>
-        <div class="filter-group">
-            <label for="end-date">End Date</label>
-            <input type="date" id="end-date" value="{{ date('Y-m-t') }}">
-        </div>
-        <div class="filter-group">
-            <label for="status-filter">Status</label>
-            <select id="status-filter">
-                <option value="">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-            </select>
-        </div>
-        <button class="generate-btn" id="generateReport">
-            <i class="fas fa-chart-line"></i> Generate Report
-        </button>
-    </div>
+    </form>
     
     <!-- Applied filters chips -->
-    <div class="filter-chips" id="filterChips" style="display: none;">
-        <!-- Chips will be added here dynamically -->
+    <div class="filter-chips" id="filterChips" style="{{ $filters['start_date'] || $filters['status'] ? 'display: flex;' : 'display: none;' }}">
+        @if($filters['start_date'] || $filters['end_date'])
+        <div class="filter-chip">
+            Date: {{ date('M d, Y', strtotime($filters['start_date'])) }} to {{ date('M d, Y', strtotime($filters['end_date'])) }}
+            <span class="remove" onclick="clearFilter('date')">&times;</span>
+        </div>
+        @endif
+        @if($filters['status'])
+        <div class="filter-chip">
+            Status: {{ ucfirst($filters['status']) }}
+            <span class="remove" onclick="clearFilter('status')">&times;</span>
+        </div>
+        @endif
     </div>
     
     <!-- Orders table -->
@@ -448,63 +485,61 @@
             <div>Status</div>
         </div>
         
-        @php
-            $sampleOrders = [
-                ['order_number'=>'ORD-1001','date'=>'2025-12-01','customer'=>'John Doe','service'=>'Wash & Fold','amount'=>25.50,'status'=>'completed'],
-                ['order_number'=>'ORD-1002','date'=>'2025-12-02','customer'=>'Jane Smith','service'=>'Dry Cleaning','amount'=>40.00,'status'=>'processing'],
-                ['order_number'=>'ORD-1003','date'=>'2025-12-03','customer'=>'Mike Johnson','service'=>'Ironing','amount'=>15.00,'status'=>'pending'],
-                ['order_number'=>'ORD-1004','date'=>'2025-12-04','customer'=>'Alice Brown','service'=>'Wash & Fold','amount'=>30.25,'status'=>'completed'],
-                ['order_number'=>'ORD-1005','date'=>'2025-12-05','customer'=>'Bob White','service'=>'Dry Cleaning','amount'=>50.00,'status'=>'cancelled'],
-            ];
-        @endphp
-
-        @foreach($sampleOrders as $order)
+        @forelse($orders as $order)
         <div class="table-row" 
-             data-date="{{ $order['date'] }}"
-             data-status="{{ $order['status'] }}">
-            <div data-label="Order #">{{ $order['order_number'] }}</div>
-            <div data-label="Date">{{ $order['date'] }}</div>
-            <div data-label="Customer">{{ $order['customer'] }}</div>
-            <div data-label="Service">{{ $order['service'] }}</div>
-            <div data-label="Amount" class="text-right">${{ number_format($order['amount'], 2) }}</div>
+             data-date="{{ $order->order_date->format('Y-m-d') }}"
+             data-status="{{ $order->status }}">
+            <div data-label="Order #">{{ $order->order_number }}</div>
+            <div data-label="Date">{{ $order->order_date->format('Y-m-d') }}</div>
+            <div data-label="Customer">
+                {{ $order->customer ? $order->customer->name : 'Walk-in Customer' }}
+            </div>
+            <div data-label="Service">
+                @foreach($order->items as $item) {{-- Changed from $order->orderItems to $order->items --}}
+                    {{ $item->service->name }}{{ $item->qty > 1 ? ' (x' . $item->qty . ')' : '' }}<br>
+                @endforeach
+            </div>
+            <div data-label="Amount" class="text-right">${{ number_format($order->total, 2) }}</div>
             <div data-label="Status" class="status-cell">
-                <span class="status-badge status-{{ $order['status'] }}">
-                    {{ ucfirst($order['status']) }}
+                <span class="status-badge status-{{ $order->status }}">
+                    {{ ucfirst($order->status) }}
                 </span>
             </div>
         </div>
-        @endforeach
+        @empty
+        <div class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <p>No orders found for the selected criteria.</p>
+        </div>
+        @endforelse
     </div>
     
     <!-- Report summary -->
     <div class="report-summary">
         <div class="summary-item">
             <div class="summary-label">Total Orders</div>
-            <div class="summary-value orders">{{ count($sampleOrders) }}</div>
+            <div class="summary-value orders">{{ $summary['total_orders'] }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Total Amount</div>
-            <div class="summary-value amount">${{ number_format(array_sum(array_column($sampleOrders,'amount')), 2) }}</div>
+            <div class="summary-value amount">${{ number_format($summary['total_amount'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Completed Orders</div>
-            @php
-                $completedCount = count(array_filter($sampleOrders, fn($order) => $order['status'] === 'completed'));
-            @endphp
-            <div class="summary-value" style="color: #28a745;">{{ $completedCount }}</div>
+            <div class="summary-value" style="color: #28a745;">{{ $summary['completed_count'] }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Pending Orders</div>
-            @php
-                $pendingCount = count(array_filter($sampleOrders, fn($order) => $order['status'] === 'pending'));
-            @endphp
-            <div class="summary-value" style="color: #ff9f43;">{{ $pendingCount }}</div>
+            <div class="summary-value" style="color: #ff9f43;">{{ $summary['pending_count'] }}</div>
         </div>
     </div>
     
     <!-- Action buttons -->
     <div class="action-buttons">
-        <button class="btn-download" id="downloadReport">
+        <button class="btn-download" id="downloadReport" 
+                data-start-date="{{ $filters['start_date'] }}"
+                data-end-date="{{ $filters['end_date'] }}"
+                data-status="{{ $filters['status'] }}">
             <i class="fas fa-download"></i> Download Report
         </button>
         <button class="btn-print" id="printReport">
@@ -515,34 +550,22 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
-    const statusFilter = document.getElementById('status-filter');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const statusFilter = document.getElementById('status');
     const generateBtn = document.getElementById('generateReport');
     const downloadBtn = document.getElementById('downloadReport');
     const printBtn = document.getElementById('printReport');
-    const filterChips = document.getElementById('filterChips');
-    const orderRows = document.querySelectorAll('.table-row[data-date]');
+    const filterForm = document.getElementById('filterForm');
+    const reportContainer = document.getElementById('reportContainer');
     
-    // Set default date range (current month)
-    const today = new Date();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
-    if (!startDateInput.value) {
-        startDateInput.value = firstDayOfMonth.toISOString().split('T')[0];
-    }
-    
-    if (!endDateInput.value) {
-        endDateInput.value = lastDayOfMonth.toISOString().split('T')[0];
-    }
-    
-    // Validate date range
-    function validateDateRange() {
+    // Validate date range on form submit
+    filterForm.addEventListener('submit', function(e) {
         const startDate = new Date(startDateInput.value);
         const endDate = new Date(endDateInput.value);
         
         if (startDate > endDate) {
+            e.preventDefault();
             alert('Start date cannot be later than end date.');
             endDateInput.value = startDateInput.value;
             return false;
@@ -553,152 +576,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         if (diffDays > 365) {
+            e.preventDefault();
             alert('Date range cannot exceed 1 year. Please select a smaller range.');
             return false;
         }
         
-        return true;
-    }
-    
-    // Update filter chips
-    function updateFilterChips() {
-        const chips = [];
-        
-        // Date range chip
-        if (startDateInput.value || endDateInput.value) {
-            const startDate = new Date(startDateInput.value).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            });
-            const endDate = new Date(endDateInput.value).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            });
-            chips.push({
-                id: 'date-range',
-                text: `${startDate} - ${endDate}`,
-                clear: () => {
-                    startDateInput.value = '';
-                    endDateInput.value = '';
-                    updateFilterChips();
-                }
-            });
-        }
-        
-        // Status chip
-        if (statusFilter.value) {
-            const statusText = statusFilter.options[statusFilter.selectedIndex].text;
-            chips.push({
-                id: 'status',
-                text: `Status: ${statusText}`,
-                clear: () => {
-                    statusFilter.value = '';
-                    updateFilterChips();
-                }
-            });
-        }
-        
-        // Render chips
-        if (chips.length > 0) {
-            filterChips.style.display = 'flex';
-            filterChips.innerHTML = chips.map(chip => `
-                <div class="filter-chip">
-                    ${chip.text}
-                    <span class="remove" onclick="${chip.clear.toString().replace(/"/g, '&quot;')}">&times;</span>
-                </div>
-            `).join('');
-        } else {
-            filterChips.style.display = 'none';
-        }
-    }
-    
-    // Filter orders based on criteria
-    function filterOrders() {
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-        const selectedStatus = statusFilter.value;
-        
-        orderRows.forEach(row => {
-            const orderDate = row.dataset.date;
-            const orderStatus = row.dataset.status;
-            let visible = true;
-            
-            // Date filter
-            if (startDate && orderDate < startDate) {
-                visible = false;
-            }
-            if (endDate && orderDate > endDate) {
-                visible = false;
-            }
-            
-            // Status filter
-            if (selectedStatus && orderStatus !== selectedStatus) {
-                visible = false;
-            }
-            
-            row.style.display = visible ? 'grid' : 'none';
-        });
-        
-        // Update summary counts
-        updateSummaryCounts();
-    }
-    
-    // Update summary counts based on visible rows
-    function updateSummaryCounts() {
-        const visibleRows = Array.from(orderRows).filter(row => row.style.display !== 'none');
-        const totalAmount = Array.from(visibleRows).reduce((sum, row) => {
-            const amountText = row.querySelector('.text-right')?.textContent || '0';
-            const amount = parseFloat(amountText.replace('$', '')) || 0;
-            return sum + amount;
-        }, 0);
-        
-        const completedCount = Array.from(visibleRows).filter(row => row.dataset.status === 'completed').length;
-        const pendingCount = Array.from(visibleRows).filter(row => row.dataset.status === 'pending').length;
-        
-        // Update summary items
-        const totalOrdersElem = document.querySelector('.summary-value.orders');
-        const totalAmountElem = document.querySelector('.summary-value.amount');
-        const completedElem = document.querySelector('.summary-item:nth-child(3) .summary-value');
-        const pendingElem = document.querySelector('.summary-item:nth-child(4) .summary-value');
-        
-        if (totalOrdersElem) totalOrdersElem.textContent = visibleRows.length;
-        if (totalAmountElem) totalAmountElem.textContent = `$${totalAmount.toFixed(2)}`;
-        if (completedElem) completedElem.textContent = completedCount;
-        if (pendingElem) pendingElem.textContent = pendingCount;
-    }
-    
-    // Generate report handler
-    generateBtn.addEventListener('click', function() {
-        if (!validateDateRange()) {
-            return;
-        }
-        
         // Show loading state
-        const originalText = generateBtn.innerHTML;
         generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
         generateBtn.disabled = true;
-        
-        // Update filter chips
-        updateFilterChips();
-        
-        // Apply filters
-        filterOrders();
-        
-        // Simulate API call
-        setTimeout(() => {
-            // Reset button
-            generateBtn.innerHTML = originalText;
-            generateBtn.disabled = false;
-        }, 800);
     });
     
     // Download report handler
     downloadBtn.addEventListener('click', function() {
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-        const status = statusFilter.value;
+        const startDate = this.getAttribute('data-start-date');
+        const endDate = this.getAttribute('data-end-date');
+        const status = this.getAttribute('data-status');
         
         const formattedStart = startDate ? new Date(startDate).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -717,14 +609,26 @@ document.addEventListener('DOMContentLoaded', function() {
         downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
         downloadBtn.disabled = true;
         
-        // Simulate download process
+        // Build download URL
+        let downloadUrl = "{{ route('reports.orders.download') }}";
+        downloadUrl += `?start_date=${startDate}&end_date=${endDate}`;
+        if (status) {
+            downloadUrl += `&status=${status}`;
+        }
+        
+        // Create temporary link for download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Reset button after a short delay
         setTimeout(() => {
-            alert(`Order report (${formattedStart} to ${formattedEnd}) is being downloaded.`);
-            
-            // Reset button
             downloadBtn.innerHTML = originalText;
             downloadBtn.disabled = false;
-        }, 1500);
+        }, 1000);
     });
     
     // Print report handler
@@ -745,9 +649,9 @@ document.addEventListener('DOMContentLoaded', function() {
             day: 'numeric'
         }) : 'All Time';
         
-        // Get visible order data for printing
-        const visibleRows = Array.from(orderRows).filter(row => row.style.display !== 'none');
-        const rowsHtml = visibleRows.map(row => {
+        // Get order data from table
+        const orderRows = document.querySelectorAll('.table-row:not(.empty-state)');
+        const rowsHtml = Array.from(orderRows).map(row => {
             const cells = row.querySelectorAll('div');
             return `
                 <tr>
@@ -760,6 +664,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </tr>
             `;
         }).join('');
+        
+        // Get summary data
+        const totalOrders = document.querySelector('.summary-value.orders')?.textContent || '0';
+        const totalAmount = document.querySelector('.summary-value.amount')?.textContent || '$0.00';
+        const completedCount = document.querySelector('.summary-item:nth-child(3) .summary-value')?.textContent || '0';
+        const pendingCount = document.querySelector('.summary-item:nth-child(4) .summary-value')?.textContent || '0';
         
         // Create print-friendly version
         const printContent = `
@@ -790,22 +700,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 13px; color: #6c757d;">Total Orders</div>
-                            <div style="font-size: 18px; font-weight: 600; color: #ff9f43;">${visibleRows.length}</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #ff9f43;">${totalOrders}</div>
                         </div>
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 13px; color: #6c757d;">Total Amount</div>
-                            <div style="font-size: 18px; font-weight: 600; color: #28a745;">$${Array.from(visibleRows).reduce((sum, row) => {
-                                const amountText = row.querySelector('.text-right')?.textContent || '0';
-                                return sum + (parseFloat(amountText.replace('$', '')) || 0);
-                            }, 0).toFixed(2)}</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #28a745;">${totalAmount}</div>
                         </div>
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 13px; color: #6c757d;">Completed Orders</div>
-                            <div style="font-size: 18px; font-weight: 600; color: #28a745;">${Array.from(visibleRows).filter(row => row.dataset.status === 'completed').length}</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #28a745;">${completedCount}</div>
                         </div>
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 13px; color: #6c757d;">Pending Orders</div>
-                            <div style="font-size: 18px; font-weight: 600; color: #ff9f43;">${Array.from(visibleRows).filter(row => row.dataset.status === 'pending').length}</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #ff9f43;">${pendingCount}</div>
                         </div>
                     </div>
                 </div>
@@ -840,13 +747,20 @@ document.addEventListener('DOMContentLoaded', function() {
             printWindow.close();
         }, 250);
     });
-    
-    // Auto-validate on date change
-    startDateInput.addEventListener('change', validateDateRange);
-    endDateInput.addEventListener('change', validateDateRange);
-    
-    // Initialize filter chips
-    updateFilterChips();
 });
+
+// Function to clear specific filter
+function clearFilter(type) {
+    const form = document.getElementById('filterForm');
+    
+    if (type === 'date') {
+        document.getElementById('start_date').value = '';
+        document.getElementById('end_date').value = '';
+    } else if (type === 'status') {
+        document.getElementById('status').value = '';
+    }
+    
+    form.submit();
+}
 </script>
 @endsection

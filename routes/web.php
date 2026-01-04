@@ -18,7 +18,8 @@ use App\Http\Controllers\{
     FileToolsController,
     BackupController,
     ReportController,
-    DailyReportController  // Added DailyReportController
+    DailyReportController ,
+    OrderReportController
 };
 
 use App\Http\Middleware\AuthStaff;
