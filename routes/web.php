@@ -19,7 +19,8 @@ use App\Http\Controllers\{
     BackupController,
     ReportController,
     DailyReportController ,
-    OrderReportController
+    OrderReportController,
+    SalesReportController
 };
 
 use App\Http\Middleware\AuthStaff;
@@ -131,17 +132,20 @@ Route::middleware(AuthStaff::class)->group(function () {
 
 // ---------- REPORTS ----------
 Route::prefix('reports')->group(function () {
-    // Daily Report routes using DailyReportController
+    // Daily Report routes
     Route::get('/daily', [DailyReportController::class, 'index'])->name('reports.daily');
     Route::get('/daily/download', [DailyReportController::class, 'download'])->name('reports.daily.download');
     
-    // Order Report routes using OrderReportController
+    // Order Report routes
     Route::get('/order', [OrderReportController::class, 'index'])->name('reports.orders');
     Route::get('/order/download', [OrderReportController::class, 'download'])->name('reports.orders.download');
-    Route::get('/order/api', [OrderReportController::class, 'apiData'])->name('reports.orders.api');
     
-    // Other report routes
-    Route::view('/sales', 'reports-sales')->name('reports.sales');
+    // Sales Report routes
+    Route::get('/sales', [SalesReportController::class, 'index'])->name('reports.sales');
+    Route::get('/sales/download', [SalesReportController::class, 'download'])->name('reports.sales.download');
+    Route::get('/sales/api', [SalesReportController::class, 'apiData'])->name('reports.sales.api');
+    
+    // Custom Report routes
     Route::get('/custom', [ReportController::class, 'custom'])->name('reports.custom');
 });
 
