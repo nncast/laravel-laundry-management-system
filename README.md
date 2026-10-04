@@ -230,7 +230,13 @@ The migration adds the payment method column and report indexes, and recalculate
 ```bash
 php artisan test
 ```
+## Developers
 
+- Frances Trisha G. Aganan
+- Janelle Ann F. Castillo
+- Romar D. De Asis
+- Hazel B. Sebastian
+- John Heinrich T. Valdez
 ---
 
 *Laundry Management System · 2025 · Laravel 12 · PHP 8.2 · MySQL / SQLite*
