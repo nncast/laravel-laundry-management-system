@@ -7,58 +7,57 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $query = Category::query();
-
-        if ($request->has('search')) {
-            $search = $request->get('search');
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-
-        $categories = $query->orderBy('id', 'asc')->get();
-
+        $categories = Category::withCount('products')->orderBy('id')->get();
 
         return view('inventory-categories', compact('categories'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-        'name' => 'required|max:255|unique:categories,name',
-        'status' => 'required|boolean',
-    ]);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name',
+            'status' => 'required|boolean',
+        ]);
 
-    Category::create($request->only('name', 'status'));
+        Category::create($validated);
 
-    return back()->with('success', 'Category added.');
+        return back()->with('success', 'Category added.');
     }
 
     public function update(Request $request)
     {
-        $request->validate([
-        'category_id' => 'required|exists:categories,id',
-        'name' => 'required|max:255|unique:categories,name,' . $request->category_id,
-        'status' => 'required|boolean',
-    ]);
+        $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255|unique:categories,name,' . (int) $request->category_id,
+            'status' => 'required|boolean',
+        ]);
 
-    $category = Category::findOrFail($request->category_id);
-    $category->update($request->only('name', 'status'));
+        Category::findOrFail($validated['category_id'])
+            ->update($request->only('name', 'status'));
 
-    return back()->with('success', 'Category updated.');
+        return back()->with('success', 'Category updated.');
     }
 
     public function destroy(Request $request)
-{
-    $request->validate([
-        'category_id' => 'required|exists:categories,id',
-    ]);
+    {
+        $request->validate([
+            'category_id' => 'required|exists:categories,id',
+        ]);
 
-    $category = Category::findOrFail($request->category_id);
-    $category->delete();
+        $category = Category::findOrFail($request->category_id);
 
-    return response()->json(['success' => true]);
-}
+        // Deleting would cascade-delete every product in the category
+        if ($category->products()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This category still has products. Move or delete them first, or set the category to Inactive.',
+            ], 422);
+        }
 
+        $category->delete();
+
+        return response()->json(['success' => true]);
+    }
 }

@@ -4,115 +4,64 @@ namespace App\Http\Controllers;
 
 use App\Models\Addon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AddonController extends Controller
 {
-    // Display the addons page using Blade
+    private const RULES = [
+        'name' => 'required|string|max:255',
+        'price' => 'required|numeric|min:0',
+        'is_active' => 'nullable|boolean',
+    ];
+
     public function index()
     {
         $addons = Addon::orderBy('name')->get();
-        return view('services-addons', compact('addons')); // resources/views/services-addons.blade.php
+
+        return view('services-addons', compact('addons'));
     }
 
-    // Create a new addon (JSON response)
     public function store(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'price' => 'required|numeric|min:0',
-                'is_active' => 'nullable|boolean',
-            ]);
+        $validated = $request->validate(self::RULES);
 
-            $addon = Addon::create([
-                'name' => $validated['name'],
-                'price' => $validated['price'],
-                'is_active' => $validated['is_active'] ?? 1,
-            ]);
+        $addon = Addon::create([
+            'name' => $validated['name'],
+            'price' => $validated['price'],
+            'is_active' => $request->boolean('is_active', true),
+        ]);
 
-            return response()->json(['success' => true, 'data' => $addon]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'data' => $addon]);
     }
 
-    // Update an existing addon (JSON response)
     public function update(Request $request, $id)
     {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'price' => 'required|numeric|min:0',
-                'is_active' => 'nullable|boolean',
-            ]);
+        $validated = $request->validate(self::RULES);
 
-            $addon = Addon::findOrFail($id);
-            $addon->update([
-                'name' => $validated['name'],
-                'price' => $validated['price'],
-                'is_active' => $validated['is_active'] ?? $addon->is_active,
-            ]);
+        $addon = Addon::findOrFail($id);
+        $addon->update([
+            'name' => $validated['name'],
+            'price' => $validated['price'],
+            'is_active' => $request->boolean('is_active', $addon->is_active),
+        ]);
 
-            return response()->json(['success' => true, 'data' => $addon]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'data' => $addon]);
     }
 
-    // Delete an addon (JSON response)
     public function destroy($id)
     {
-        try {
-            $addon = Addon::findOrFail($id);
-            $addon->delete();
+        $addon = Addon::findOrFail($id);
 
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    // Get active addons for POS (JSON response)
-    public function getActiveAddons()
-{
-    try {
-        $addons = Addon::where('is_active', 1)
-            ->orderBy('name')
-            ->get(['id', 'name', 'price', 'is_active'])
-            ->map(function ($addon) {
-                // Ensure price is a float
-                $addon->price = (float) $addon->price;
-                return $addon;
-            });
-
-        return response()->json([
-            'success' => true,
-            'addons' => $addons
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Error fetching addons: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-    // Alternative: Get all addons including inactive (for admin purposes)
-    public function getAllAddons()
-    {
-        try {
-            $addons = Addon::orderBy('name')
-                ->get(['id', 'name', 'price', 'is_active']);
-
-            return response()->json([
-                'success' => true,
-                'addons' => $addons
-            ]);
-        } catch (\Exception $e) {
+        // Deleting would cascade-delete this add-on from every past order
+        if (DB::table('order_addons')->where('addon_id', $addon->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching addons: ' . $e->getMessage()
-            ], 500);
+                'message' => 'This add-on is used in existing orders and cannot be deleted. Set it to Inactive to hide it from the POS.',
+            ], 422);
         }
+
+        $addon->delete();
+
+        return response()->json(['success' => true]);
     }
 }

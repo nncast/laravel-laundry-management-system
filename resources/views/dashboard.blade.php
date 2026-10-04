@@ -469,6 +469,18 @@ hr {
     }
 }
 
+/* Wide tables scroll inside their card instead of stretching the page */
+.recent-orders,
+.services-section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0;
+}
+.main-content-grid > *,
+.bottom-grid > * {
+    min-width: 0;
+}
+
 /* Print Styles */
 @media print {
     .dashboard-container {
@@ -642,14 +654,17 @@ hr {
     </div>
 </div>
 
-<!-- Font Awesome Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<!-- Chart.js Library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+@push('scripts')
+<!-- Chart.js (pinned version, deferred so it never blocks page rendering) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', function() {
+    if (typeof Chart === 'undefined') {
+        document.querySelector('.chart-container').innerHTML =
+            '<p style="color:#999;text-align:center;padding:40px 0;">Chart could not be loaded (offline?).</p>';
+        return;
+    }
+
     // Initial chart data from PHP
     const chartData = @json($chartData);
     
@@ -658,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Format currency
     const formatCurrency = (value) => {
-        return '₱' + value.toLocaleString('en-US', {
+        return '₱' + Number(value || 0).toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
@@ -785,8 +800,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const period = this.dataset.period;
             
             // Fetch new chart data via AJAX
-            fetch(`/dashboard/chart-data/${period}`)
-                .then(response => response.json())
+            fetch(appUrl(`dashboard/chart-data/${period}`), { headers: { 'Accept': 'application/json' } })
+                .then(response => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
                 .then(data => {
                     if (data.success) {
                         // Update chart data
@@ -804,31 +819,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update dashboard stats every 30 seconds
     function updateDashboardStats() {
-        fetch('/dashboard/stats')
-            .then(response => response.json())
+        if (document.hidden) return; // don't poll while the tab is in the background
+        fetch(appUrl('dashboard/stats'), { headers: { 'Accept': 'application/json' } })
+            .then(response => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
             .then(data => {
                 if (data.success) {
                     const stats = data.stats;
                     
                     // Update stat cards
                     document.querySelector('.stat-card:nth-child(1) .stat-value').textContent = 
-                        stats.totalOrders.toLocaleString();
+                        Number(stats.totalOrders).toLocaleString();
                     
                     document.querySelector('.stat-card:nth-child(2) .stat-value').textContent = 
-                        stats.pendingOrders.toLocaleString();
+                        Number(stats.pendingOrders).toLocaleString();
                     
                     document.querySelector('.stat-card:nth-child(3) .stat-value').textContent = 
-                        '₱' + stats.totalRevenue.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
+                        formatCurrency(stats.totalRevenue);
                     
                     // Update income card
                     document.querySelector('.income-card .income-value').textContent = 
-                        '₱' + stats.todayRevenue.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
+                        formatCurrency(stats.todayRevenue);
                     
                     document.querySelector('.income-stat:nth-child(1) .stat-value').textContent = 
                         stats.todayCompleted;
@@ -847,18 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update stats every 30 seconds
     setInterval(updateDashboardStats, 30000);
-    
-    // Add hover effect to table rows
-    const tableRows = document.querySelectorAll('.dashboard-table tbody tr');
-    tableRows.forEach(row => {
-        row.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateX(5px)';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateX(0)';
-        });
-    });
 });
 </script>
+@endpush
 @endsection

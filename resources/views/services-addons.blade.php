@@ -5,8 +5,9 @@
 @section('active-services-addons', 'active')
 
 @section('content')
-<!-- Include reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 :root {
@@ -197,31 +198,31 @@
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .addons-header .search-box {
         width: 100%;
     }
-    
+
     .addons-header .search-box input {
         width: 100%;
     }
-    
+
     .addons-header .add-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     .addons-section {
         padding: 20px;
         overflow: visible;
     }
-    
+
     .table-wrapper {
         border: 1px solid #f0f0f0;
         border-radius: 8px;
         background: white;
     }
-    
+
     .addons-table {
         min-width: 600px;
         margin: 0;
@@ -232,21 +233,21 @@
     .addons-section {
         padding: 15px;
     }
-    
+
     .addons-table {
         min-width: 550px;
         font-size: 13px;
     }
-    
-    .addons-table th, 
+
+    .addons-table th,
     .addons-table td {
         padding: 10px 12px;
     }
-    
+
     .action-btn {
         gap: 8px;
     }
-    
+
     .edit-btn, .delete-btn {
         padding: 6px;
         font-size: 13px;
@@ -259,11 +260,11 @@
     .addons-section {
         padding: 10px;
     }
-    
+
     .addons-table {
         min-width: 500px;
     }
-    
+
     .addons-header .add-btn {
         padding: 8px 15px;
         font-size: 13px;
@@ -278,16 +279,16 @@
         max-height: 90vh;
         overflow-y: auto;
     }
-    
+
     .modal-body .form-group {
         margin-bottom: 15px;
     }
-    
+
     .modal-footer {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .modal-footer button {
         width: 100%;
     }
@@ -327,15 +328,15 @@
                         </span>
                     </td>
                     <td class="action-btn">
-                        <button class="edit-btn" 
-                            data-id="{{ $addon->id }}" 
-                            data-name="{{ $addon->name }}" 
-                            data-price="{{ $addon->price }}" 
+                        <button class="edit-btn"
+                            data-id="{{ $addon->id }}"
+                            data-name="{{ $addon->name }}"
+                            data-price="{{ $addon->price }}"
                             data-active="{{ $addon->is_active }}">
                             <i class="fas fa-pen"></i>
                         </button>
-                        <button class="delete-btn" 
-                            data-id="{{ $addon->id }}" 
+                        <button class="delete-btn"
+                            data-id="{{ $addon->id }}"
                             data-name="{{ $addon->name }}">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -467,7 +468,7 @@ document.querySelectorAll('.delete-btn').forEach(btn => {
         const name = btn.dataset.name;
 
         // Custom confirmation popup
-        if(!confirm(`Are you sure you want to delete the addon "${name}"? This action cannot be undone.`)) 
+        if(!confirm(`Are you sure you want to delete the addon "${name}"? This action cannot be undone.`))
             return;
 
         // Send DELETE request
@@ -475,10 +476,11 @@ document.querySelectorAll('.delete-btn').forEach(btn => {
         formData.append('_method', 'DELETE'); // Laravel requires this
         formData.append('id', id);
 
-        fetch(`/services/addons/${id}`, {
+        fetch(appUrl(`services/addons/${id}`), {
             method: 'POST', // Laravel reads _method
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
             body: formData
         })
@@ -504,9 +506,9 @@ addonForm.addEventListener('submit', function(e){
     e.preventDefault();
     clearErrors();
     const formData = new FormData(addonForm);
-    let url = '/services/addons';
+    let url = appUrl('services/addons');
     let method = 'POST';
-    
+
     if(currentAddonId){
         url += `/${currentAddonId}`;
         formData.append('_method','PUT');
@@ -514,7 +516,7 @@ addonForm.addEventListener('submit', function(e){
 
     fetch(url,{
         method:'POST',
-        headers:{ 'X-CSRF-TOKEN':'{{ csrf_token() }}' },
+        headers:{ 'X-CSRF-TOKEN':'{{ csrf_token() }}', 'Accept':'application/json' },
         body: formData
     })
     .then(res=>res.json())
@@ -525,8 +527,9 @@ addonForm.addEventListener('submit', function(e){
         } else {
             // Display validation errors if any
             if(data.errors){
+                const errorIds = { name: 'addonName_error', price: 'addonPrice_error', is_active: 'addonStatus_error' };
                 Object.keys(data.errors).forEach(key=>{
-                    const errorEl = document.getElementById(`${key}_error`);
+                    const errorEl = document.getElementById(errorIds[key] || `${key}_error`);
                     if(errorEl){
                         errorEl.textContent = data.errors[key][0];
                         errorEl.style.display = 'block';
@@ -547,7 +550,7 @@ addonForm.addEventListener('submit', function(e){
 document.getElementById('addonSearch').addEventListener('input', function(){
     const filter = this.value.toLowerCase();
     const rows = document.querySelectorAll('#addonsTable tbody tr');
-    
+
     rows.forEach(row=>{
         if(row.cells.length > 1){
             const text = row.cells[1].textContent.toLowerCase(); // Search in Addon column

@@ -153,13 +153,11 @@ class OrderAddon extends Model
     {
         // Update order totals when order addon is created or deleted
         static::created(function (OrderAddon $orderAddon) {
-            $orderAddon->order->updateTotals();
+            $orderAddon->order?->updateTotals();
         });
 
         static::deleted(function (OrderAddon $orderAddon) {
-            if ($orderAddon->order) {
-                $orderAddon->order->updateTotals();
-            }
+            $orderAddon->order?->updateTotals();
         });
     }
 }

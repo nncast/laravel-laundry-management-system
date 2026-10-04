@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Staff; // <-- changed from User
+use App\Models\Staff;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 
@@ -13,7 +13,7 @@ class AuthController extends Controller
     {
         // If already logged in, skip login page
         if (Session::has('staff.id')) {
-            return redirect('/home');
+            return redirect()->route('dashboard');
         }
 
         return view('login');
@@ -29,28 +29,32 @@ class AuthController extends Controller
         $staff = Staff::where('username', $request->username)->first();
 
         if (!$staff || !Hash::check($request->password, $staff->password)) {
-            return back()->with('error', 'Invalid username or password.');
+            return back()->withInput($request->only('username'))
+                ->with('error', 'Invalid username or password.');
         }
 
         if (!$staff->is_active) {
-            return back()->with('error', 'Your account is deactivated.');
+            return back()->withInput($request->only('username'))
+                ->with('error', 'Your account is deactivated.');
         }
 
-        // Store in session
+        // Prevent session fixation, then store the staff in the new session
+        Session::regenerate();
         Session::put('staff', [
             'id'   => $staff->id,
             'name' => $staff->name,
             'role' => $staff->role,
         ]);
 
-        Session::regenerate();
-
-        return redirect('/home');
+        return redirect()->intended(route('dashboard'));
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         Session::flush();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Order;
 use App\Models\Staff;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class StaffController extends Controller
 {
@@ -12,28 +14,28 @@ class StaffController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Staff::query();
+        $search = trim((string) $request->input('search'));
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(fn($q) => 
+        $staffs = Staff::query()
+            ->when($search !== '', fn ($query) => $query->where(fn ($q) =>
                 $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('username', 'LIKE', "%{$search}%")
                   ->orWhere('role', 'LIKE', "%{$search}%")
-            );
-        }
+            ))
+            ->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
-        $staffs = $query->orderBy('created_at', 'desc')->paginate(15);
-
-        $stats = Staff::selectRaw('COUNT(*) as total,
-                                  SUM(is_active) as active,
-                                  SUM(!is_active) as inactive')
-                     ->first();
+        // CASE works on both MySQL and SQLite (SUM(!col) does not)
+        $stats = Staff::selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active')
+            ->first();
 
         return view('users-admin', [
             'users' => $staffs,
-            'totalUsers' => $stats->total,
-            'activeUsers' => $stats->active,
-            'inactiveUsers' => $stats->inactive,
+            'totalUsers' => (int) $stats->total,
+            'activeUsers' => (int) $stats->active,
+            'inactiveUsers' => (int) $stats->total - (int) $stats->active,
         ]);
     }
 
@@ -42,16 +44,18 @@ class StaffController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:15|regex:/^[0-9]{10,15}$/',
-            'username' => 'required|string|max:50|unique:staffs',
+            'phone' => ['nullable', 'regex:/^[0-9]{10,15}$/'],
+            'username' => 'required|string|max:50|unique:staffs,username',
             'password' => 'required|string|min:6',
             'role' => 'required|string|in:admin,manager,cashier',
             'is_active' => 'required|boolean',
+        ], [
+            'phone.regex' => 'Phone number must be 10 to 15 digits.',
         ]);
 
-        Staff::create($request->only('name', 'phone', 'username', 'password', 'role', 'is_active'));
+        Staff::create($validated);
 
         return redirect()->back()->with('success', 'Staff added successfully!');
     }
@@ -61,23 +65,67 @@ class StaffController extends Controller
      */
     public function update(Request $request, Staff $staff)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:15|regex:/^[0-9]{10,15}$/',
+            'phone' => ['nullable', 'regex:/^[0-9]{10,15}$/'],
             'username' => 'required|string|max:50|unique:staffs,username,' . $staff->id,
             'role' => 'required|string|in:admin,manager,cashier',
             'is_active' => 'required|boolean',
             'password' => 'nullable|string|min:6',
+        ], [
+            'phone.regex' => 'Phone number must be 10 to 15 digits.',
         ]);
 
-        $data = $request->only('name', 'phone', 'username', 'role', 'is_active');
+        $isSelf = $staff->id === (int) Session::get('staff.id');
+        $losesAdmin = $staff->role === 'admin'
+            && ($validated['role'] !== 'admin' || !$request->boolean('is_active'));
 
+        if ($isSelf && $losesAdmin) {
+            return back()->with('error', 'You cannot deactivate your own account or remove your own admin role.');
+        }
+
+        if ($losesAdmin && $this->activeAdminCount($staff->id) === 0) {
+            return back()->with('error', 'At least one active admin account is required.');
+        }
+
+        $data = collect($validated)->except('password')->all();
         if ($request->filled('password')) {
-            $data['password'] = $request->password; // ensure model mutator hashes it
+            $data['password'] = $validated['password']; // hashed by the model mutator
         }
 
         $staff->update($data);
 
         return redirect()->back()->with('success', 'Staff updated successfully!');
+    }
+
+    /**
+     * Delete a staff account (only if it has no orders; otherwise deactivate it).
+     */
+    public function destroy(Staff $staff)
+    {
+        if ($staff->id === (int) Session::get('staff.id')) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // orders.staff_id cascades on delete – never lose order history
+        if (Order::where('staff_id', $staff->id)->exists()) {
+            return back()->with('error', 'This staff member has orders on record. Deactivate the account instead of deleting it.');
+        }
+
+        if ($staff->role === 'admin' && $staff->is_active && $this->activeAdminCount($staff->id) === 0) {
+            return back()->with('error', 'At least one active admin account is required.');
+        }
+
+        $staff->delete();
+
+        return back()->with('success', 'Staff deleted successfully!');
+    }
+
+    private function activeAdminCount(int $exceptId): int
+    {
+        return Staff::where('role', 'admin')
+            ->where('is_active', true)
+            ->where('id', '!=', $exceptId)
+            ->count();
     }
 }

@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
+<title>Login - {{ $system->business_name ?? 'Laundry' }}</title>
+@if(!empty($system->favicon))
+<link rel="icon" href="{{ asset($system->favicon) }}?v={{ optional($system->updated_at)->timestamp }}" type="image/x-icon">
+@endif
 
 <!-- Preload Fonts -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +30,8 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    height: 100vh;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -172,13 +176,15 @@ body::before {
                 </div>
             @endif
 
-            <form action="/login" method="post">
+            <form action="{{ route('login.post') }}" method="post">
                 @csrf
 
                 <div class="input-group">
                     <i class="fas fa-user"></i>
                     <input type="text"
                            name="username"
+                           value="{{ old('username') }}"
+                           autocomplete="username"
                            placeholder="Username"
                            class="{{ session('error') ? 'error' : '' }}"
                            required>
@@ -188,12 +194,13 @@ body::before {
                     <i class="fas fa-lock"></i>
                     <input type="password"
                            name="password"
+                           autocomplete="current-password"
                            placeholder="Password"
                            class="{{ session('error') ? 'error' : '' }}"
                            required>
                 </div>
 
-                <button class="login-btn">Login</button>
+                <button type="submit" class="login-btn">Login</button>
             </form>
         </div>
     </div>
@@ -204,11 +211,12 @@ const img = new Image();
 img.src = "{{ asset('images/laundry.jpeg') }}";
 img.onload = () => document.body.classList.add("loaded");
 
-// Auto-hide error
-setTimeout(() => {
-    const err = document.querySelector('.login-error');
-    if (err) err.style.display = 'none';
-}, 4000);
+// Prevent double submits
+document.querySelector('form').addEventListener('submit', function () {
+    const btn = this.querySelector('.login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+});
 </script>
 
 </body>

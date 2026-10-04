@@ -496,10 +496,10 @@
             </div>
             <div data-label="Service">
                 @foreach($order->items as $item) {{-- Changed from $order->orderItems to $order->items --}}
-                    {{ $item->service->name }}{{ $item->qty > 1 ? ' (x' . $item->qty . ')' : '' }}<br>
+                    {{ $item->service->name ?? 'Deleted service' }}{{ $item->qty > 1 ? ' (x' . $item->qty . ')' : '' }}<br>
                 @endforeach
             </div>
-            <div data-label="Amount" class="text-right">${{ number_format($order->total, 2) }}</div>
+            <div data-label="Amount" class="text-right">₱{{ number_format($order->total, 2) }}</div>
             <div data-label="Status" class="status-cell">
                 <span class="status-badge status-{{ $order->status }}">
                     {{ ucfirst($order->status) }}
@@ -513,6 +513,8 @@
         </div>
         @endforelse
     </div>
+
+    {{ $orders->links() }}
     
     <!-- Report summary -->
     <div class="report-summary">
@@ -522,7 +524,7 @@
         </div>
         <div class="summary-item">
             <div class="summary-label">Total Amount</div>
-            <div class="summary-value amount">${{ number_format($summary['total_amount'], 2) }}</div>
+            <div class="summary-value amount">₱{{ number_format($summary['total_amount'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Completed Orders</div>

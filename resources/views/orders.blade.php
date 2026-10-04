@@ -391,7 +391,7 @@
     .status-container { justify-content: flex-start; }
     .action-buttons { justify-content: flex-start; }
     .search-box input { width: 200px; }
-    
+
     .status-badge {
         min-width: auto;
         justify-content: flex-start;
@@ -463,7 +463,7 @@
                 @php
                     $paymentStatus = 'unpaid';
                     $paymentClass = 'payment-unpaid';
-                    if ($order->paid_amount >= $order->total) {
+                    if ($order->total > 0 && $order->paid_amount >= $order->total) {
                         $paymentStatus = 'fully paid';
                         $paymentClass = 'payment-fully-paid';
                     } elseif ($order->paid_amount > 0) {
@@ -478,9 +478,12 @@
                 <a href="{{ route('orders.details', $order) }}" class="action-btn btn-view" title="View">
                     <i class="fas fa-eye"></i>
                 </a>
+                @if($order->can_edit)
                 <a href="{{ route('pos.edit', $order) }}" class="action-btn btn-edit" title="Edit">
                     <i class="fas fa-edit"></i>
                 </a>
+                @endif
+                @if(in_array(session('staff.role'), ['manager', 'admin']))
                 <form action="{{ route('orders.destroy', $order) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this order?')">
                     @csrf
                     @method('DELETE')
@@ -488,6 +491,7 @@
                         <i class="fas fa-trash"></i>
                     </button>
                 </form>
+                @endif
             </div>
         </div>
         @endforeach
@@ -505,7 +509,7 @@
 
 @if($orders->count() > 0)
 <div class="pagination-container">
-    {{ $orders->withQueryString()->links() }}
+    {{ $orders->links() }}
 </div>
 @endif
 
@@ -514,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto submit search on typing with debounce
     let searchTimer;
     const searchInput = document.querySelector('input[name="search"]');
-    
+
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimer);
@@ -522,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.form.submit();
             }, 500);
         });
-        
+
         // Clear search button
         if (searchInput.value) {
             const clearBtn = document.createElement('button');

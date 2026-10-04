@@ -3,13 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>@yield('title', 'POS')</title>
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>{{ isset($order) ? 'Edit Order' : 'POS' }} - {{ $system->business_name ?? 'Laundry' }}</title>
+@if(!empty($system->favicon))
+<link rel="icon" href="{{ asset($system->favicon) }}?v={{ optional($system->updated_at)->timestamp }}" type="image/x-icon">
+@endif
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Font Awesome (same version as the rest of the app, so it is served from cache) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 
 <style>
 :root {
@@ -409,7 +417,7 @@ button.qty-btn:hover {
         width: 100%;
         height: 100%;
     }
-    
+
     .date-picker-button {
         pointer-events: none;
     }
@@ -778,10 +786,40 @@ button.qty-btn:hover {
         width: 100%;
         height: 100%;
     }
-    
+
     .date-picker-button {
         pointer-events: none;
     }
+}
+
+/* --- Fixes: layout & mobile --- */
+.topbar-back { display:inline-flex; align-items:center; gap:6px; background: var(--blue); color:#fff; padding:8px 12px; border-radius:6px; font-size:14px; text-decoration:none; }
+.topbar-back:hover { background:#0056b3; }
+.product-item { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.product-item:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.product-item p {
+    font-size:12px; line-height:1.3; margin-top:2px; word-break:break-word;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.product-price { font-size:11px; color:#28a745; font-weight:600; }
+.order-section { min-width:0; overflow-x:auto; }
+.order-section table { min-width:320px; }
+.payment-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+.payment-buttons button { flex:1 1 90px; min-height:42px; }
+button.qty-btn { min-width:28px; min-height:28px; }
+
+@media (max-width: 768px) {
+    .topbar h2 { font-size:16px; }
+    .pos-container { padding:70px 8px 12px; gap:10px; }
+    .products-section, .order-section { padding:12px; }
+    .product-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); max-height:38vh; }
+    .product-item:hover { transform:none; }
+    .customer-select-wrapper { width:100%; }
+    .customer-select-container { width:100%; flex-wrap:nowrap; }
+    .customer-select-container select { flex:1; min-width:0; width:auto; }
+    #discountInput { width:110px !important; }
+    input, select, textarea { font-size:16px !important; } /* stop iOS zoom */
+    .modal-content { max-height:90vh; overflow-y:auto; }
 }
 </style>
 </head>
@@ -789,7 +827,7 @@ button.qty-btn:hover {
 
 <div class="topbar">
     <h2>{{ isset($order) ? 'Edit Order' : 'POS' }}</h2>
-    <button onclick="window.history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+    <a href="{{ isset($order) ? route('orders.details', $order) : route('orders.index') }}" class="topbar-back"><i class="fas fa-arrow-left"></i> Back</a>
 </div>
 
 <div class="pos-container">
@@ -799,13 +837,14 @@ button.qty-btn:hover {
         <input type="text" id="searchInput" placeholder="Search products...">
         <div class="product-grid">
             @foreach($services as $service)
-            <div class="product-item" data-name="{{ strtolower($service->name) }}" onclick="addToOrder({{ $service->id }})">
+            <div class="product-item" data-name="{{ strtolower($service->name) }}" onclick="addToOrder({{ $service->id }})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();addToOrder({{ $service->id }});}">
                 @if($service->icon_url)
-                    <img src="{{ $service->icon_url }}" alt="{{ $service->name }}">
+                    <img src="{{ $service->icon_url }}" alt="{{ $service->name }}" loading="lazy" width="60" height="60" onerror="this.onerror=null;this.src='{{ asset('images/services/placeholder.jpg') }}'">
                 @else
                     <i class="fas fa-box" style="font-size:40px; color:#333;"></i>
                 @endif
-                <p title="{{ $service->name }}">{{ Str::limit($service->name, 10, '...') }}</p>
+                <p title="{{ $service->name }}">{{ $service->name }}</p>
+                <small class="product-price">₱{{ number_format($service->price, 2) }}</small>
             </div>
             @endforeach
         </div>
@@ -816,7 +855,7 @@ button.qty-btn:hover {
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; font-size:12px;">
             <div>
                 <!-- Order Number Display -->
-                <p>Order: <strong id="orderNumber">@if(isset($order))#ORD-{{ $order->id }}@else#ORD-{{ $last_order_number ?? '1' }}@endif</strong></p>
+                <p>Order: <strong id="orderNumber">@if(isset($order)){{ $order->order_number }}@else New Order @endif</strong></p>
                 <div class="date-picker-wrapper">
                 <span class="date-picker-label"><p style="color:#2c3e50;">Date: </p></span>
 
@@ -834,11 +873,8 @@ button.qty-btn:hover {
                 <div class="customer-select-container">
                     <select id="selectCustomer">
                         <option value="">Select Customer</option>
-                        @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}" @if(isset($order) && $order->customer_id == $customer->id) selected @endif>
-                                {{ $customer->name }}
-                            </option>
-                        @endforeach
+                        @php $selectedCustomer = isset($order) ? $order->customer_id : null; @endphp
+                        @foreach($customers as $customer)<option value="{{ $customer->id }}"@selected($selectedCustomer == $customer->id)>{{ $customer->name }}</option>@endforeach
                     </select>
                     <button type="button"
                     onclick="openAddCustomerModal()"
@@ -917,9 +953,9 @@ button.qty-btn:hover {
 </button>
 
                 </div>
-                <strong id="addonTotal">@if(isset($order)){{ number_format($order->addons->sum('price'), 2) }}@else 0.00 @endif PHP</strong>
+                <strong id="addonTotal">@if(isset($order)){{ number_format($order->addons->sum('pivot.price'), 2) }}@else 0.00 @endif PHP</strong>
             </div>
-            
+
             <!-- Selected Addons List -->
             <div id="selectedAddonsList" style="margin-top:5px; margin-bottom:10px; @if(!isset($order) || $order->addons->count() == 0) display:none; @endif">
                 <div style="font-size:11px; color:#666; margin-bottom:3px;">Selected Add-ons:</div>
@@ -939,20 +975,20 @@ button.qty-btn:hover {
                     @endif
                 </div>
             </div>
-            
+
             <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                 <span>Sub Total:</span>
                 <strong id="subTotal">0.00 PHP</strong>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <span>Discount:</span>
-                <input type="number" id="discountInput" value="{{ isset($order) ? number_format($order->discount, 2) : '0' }}" min="0" style="width:80px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+                <input type="number" id="discountInput" value="{{ isset($order) ? (float) $order->discount : 0 }}" min="0" step="0.01" style="width:80px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:5px;">
                 <span><strong>Gross Total:</strong></span>
                 <strong id="grossTotal">0.00 PHP</strong>
             </div>
-            
+
             <!-- Payment Info (for edit mode) -->
             @if(isset($order) && $order->payments->count() > 0)
             <div style="margin-top:10px; padding:8px; background:#f8f9fa; border-radius:6px; border:1px solid #e9ecef;">
@@ -962,7 +998,7 @@ button.qty-btn:hover {
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                     <span style="color:#6c757d; font-size:11px;">Balance:</span>
-                    <strong style="color:@if($order->balance > 0)#dc3545 @else #28a745 @endif; font-size:11px;">
+                    <strong style="color:{{ $order->balance > 0 ? '#dc3545' : '#28a745' }}; font-size:11px;">
                         {{ number_format($order->balance, 2) }} PHP
                     </strong>
                 </div>
@@ -976,7 +1012,7 @@ button.qty-btn:hover {
         </div>
 
         <div class="payment-buttons">
-            <button class="btn-payment" 
+            <button class="btn-payment"
                     onclick="openPaymentModal()"
                     @if(isset($order)) data-edit-mode="true" @endif>
                 Payment
@@ -995,20 +1031,20 @@ button.qty-btn:hover {
             <h3>Add Service</h3>
             <button type="button" class="close-btn" onclick="closeAddModal()">&times;</button>
         </div>
-        
+
         <div class="modal-body">
             <div class="form-group">
                 <label>Name:</label>
                 <p id="modal_service_name" style="padding:8px 10px; background:#f8f9fa; border-radius:6px; margin-top:5px;"></p>
                 <input type="hidden" id="modal_service_id">
             </div>
-            
+
             <div class="form-group">
                 <label>Qty: <span class="required-star">*</span></label>
                 <input type="number" id="modal_service_qty" value="1" min="1" style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; margin-top:5px;">
             </div>
         </div>
-        
+
         <div class="modal-footer">
             <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
             <button type="button" class="btn-primary" onclick="confirmAddService()">Add</button>
@@ -1023,7 +1059,7 @@ button.qty-btn:hover {
             <h3>Add Customer</h3>
             <button type="button" class="close-btn" onclick="closeCustomerModal()">&times;</button>
         </div>
-        
+
         <form id="addCustomerForm" onsubmit="handleAddCustomer(event)">
             @csrf
             <div class="modal-body">
@@ -1034,7 +1070,7 @@ button.qty-btn:hover {
                     <input type="text" name="name" id="customer_name" placeholder="Enter customer name" required>
                     <div class="error-message" id="customer_name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="customer_contact">
                         Contact Number
@@ -1043,7 +1079,7 @@ button.qty-btn:hover {
                     <div class="error-message" id="customer_contact_error"></div>
                     <div class="helper-text">Optional - 10 to 15 digits only</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="customer_address">
                         Address
@@ -1052,7 +1088,7 @@ button.qty-btn:hover {
                     <div class="error-message" id="customer_address_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeCustomerModal()">Cancel</button>
                 <button type="submit" class="btn-primary">Save Customer</button>
@@ -1068,7 +1104,7 @@ button.qty-btn:hover {
             <h3>Process Payment</h3>
             <button type="button" class="close-btn" onclick="closePaymentModal()">&times;</button>
         </div>
-        
+
         <div class="modal-body">
             <!-- Amount Display -->
             <div class="payment-amount-display">
@@ -1080,20 +1116,20 @@ button.qty-btn:hover {
                 </div>
                 @endif
             </div>
-            
+
             <!-- Amount Input -->
             <div class="form-group">
                 <label for="paymentAmount">
                     Payment Amount <span class="required-star">*</span>
                 </label>
-                <input type="number" id="paymentAmount" 
-                       placeholder="Enter payment amount" 
-                       min="0" 
+                <input type="number" id="paymentAmount"
+                       placeholder="Enter payment amount"
+                       min="0"
                        step="0.01"
                        class="form-control">
                 <div class="error-message" id="payment_amount_error"></div>
                 <div class="helper-text">Enter the amount being paid</div>
-                
+
                 <!-- Real-time change display -->
                 <div class="payment-change-display" id="paymentChangeDisplay" style="display: none;">
                     <div class="change-info">
@@ -1101,7 +1137,7 @@ button.qty-btn:hover {
                         <span>Change: <strong id="paymentChangeAmount">0.00</strong> PHP</span>
                     </div>
                 </div>
-                
+
                 <!-- Real-time shortfall display -->
                 <div class="payment-shortfall-display" id="paymentShortfallDisplay" style="display: none;">
                     <div class="shortfall-info">
@@ -1109,7 +1145,7 @@ button.qty-btn:hover {
                         <span>Shortfall: <strong id="paymentShortfallAmount">0.00</strong> PHP</span>
                     </div>
                 </div>
-                
+
                 <!-- Overpayment warning -->
                 <div class="payment-overpayment-display" id="paymentOverpaymentDisplay" style="display: none;">
                     <div class="overpayment-info">
@@ -1118,10 +1154,10 @@ button.qty-btn:hover {
                     </div>
                 </div>
             </div>
-            
-            
+
+
         </div>
-        
+
         <div class="modal-footer">
             <button type="button" class="btn-cancel" onclick="closePaymentModal()">Cancel</button>
             <button type="button" class="btn-primary" onclick="processPayment()">Process Payment</button>
@@ -1136,25 +1172,25 @@ button.qty-btn:hover {
             <h3>Select Add-ons</h3>
             <button type="button" class="close-btn" onclick="closeAddonModal()">&times;</button>
         </div>
-        
+
         <div class="modal-body">
             <div style="margin-bottom:10px;">
-                <input type="text" id="addonSearchInput" placeholder="Search add-ons..." 
+                <input type="text" id="addonSearchInput" placeholder="Search add-ons..."
                        style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:12px;">
             </div>
-            
+
             <div class="addons-list-container" style="max-height:300px; overflow-y:auto;">
                 <div id="addonsList">
                     <!-- Addons will be loaded here -->
                 </div>
-                
+
                 <div id="noAddonsMessage" style="text-align:center; padding:20px; color:#999; display:none;">
                     <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px;"></i>
                     <p>No addons available</p>
                 </div>
             </div>
         </div>
-        
+
         <div class="modal-footer">
             <button type="button" class="btn-cancel" onclick="closeAddonModal()">Cancel</button>
             <button type="button" class="btn-primary" onclick="saveSelectedAddons()">Apply Selected</button>
@@ -1165,12 +1201,37 @@ button.qty-btn:hover {
 // ============================================
 // GLOBAL VARIABLES
 // ============================================
+const APP_URL = @json(rtrim(url('/'), '/'));
+const appUrl = (path = '') => APP_URL + '/' + String(path).replace(/^\/+/, '');
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Today's date in the user's local timezone (toISOString() would give the UTC date)
+function localDateString(date = new Date()) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// Turn a failed fetch response into a readable message
+async function errorMessageFrom(response, fallback) {
+    try {
+        const data = await response.json();
+        if (data.errors) return Object.values(data.errors).flat().join('\n');
+        if (data.message) return data.message;
+    } catch (e) { /* not JSON */ }
+    if (response.status === 419) return 'Your session expired. Please refresh the page and try again.';
+    if (response.status === 401) return 'Your session ended. Please log in again.';
+    return fallback;
+}
+
 let servicesData = @json($services);
-let customersData = @json($customers);
 let addonsData = [];
 
 // Order Items - Using inline PHP to avoid Blade parsing issues
-let orderItems = <?php 
+let orderItems = <?php
     if(isset($order)) {
         $items = $order->items->map(function($item) {
             return [
@@ -1189,7 +1250,7 @@ let orderItems = <?php
 ?>;
 
 // Selected Addons - Using inline PHP
-let selectedAddons = <?php 
+let selectedAddons = <?php
     if(isset($order)) {
         $addons = $order->addons->map(function($addon) {
             return [
@@ -1218,11 +1279,13 @@ let orderData = {
 // HELPER FUNCTIONS
 // ============================================
 function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
+    // Parse Y-m-d as a local date (new Date('Y-m-d') is treated as UTC)
+    const [y, m, d] = String(dateString).split('-').map(Number);
+    const date = new Date(y, (m || 1) - 1, d || 1);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
     });
 }
 
@@ -1249,11 +1312,11 @@ function closeModal(modal) {
 function initOrderDate() {
     const dateInput = document.getElementById('orderDateInput');
     const dateText = document.getElementById('orderDateText');
-    
+
     if (dateInput.value) {
         dateText.textContent = formatDate(dateInput.value);
     } else {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDateString();
         dateInput.value = today;
         dateText.textContent = formatDate(today);
     }
@@ -1265,24 +1328,24 @@ function initOrderDate() {
 function validateCustomerSelection() {
     const customerSelect = document.getElementById('selectCustomer');
     const customerError = document.getElementById('customerError');
-    
+
     customerSelect.classList.remove('customer-select-error');
     customerError.style.display = 'none';
-    
+
     if (!customerSelect.value) {
         customerSelect.classList.add('customer-select-error');
         customerError.style.display = 'flex';
         customerSelect.focus();
         return false;
     }
-    
+
     return true;
 }
 
 function clearCustomerError() {
     const customerSelect = document.getElementById('selectCustomer');
     const customerError = document.getElementById('customerError');
-    
+
     customerSelect.classList.remove('customer-select-error');
     customerError.style.display = 'none';
 }
@@ -1308,29 +1371,33 @@ function clearCustomerErrors() {
 
 async function handleAddCustomer(event) {
     event.preventDefault();
-    
+
     const formData = new FormData(event.target);
-    
+
     try {
         const response = await fetch('{{ route("customers.store") }}', {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json'
             },
             body: formData
         });
-        
+
+        if (!response.ok && response.status !== 422) {
+            alert(await errorMessageFrom(response, 'Error adding customer. Please try again.'));
+            return;
+        }
+
         const data = await response.json();
-        
-        if (response.ok) {
+
+        if (response.ok && data.customer) {
             const select = document.getElementById('selectCustomer');
             const option = document.createElement('option');
             option.value = data.customer.id;
             option.textContent = data.customer.name;
             select.appendChild(option);
             select.value = data.customer.id;
-            customersData.push(data.customer);
             closeCustomerModal();
             clearCustomerError();
             alert('Customer added successfully!');
@@ -1364,13 +1431,10 @@ function closeAddonModal() {
 }
 
 function loadAddons() {
-    fetch('/pos/addons/active', {
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
+    fetch(appUrl('pos/addons/active'), {
+        headers: { 'Accept': 'application/json' }
     })
-    .then(response => response.json())
+    .then(response => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
     .then(data => {
         if (data.success) {
             addonsData = data.addons.map(addon => ({
@@ -1392,24 +1456,24 @@ function loadAddons() {
 function displayAddons(addons) {
     const addonsList = document.getElementById('addonsList');
     const noAddonsMessage = document.getElementById('noAddonsMessage');
-    
+
     if (!addons || addons.length === 0) {
         addonsList.innerHTML = '';
         noAddonsMessage.style.display = 'block';
         return;
     }
-    
+
     noAddonsMessage.style.display = 'none';
-    
+
     let html = '';
     addons.forEach(addon => {
         const isSelected = selectedAddons.some(selected => selected.id == addon.id);
         const price = parseFloat(addon.price) || 0;
-        
+
         html += `
             <div class="addon-item" data-id="${addon.id}">
                 <div class="addon-info">
-                    <div class="addon-name">${addon.name}</div>
+                    <div class="addon-name">${escapeHtml(addon.name)}</div>
                     <div class="addon-price">${price.toFixed(2)} PHP</div>
                 </div>
                 <div class="addon-checkbox ${isSelected ? 'checked' : ''}">
@@ -1418,28 +1482,27 @@ function displayAddons(addons) {
             </div>
         `;
     });
-    
+
     addonsList.innerHTML = html;
-    
+
     document.querySelectorAll('.addon-item').forEach(item => {
         item.addEventListener('click', function() {
             const id = parseInt(this.dataset.id);
-            const name = this.querySelector('.addon-name').textContent;
-            const price = parseFloat(this.querySelector('.addon-price').textContent);
-            toggleAddon(id, name, price);
+            const addon = addonsData.find(a => a.id == id);
+            if (addon) toggleAddon(id, addon.name, parseFloat(addon.price) || 0);
         });
     });
 }
 
 function toggleAddon(id, name, price) {
     const index = selectedAddons.findIndex(addon => addon.id == id);
-    
+
     if (index === -1) {
         selectedAddons.push({ id, name, price });
     } else {
         selectedAddons.splice(index, 1);
     }
-    
+
     const addonItem = document.querySelector(`.addon-item[data-id="${id}"]`);
     if (addonItem) {
         const checkbox = addonItem.querySelector('.addon-checkbox');
@@ -1457,23 +1520,23 @@ function saveSelectedAddons() {
 function updateAddonDisplay() {
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
     document.getElementById('addonTotal').textContent = addonTotal.toFixed(2) + " PHP";
-    
+
     const container = document.getElementById('selectedAddonsContainer');
     const listContainer = document.getElementById('selectedAddonsList');
-    
+
     if (selectedAddons.length === 0) {
         container.innerHTML = '';
         listContainer.style.display = 'none';
         return;
     }
-    
+
     listContainer.style.display = 'block';
-    
+
     let html = '';
     selectedAddons.forEach(addon => {
         html += `
             <div class="selected-addon-item" data-addon-id="${addon.id}">
-                <span class="selected-addon-name">${addon.name}</span>
+                <span class="selected-addon-name">${escapeHtml(addon.name)}</span>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span class="selected-addon-price">${addon.price.toFixed(2)} PHP</span>
                     <button type="button" class="remove-addon-btn" onclick="removeAddon(${addon.id})">
@@ -1483,7 +1546,7 @@ function updateAddonDisplay() {
             </div>
         `;
     });
-    
+
     container.innerHTML = html;
 }
 
@@ -1514,20 +1577,14 @@ function openPaymentModal() {
         alert('Please add items or add-ons to the order first.');
         return;
     }
-    
+
     const total = calculateTotal();
     const paid = getTotalPaidAmount();
     const remainingBalance = total - paid;
-    
-    console.log('Opening payment modal:', {
-        total: total,
-        paid: paid,
-        remainingBalance: remainingBalance,
-        orderData: orderData
-    });
-    
+
+
     orderData.totalAmount = total;
-    
+
     // Display the remaining balance (can be negative if overpaid)
     if (remainingBalance > 0) {
         document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
@@ -1541,7 +1598,7 @@ function openPaymentModal() {
         document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#856404; font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
         document.getElementById('paymentAmount').value = '0.00';
     }
-    
+
     resetPaymentModalErrors();
     openModal(document.getElementById("paymentModal"));
     calculatePaymentStatus();
@@ -1557,15 +1614,15 @@ function calculatePaymentStatus() {
     const total = calculateTotal();
     const paid = getTotalPaidAmount();
     const remainingBalance = total - paid;
-    
+
     // Reset all displays
     paymentInput.classList.remove('payment-valid', 'payment-invalid');
     document.getElementById('paymentChangeDisplay').style.display = 'none';
     document.getElementById('paymentShortfallDisplay').style.display = 'none';
     document.getElementById('paymentOverpaymentDisplay').style.display = 'none';
-    
+
     if (paymentAmount === 0) return;
-    
+
     // If order is already overpaid (remainingBalance < 0)
     if (remainingBalance < 0) {
         // Any payment is considered overpayment
@@ -1573,7 +1630,7 @@ function calculatePaymentStatus() {
         document.getElementById('paymentOverpaymentAmount').textContent = overpayment.toFixed(2);
         document.getElementById('paymentOverpaymentDisplay').style.display = 'block';
         paymentInput.classList.add('payment-valid');
-    } 
+    }
     // If there's still balance to pay (remainingBalance > 0)
     else if (remainingBalance > 0) {
         if (paymentAmount > remainingBalance) {
@@ -1605,45 +1662,45 @@ function processPayment() {
     const netTotal = calculateTotal();
     const paid = getTotalPaidAmount();
     const remainingBalance = netTotal - paid;
-    
+
     if (paymentAmount < 0) {
         const errorElement = document.getElementById('payment_amount_error');
         errorElement.textContent = 'Payment amount cannot be negative';
         errorElement.style.display = 'block';
         return;
     }
-    
+
     // Warn if trying to pay when order is already overpaid
     if (remainingBalance < 0 && paymentAmount > 0) {
         if (!confirm('This order is already overpaid by ' + Math.abs(remainingBalance).toFixed(2) + ' PHP. Adding more payment will increase the overpayment. Continue?')) {
             return;
         }
     }
-    
+
     // Warn if payment is 0 but there's still balance
     if (paymentAmount === 0 && remainingBalance > 0) {
         if (!confirm('Payment amount is 0, but there is still a balance of ' + remainingBalance.toFixed(2) + ' PHP. Record as no additional payment?')) {
             return;
         }
     }
-    
+
     // For edit mode, store the new payment amount
     orderData.paymentAmount = paymentAmount;
-    
+
     const newPaidAmount = paid + paymentAmount;
     const newBalance = netTotal - newPaidAmount;
-    
+
     let message = `Payment recorded!\n`;
     message += `Current Order Total: ${netTotal.toFixed(2)} PHP\n`;
     message += `Previously Paid: ${paid.toFixed(2)} PHP\n`;
     message += `New Payment: ${paymentAmount.toFixed(2)} PHP\n`;
     message += `Total Paid: ${newPaidAmount.toFixed(2)} PHP\n`;
-    
+
     if (paymentAmount > Math.max(0, remainingBalance)) {
         const change = paymentAmount - Math.max(0, remainingBalance);
         message += `Change Due: ${change.toFixed(2)} PHP\n`;
     }
-    
+
     if (newBalance > 0) {
         message += `Remaining Balance: ${newBalance.toFixed(2)} PHP`;
     } else if (newBalance < 0) {
@@ -1651,7 +1708,7 @@ function processPayment() {
     } else {
         message += `Order is fully paid!`;
     }
-    
+
     alert(message);
     closePaymentModal();
 }
@@ -1662,14 +1719,14 @@ function processPayment() {
 function addToOrder(id) {
     const service = servicesData.find(s => s.id == id);
     if (!service) return;
-    
+
     // Check if item already exists
     const existingItem = orderItems.find(item => item.id == id);
-    
+
     document.getElementById("modal_service_id").value = service.id;
     document.getElementById("modal_service_name").textContent = service.name;
     document.getElementById("modal_service_qty").value = existingItem ? existingItem.qty : 1;
-    
+
     openModal(document.getElementById("addServiceModal"));
 }
 
@@ -1695,10 +1752,10 @@ function confirmAddService() {
     } else {
         // Add new item
         orderItems.push({
-            id, 
-            name, 
-            price, 
-            qty, 
+            id,
+            name,
+            price,
+            qty,
             total,
             item_id: null // Will be set when updating existing order
         });
@@ -1709,38 +1766,39 @@ function confirmAddService() {
 }
 
 function changeQty(id, delta, itemId = null) {
-    console.log('changeQty called:', id, delta, itemId);
-    
+
     // Try to find item by item_id first (for existing items in edit mode)
     let itemIndex = orderItems.findIndex(i => i.item_id == itemId);
-    
+
     // If not found by item_id, try by service id
     if (itemIndex === -1) {
         itemIndex = orderItems.findIndex(i => i.id == id);
     }
-    
+
     if (itemIndex === -1) {
         console.error('Item not found:', id, itemId);
         return;
     }
 
     const item = orderItems[itemIndex];
-    
+
     if (delta === -1 && item.qty === 1) {
         if (confirm(`Remove "${item.name}" from order?`)) {
             orderItems.splice(itemIndex, 1);
+            updateOrderTable();
         }
+        return;
     } else {
         item.qty += delta;
         if (item.qty < 1) item.qty = 1;
         item.total = item.price * item.qty;
-        
+
         // Update the quantity display in the table
         const qtySpan = document.getElementById(`qty-${item.id}`);
         if (qtySpan) {
             qtySpan.textContent = item.qty;
         }
-        
+
         // Update the total display in the table
         const totalElement = document.getElementById(`total-${item.id}`);
         if (totalElement) {
@@ -1761,9 +1819,9 @@ function updateOrderTable() {
         orderItems.forEach(item => {
             const itemId = item.item_id || item.id;
             const total = item.price * item.qty;
-            
+
             tbody.innerHTML += `<tr id="item-${itemId}" data-item-id="${itemId}" data-service-id="${item.id}">
-                <td>${item.name}</td>
+                <td>${escapeHtml(item.name)}</td>
                 <td class="item-price">${item.price.toFixed(2)}</td>
                 <td>
                     <button type="button" class="qty-btn" onclick="changeQty(${item.id}, -1, ${itemId})">-</button>
@@ -1789,18 +1847,18 @@ function calculateTotal() {
 function updateTotals() {
     const total = calculateTotal();
     orderData.totalAmount = total;
-    
+
     const subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
     const discount = parseFloat(document.getElementById("discountInput").value) || 0;
-    
+
     document.getElementById("subTotal").textContent = subtotal.toFixed(2) + " PHP";
     document.getElementById("grossTotal").textContent = total.toFixed(2) + " PHP";
-    
+
     if (document.getElementById('paymentModal').classList.contains('active')) {
         const paid = getTotalPaidAmount();
         const remainingBalance = total - paid;
-        
+
         if (remainingBalance > 0) {
             document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
         } else if (remainingBalance === 0) {
@@ -1809,7 +1867,7 @@ function updateTotals() {
             const overpayment = Math.abs(remainingBalance);
             document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#856404; font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
         }
-        
+
         calculatePaymentStatus();
     }
 }
@@ -1817,7 +1875,7 @@ function updateTotals() {
 function cancelOrder() {
     if (orderData.isEditMode) {
         if (confirm('Are you sure you want to cancel editing? All unsaved changes will be lost.')) {
-            window.location.href = `/orders/${orderData.orderId}/details`;
+            window.location.href = appUrl(`orders/${orderData.orderId}/details`);
         }
     } else {
         if (orderItems.length === 0 && selectedAddons.length === 0) {
@@ -1854,28 +1912,28 @@ async function saveOrder() {
         alert('No items or add-ons in the order to save.');
         return;
     }
-    
+
     // Validate customer selection
     if (!validateCustomerSelection()) {
         return;
     }
-    
+
     // For edit mode, check if payment is being added
     if (orderData.isEditMode && orderData.paymentAmount === null) {
         const proceed = confirm('No new payment recorded. Update order without payment?');
         if (!proceed) return;
     }
-    
+
     // For new order, check if payment is made
     if (!orderData.isEditMode && orderData.paymentAmount === null) {
         const proceed = confirm('Payment has not been recorded. Save as unpaid order?');
         if (!proceed) return;
     }
-    
+
     // Prepare order data
     const netTotal = calculateTotal();
     const discount = parseFloat(document.getElementById('discountInput').value) || 0;
-    
+
     const orderDataToSend = {
         customer_id: document.getElementById('selectCustomer').value,
         order_date: document.getElementById('orderDateInput').value,
@@ -1883,61 +1941,64 @@ async function saveOrder() {
         discount: discount,
         items: orderItems.map(item => ({
             service_id: item.id,
-            qty: item.qty,
-            price: item.price,
-            id: item.item_id // Send existing item ID if editing
+            qty: item.qty
         })),
         addons: selectedAddons.map(addon => ({
-            addon_id: addon.id,
-            price: addon.price
+            addon_id: addon.id
         })),
         payment_amount: orderData.paymentAmount || 0,
-        payment_method: 'cash', // Default payment method
-        _method: orderData.isEditMode ? 'PUT' : 'POST'
+        payment_method: 'cash'
     };
-    
-    console.log('Sending order data:', orderDataToSend);
-    
+    if (orderData.isEditMode) orderDataToSend._method = 'PUT';
+
     // Determine the endpoint
-    const endpoint = orderData.isEditMode 
-        ? `/pos/${orderData.orderId}`  // Update endpoint for editing
-        : '/pos/orders';  // Create endpoint for new order
-    
+    const endpoint = orderData.isEditMode
+        ? appUrl(`pos/${orderData.orderId}`)
+        : appUrl('pos/orders');
+
     // Show loading state
     const saveButton = document.querySelector('.btn-save');
     const originalText = saveButton.textContent;
     saveButton.textContent = orderData.isEditMode ? 'Updating...' : 'Saving...';
     saveButton.disabled = true;
-    
+
     try {
         const response = await fetch(endpoint, {
             method: 'POST', // Use POST for both, with _method parameter
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(orderDataToSend)
         });
-        
+
+        if (!response.ok) {
+            const verb = orderData.isEditMode ? 'updating' : 'creating';
+            alert('❌ ' + await errorMessageFrom(response, `Error ${verb} order. Please try again.`));
+            return;
+        }
+
         const data = await response.json();
-        
+
         if (data.success) {
             const action = orderData.isEditMode ? 'updated' : 'created';
-            alert(`✅ Order #${data.order?.order_number || data.order_number} ${action} successfully!`);
-            
+            let message = `✅ Order ${data.order?.order_number || data.order_number} ${action} successfully!`;
+            if (data.order && data.order.balance > 0) {
+                message += `\nBalance due: ${Number(data.order.balance).toFixed(2)} PHP`;
+            }
+            alert(message);
+
             if (orderData.isEditMode) {
-                // Redirect to order details after successful update
-                setTimeout(() => {
-                    window.location.href = `/orders/${orderData.orderId}/details`;
-                }, 1000);
+                window.location.href = appUrl(`orders/${orderData.orderId}/details`);
+                return;
             } else {
                 // Reset for next order
                 orderItems = [];
                 selectedAddons = [];
-                orderData = { 
-                    paymentAmount: null, 
-                    totalAmount: 0, 
+                orderData = {
+                    paymentAmount: null,
+                    totalAmount: 0,
                     customerId: null,
                     isEditMode: false,
                     orderId: null,
@@ -1949,15 +2010,14 @@ async function saveOrder() {
                 document.getElementById('discountInput').value = 0;
                 document.getElementById('selectCustomer').value = '';
                 clearCustomerError();
-                
+
                 // Redirect to order details for new order
                 if (data.order && data.order.id) {
-                    setTimeout(() => {
-                        window.location.href = `/orders/${data.order.id}/details`;
-                    }, 1000);
+                    window.location.href = appUrl(`orders/${data.order.id}/details`);
+                    return;
                 }
             }
-            
+
         } else {
             let errorMessage = orderData.isEditMode ? 'Error updating order' : 'Error creating order';
             if (data.message) errorMessage += ': ' + data.message;
@@ -1978,7 +2038,7 @@ function validateAndSaveOrder() {
     if (!validateCustomerSelection()) {
         return;
     }
-    
+
     // Then save order
     saveOrder();
 }
@@ -1988,17 +2048,17 @@ function validateAndSaveOrder() {
 // ============================================
 document.addEventListener("DOMContentLoaded", () => {
     initOrderDate();
-    
+
     // Date picker event
     document.getElementById('orderDateInput').addEventListener('change', function() {
         document.getElementById('orderDateText').textContent = formatDate(this.value);
     });
-    
+
     // Customer select event
     document.getElementById('selectCustomer').addEventListener('change', function() {
         if (this.value) clearCustomerError();
     });
-    
+
     // Payment amount real-time calculation
     const paymentAmountInput = document.getElementById('paymentAmount');
     if (paymentAmountInput) {
@@ -2006,7 +2066,7 @@ document.addEventListener("DOMContentLoaded", () => {
         paymentAmountInput.addEventListener('keyup', calculatePaymentStatus);
         paymentAmountInput.addEventListener('change', calculatePaymentStatus);
     }
-    
+
     // Product search
     document.getElementById("searchInput").addEventListener("input", function() {
         const query = this.value.toLowerCase();
@@ -2015,7 +2075,7 @@ document.addEventListener("DOMContentLoaded", () => {
             item.style.display = itemName.includes(query) ? "block" : "none";
         });
     });
-    
+
     // Addon search
     const addonSearchInput = document.getElementById('addonSearchInput');
     if (addonSearchInput) {
@@ -2027,13 +2087,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
-    
+
     // Discount input
     document.getElementById("discountInput").addEventListener("input", updateTotals);
-    
+
     // Initialize if in edit mode - calculate initial totals
     if (orderData.isEditMode) {
-        console.log('Edit mode initialized, calculating initial totals');
         updateTotals();
         updateAddonDisplay();
     }

@@ -4,8 +4,9 @@
 @section('page-title', 'Customers')
 
 @section('content')
-<!-- Include the reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 /* ================================
@@ -179,22 +180,22 @@
         align-items: stretch;
         gap: 15px;
     }
-    
+
     .search-add-container {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .search-box input {
         width: 100%;
         min-width: unset;
     }
-    
+
     .add-customer-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     .table-header {
         display: none;
     }
@@ -207,7 +208,7 @@
         padding: 12px;
         gap: 10px;
     }
-    
+
     .action-buttons {
         justify-content: flex-start;
         margin-top: 10px;
@@ -218,7 +219,7 @@
     .table-row {
         font-size: 13px;
     }
-    
+
     .action-btn {
         width: 28px;
         height: 28px;
@@ -229,10 +230,10 @@
 
 <div class="customers-header">
     <div class="search-add-container">
-        <div class="search-box">
+        <form class="search-box" method="GET" action="{{ route('customers.index') }}" role="search">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search customers...">
-        </div>
+            <input type="search" id="searchInput" name="search" value="{{ $search ?? '' }}" placeholder="Search customers..." autocomplete="off">
+        </form>
         <button class="add-customer-btn" id="addCustomerBtn"><i class="fas fa-plus"></i> Add New Customer</button>
     </div>
 </div>
@@ -243,23 +244,26 @@
     </div>
 
     @forelse($customers as $index => $customer)
-    <div class="table-row" data-id="{{ $customer->id }}">
-        <div>{{ $index + 1 }}</div>
+    <div class="table-row" data-id="{{ $customer->id }}" data-update-url="{{ route('customers.update', $customer) }}" data-delete-url="{{ route('customers.destroy', $customer) }}">
+        <div>{{ $customers->firstItem() + $index }}</div>
         <div class="customer-name">{{ $customer->name }}</div>
         <div class="customer-contact">{{ $customer->contact }}</div>
         <div class="customer-address">{{ $customer->address }}</div>
         <div class="action-buttons">
-            <button class="action-btn edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
-
-            <button class="action-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
+            <button type="button" class="action-btn edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
+            @if(in_array(session('staff.role'), ['manager', 'admin']))
+            <button type="button" class="action-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
+            @endif
         </div>
     </div>
     @empty
     <div class="table-row no-results">
-        <div>No customers found.</div>
+        <div>{{ !empty($search) ? 'No customers match your search.' : 'No customers found.' }}</div>
     </div>
     @endforelse
 </div>
+
+{{ $customers->links() }}
 
 <!-- Add Customer Modal -->
 <div id="addCustomerModal" class="modal">
@@ -268,7 +272,7 @@
             <h3>Add Customer</h3>
             <button type="button" class="close-btn" id="closeAddModal">&times;</button>
         </div>
-        
+
         <form method="POST" action="{{ route('customers.store') }}" id="addCustomerForm">
             @csrf
             <div class="modal-body">
@@ -279,7 +283,7 @@
                     <input type="text" name="name" id="name" placeholder="Enter customer name" required>
                     <div class="error-message" id="name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="contact">
                         Contact Number
@@ -288,7 +292,7 @@
                     <div class="error-message" id="contact_error"></div>
                     <div class="helper-text">Optional - 10 to 15 digits only</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="address">
                         Address
@@ -297,7 +301,7 @@
                     <div class="error-message" id="address_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
                 <button type="submit" class="btn-primary">Save Customer</button>
@@ -313,11 +317,11 @@
             <h3>Edit Customer</h3>
             <button type="button" class="close-btn" id="closeEditModal">&times;</button>
         </div>
-        
+
         <form method="POST" id="editCustomerForm">
             @csrf
             @method('PUT')
-            
+
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit_name">
@@ -326,7 +330,7 @@
                     <input type="text" name="name" id="edit_name" placeholder="Enter customer name" required>
                     <div class="error-message" id="edit_name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_contact">
                         Contact Number
@@ -335,7 +339,7 @@
                     <div class="error-message" id="edit_contact_error"></div>
                     <div class="helper-text">Optional - 10 to 15 digits only</div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_address">
                         Address
@@ -344,7 +348,7 @@
                     <div class="error-message" id="edit_address_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
                 <button type="submit" class="btn-primary">Update Customer</button>
@@ -394,21 +398,21 @@ function validatePhone(phone) {
 function validateForm(form) {
     let valid = true;
     clearAllErrors();
-    
+
     const nameField = form.querySelector('[name="name"]');
     const contactField = form.querySelector('[name="contact"]');
     const isEdit = form.id === 'editCustomerForm';
-    
+
     if (!nameField || !nameField.value.trim()) {
         showError(isEdit ? 'edit_name_error' : 'name_error', 'Customer name is required');
         valid = false;
     }
-    
+
     if (contactField && contactField.value && !validatePhone(contactField.value)) {
         showError(isEdit ? 'edit_contact_error' : 'contact_error', 'Contact number must be 10-15 digits');
         valid = false;
     }
-    
+
     return valid;
 }
 
@@ -428,10 +432,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------
     // Open Add Modal
     // ----------------------------
-    addBtn.addEventListener('click', () => { 
+    addBtn.addEventListener('click', () => {
         openModal(addModal);
         addForm.reset();
-        
+
         // Auto-focus on name field
         setTimeout(() => {
             document.getElementById('name')?.focus();
@@ -443,7 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------
     cancelAddBtn.addEventListener('click', () => closeModal(addModal));
     closeAddModal.addEventListener('click', () => closeModal(addModal));
-    
+
     cancelEditBtn.addEventListener('click', () => closeModal(editModal));
     closeEditModal.addEventListener('click', () => closeModal(editModal));
 
@@ -454,14 +458,14 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener('click', (e) => {
             const row = e.target.closest('.table-row');
             const customerId = row.dataset.id;
-            
-            editForm.action = `/customers/${customerId}`;
+
+            editForm.action = row.dataset.updateUrl;
             document.getElementById('edit_name').value = row.querySelector('.customer-name').innerText;
             document.getElementById('edit_contact').value = row.querySelector('.customer-contact').innerText;
             document.getElementById('edit_address').value = row.querySelector('.customer-address').innerText;
-            
+
             openModal(editModal);
-            
+
             // Auto-focus on name field
             setTimeout(() => {
                 document.getElementById('edit_name')?.focus();
@@ -476,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(e.target === addModal) closeModal(addModal);
         if(e.target === editModal) closeModal(editModal);
     });
-    
+
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeModal(addModal);
@@ -492,26 +496,26 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
         }
     });
-    
+
     editForm.addEventListener('submit', function(e) {
         if (!validateForm(this)) {
             e.preventDefault();
         }
     });
-    
+
     // Real-time phone validation
     document.getElementById('contact')?.addEventListener('blur', function() {
         if (this.value && !validatePhone(this.value)) {
             showError('contact_error', 'Contact number must be 10-15 digits');
         }
     });
-    
+
     document.getElementById('edit_contact')?.addEventListener('blur', function() {
         if (this.value && !validatePhone(this.value)) {
             showError('edit_contact_error', 'Contact number must be 10-15 digits');
         }
     });
-    
+
     // Clear errors on input
     document.querySelectorAll('#addCustomerForm input, #addCustomerForm textarea').forEach(field => {
         field.addEventListener('input', function() {
@@ -520,7 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (errorElement) errorElement.style.display = 'none';
         });
     });
-    
+
     document.querySelectorAll('#editCustomerForm input, #editCustomerForm textarea').forEach(field => {
         field.addEventListener('input', function() {
             this.style.borderColor = '#ddd';
@@ -532,7 +536,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------
     // Live search filter
     // ----------------------------
+    let searchTimer;
     searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => searchInput.form.submit(), 600);
         const query = searchInput.value.toLowerCase().trim();
         let anyVisible = false;
 
@@ -551,19 +558,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Handle "No customers found" message
         let noResultsRow = document.querySelector('.table-row.no-results');
-        
+
         if (!anyVisible && !noResultsRow) {
             noResultsRow = document.createElement('div');
             noResultsRow.classList.add('table-row', 'no-results');
             noResultsRow.innerHTML = `<div>No customers found.</div>`;
             document.querySelector('.customers-table').appendChild(noResultsRow);
         }
-        
+
         if (noResultsRow) {
             noResultsRow.style.display = anyVisible ? 'none' : 'grid';
         }
     });
-    
+
     // ----------------------------
     // Delete functionality (if needed)
     // ----------------------------
@@ -572,27 +579,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const row = e.target.closest('.table-row');
             const customerId = row.dataset.id;
             const customerName = row.querySelector('.customer-name').innerText.trim();
-            
+
             if (!confirm(`Are you sure you want to delete "${customerName}"?`)) {
                 return;
             }
-            
+
             // Create a form to submit the DELETE request
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/customers/${customerId}`;
+            form.action = row.dataset.deleteUrl;
             form.style.display = 'none';
-            
+
             const csrfToken = document.createElement('input');
             csrfToken.type = 'hidden';
             csrfToken.name = '_token';
             csrfToken.value = '{{ csrf_token() }}';
-            
+
             const methodField = document.createElement('input');
             methodField.type = 'hidden';
             methodField.name = '_method';
             methodField.value = 'DELETE';
-            
+
             form.appendChild(csrfToken);
             form.appendChild(methodField);
             document.body.appendChild(form);

@@ -5,8 +5,9 @@
 @section('active-inventory-categories', 'active')
 
 @section('content')
-<!-- Include the reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 /* ================================
@@ -273,7 +274,7 @@ tbody tr:hover {
             <h3>Add New Category</h3>
             <button type="button" class="close-btn" id="closeAddModal">&times;</button>
         </div>
-        
+
         <form method="POST" action="{{ route('categories.store') }}" id="addCategoryForm">
             @csrf
             <div class="modal-body">
@@ -284,7 +285,7 @@ tbody tr:hover {
                     <input type="text" name="name" id="name" placeholder="Enter category name" required>
                     <div class="error-message" id="name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="status">
                         Status <span class="required-star">*</span>
@@ -297,7 +298,7 @@ tbody tr:hover {
                     <div class="error-message" id="status_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
                 <button type="submit" class="btn-primary">Add Category</button>
@@ -313,12 +314,12 @@ tbody tr:hover {
             <h3>Edit Category</h3>
             <button type="button" class="close-btn" id="closeEditModal">&times;</button>
         </div>
-        
+
         <form method="POST" action="{{ route('categories.update') }}" id="editForm">
             @csrf
             @method('PUT')
             <input type="hidden" name="category_id" id="edit_category_id">
-            
+
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit_name">
@@ -327,7 +328,7 @@ tbody tr:hover {
                     <input type="text" name="name" id="edit_name" placeholder="Enter category name" required>
                     <div class="error-message" id="edit_name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_status">
                         Status <span class="required-star">*</span>
@@ -340,7 +341,7 @@ tbody tr:hover {
                     <div class="error-message" id="edit_status_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
                 <button type="submit" class="btn-primary">Update Category</button>
@@ -484,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function () {
         rows.forEach(row => {
             // Skip the "no categories" row
             if (row.cells.length < 2) return;
-            
+
             const name = row.cells[1].textContent.toLowerCase();
             if (name.includes(query)) {
                 row.style.display = '';
@@ -565,10 +566,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ category_id: categoryId })
             })
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error('Network response was not ok');
-                }
+            .then(async res => {
+                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
                 return res.json();
             })
             .then(data => {
@@ -576,14 +575,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Remove the row from the table
                     const row = e.target.closest('tr');
                     row.remove();
-                    
+
                     // Reset row numbers
                     resetTableNumbers();
-                    
+
                     // If no rows left, show empty message
                     const remainingRows = document.querySelectorAll('#categoryTable tr:not([colspan])');
                     const noResultsRow = document.querySelector('#categoryTable tr[colspan]');
-                    
+
                     if (remainingRows.length === 0 && !noResultsRow) {
                         const tbody = document.getElementById('categoryTable');
                         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No categories found.</td></tr>';
@@ -593,8 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(err => {
-                console.error('Delete error:', err);
-                alert("Error deleting category. Please try again.");
+                alert(err.message || "Error deleting category. Please try again.");
             });
         });
     });

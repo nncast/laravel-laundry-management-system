@@ -466,10 +466,10 @@
             <div data-label="Date">{{ $sale['date'] }}</div>
             <div data-label="Order#">{{ $sale['order_number'] }}</div>
             <div data-label="Customer">{{ $sale['customer_name'] }}</div>
-            <div data-label="Items Total" class="text-right">${{ number_format($sale['items_total'], 2) }}</div>
-            <div data-label="Addon Total" class="text-right">${{ number_format($sale['addon_total'], 2) }}</div>
-            <div data-label="Discount" class="text-right">${{ number_format($sale['discount'], 2) }}</div>
-            <div data-label="Total" class="text-right" style="color: #28a745; font-weight: 700;">${{ number_format($sale['total'], 2) }}</div>
+            <div data-label="Items Total" class="text-right">₱{{ number_format($sale['items_total'], 2) }}</div>
+            <div data-label="Addon Total" class="text-right">₱{{ number_format($sale['addon_total'], 2) }}</div>
+            <div data-label="Discount" class="text-right">₱{{ number_format($sale['discount'], 2) }}</div>
+            <div data-label="Total" class="text-right" style="color: #28a745; font-weight: 700;">₱{{ number_format($sale['total'], 2) }}</div>
             <div data-label="Status">
                 <span class="status-badge status-{{ $sale['status'] }}">
                     {{ ucfirst($sale['status']) }}
@@ -492,11 +492,11 @@
         </div>
         <div class="summary-item">
             <div class="summary-label">Total Sales</div>
-            <div class="summary-value sales">${{ number_format($summary['total_sales'], 2) }}</div>
+            <div class="summary-value sales">₱{{ number_format($summary['total_sales'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Total Discount</div>
-            <div class="summary-value discount">${{ number_format($summary['total_discount'], 2) }}</div>
+            <div class="summary-value discount">₱{{ number_format($summary['total_discount'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Items Sold</div>
@@ -504,7 +504,7 @@
         </div>
         <div class="summary-item">
             <div class="summary-label">Avg Order Value</div>
-            <div class="summary-value average">${{ number_format($summary['average_order_value'], 2) }}</div>
+            <div class="summary-value average">₱{{ number_format($summary['average_order_value'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Completion Rate</div>
@@ -517,11 +517,11 @@
     <div class="report-summary" style="margin-top: 15px;">
         <div class="summary-item">
             <div class="summary-label">Total Paid</div>
-            <div class="summary-value" style="color: #28a745;">${{ number_format($summary['total_paid'], 2) }}</div>
+            <div class="summary-value" style="color: #28a745;">₱{{ number_format($summary['total_paid'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Total Outstanding</div>
-            <div class="summary-value" style="color: #dc3545;">${{ number_format($summary['total_outstanding'], 2) }}</div>
+            <div class="summary-value" style="color: #dc3545;">₱{{ number_format($summary['total_outstanding'], 2) }}</div>
         </div>
         <div class="summary-item">
             <div class="summary-label">Addons Sold</div>

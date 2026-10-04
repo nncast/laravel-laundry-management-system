@@ -4,12 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Service;
-use App\Models\Customer;
-use App\Models\Payment;
-use App\Models\Addon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -19,294 +15,178 @@ class DashboardController extends Controller
     public function index()
     {
         $today = Carbon::today();
-        $startOfWeek = Carbon::now()->startOfWeek();
-        $endOfWeek = Carbon::now()->endOfWeek();
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
-        $startOfYear = Carbon::now()->startOfYear();
-        $endOfYear = Carbon::now()->endOfYear();
-        
-        // Total Orders
-        $totalOrders = Order::count();
-        $pendingOrders = Order::where('status', 'pending')->count();
-        
-        // Revenue calculations
-        $totalRevenue = Order::where('status', 'completed')->sum('total');
-        $todayRevenue = Order::whereDate('order_date', $today)
-            ->where('status', 'completed')
-            ->sum('total');
-        
-        // Today's statistics
-        $todayOrders = Order::whereDate('order_date', $today)->count();
-        $todayPending = Order::whereDate('order_date', $today)
-            ->where('status', 'pending')
-            ->count();
-        $todayProcessing = Order::whereDate('order_date', $today)
-            ->where('status', 'processing')
-            ->count();
-        $todayCompleted = Order::whereDate('order_date', $today)
-            ->where('status', 'completed')
-            ->count();
-        
+        $yesterday = Carbon::yesterday();
+        $startOfMonth = $today->copy()->startOfMonth();
+        $startOfLastMonth = $startOfMonth->copy()->subMonthNoOverflow();
+        $endOfLastMonth = $startOfMonth->copy()->subDay();
+
+        $stats = $this->stats();
+
+        // Month-over-month trends (this month so far vs. the whole of last month)
+        $thisMonth = $this->periodTotals($startOfMonth, $today);
+        $lastMonth = $this->periodTotals($startOfLastMonth, $endOfLastMonth);
+
+        $revenueTrend = $this->percentChange($thisMonth->revenue, $lastMonth->revenue);
+        $ordersTrend = $this->percentChange($thisMonth->orders, $lastMonth->orders);
+
+        // Pending orders created today vs. yesterday
+        $yesterdayPending = Order::onDate($yesterday)->where('status', 'pending')->count();
+        $pendingTrend = $this->percentChange($stats['todayPending'], $yesterdayPending);
+
         // Recent Orders (last 10)
-        $recentOrders = Order::with(['customer', 'items.service'])
-            ->latest()
+        $recentOrders = Order::with('customer:id,name')
+            ->latest('id')
             ->take(10)
             ->get();
-        
-        // Top Services by order count
-        $topServices = Service::select(
+
+        // Top Services by number of completed orders
+        $topServices = Service::query()
+            ->select(
                 'services.id',
                 'services.name',
-                'services.price', // ADD THIS LINE
+                'services.price',
                 DB::raw('COUNT(order_items.id) as order_count'),
-                DB::raw('SUM(order_items.total) as total_revenue')
+                DB::raw('COALESCE(SUM(order_items.total), 0) as total_revenue')
             )
-            ->leftJoin('order_items', 'services.id', '=', 'order_items.service_id')
-            ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('order_items', 'services.id', '=', 'order_items.service_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed')
-            ->groupBy('services.id', 'services.name', 'services.price') // ADD 'services.price' here
+            ->groupBy('services.id', 'services.name', 'services.price')
             ->orderByDesc('order_count')
             ->take(10)
             ->get();
-        
-        // Weekly sales data for chart
-        $weeklySales = [];
-        $weeklyOrders = [];
-        
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
-            $dayName = $date->format('D');
-            
-            $sales = Order::whereDate('order_date', $date)
-                ->where('status', 'completed')
-                ->sum('total');
-            
-            $orders = Order::whereDate('order_date', $date)
-                ->where('status', 'completed')
-                ->count();
-            
-            $weeklySales[$dayName] = $sales;
-            $weeklyOrders[$dayName] = $orders;
-        }
-        
-        // Monthly sales data
-        $monthlySales = [];
-        $monthlyOrders = [];
-        
-        $currentMonth = Carbon::now()->month;
-        $currentYear = Carbon::now()->year;
-        
-        for ($week = 1; $week <= 4; $week++) {
-            $weekStart = Carbon::create($currentYear, $currentMonth, ($week - 1) * 7 + 1);
-            $weekEnd = Carbon::create($currentYear, $currentMonth, min($week * 7, 30));
-            
-            $sales = Order::whereBetween('order_date', [$weekStart, $weekEnd])
-                ->where('status', 'completed')
-                ->sum('total');
-            
-            $orders = Order::whereBetween('order_date', [$weekStart, $weekEnd])
-                ->where('status', 'completed')
-                ->count();
-            
-            $monthlySales["Week $week"] = $sales;
-            $monthlyOrders["Week $week"] = $orders;
-        }
-        
-        // Yearly sales data
-        $yearlySales = [];
-        $yearlyOrders = [];
-        
-        for ($month = 1; $month <= 12; $month++) {
-            $monthName = Carbon::create($currentYear, $month, 1)->format('M');
-            
-            $sales = Order::whereMonth('order_date', $month)
-                ->whereYear('order_date', $currentYear)
-                ->where('status', 'completed')
-                ->sum('total');
-            
-            $orders = Order::whereMonth('order_date', $month)
-                ->whereYear('order_date', $currentYear)
-                ->where('status', 'completed')
-                ->count();
-            
-            $yearlySales[$monthName] = $sales;
-            $yearlyOrders[$monthName] = $orders;
-        }
-        
-        // Chart data
+
         $chartData = [
-            'week' => [
-                'labels' => array_keys($weeklySales),
-                'sales' => array_values($weeklySales),
-                'orders' => array_values($weeklyOrders)
-            ],
-            'month' => [
-                'labels' => array_keys($monthlySales),
-                'sales' => array_values($monthlySales),
-                'orders' => array_values($monthlyOrders)
-            ],
-            'year' => [
-                'labels' => array_keys($yearlySales),
-                'sales' => array_values($yearlySales),
-                'orders' => array_values($yearlyOrders)
-            ]
+            'week' => $this->chartData('week'),
+            'month' => $this->chartData('month'),
+            'year' => $this->chartData('year'),
         ];
-        
-        // Calculate trends
-        $lastMonth = Carbon::now()->subMonth();
-        $lastMonthRevenue = Order::whereMonth('order_date', $lastMonth->month)
-            ->whereYear('order_date', $lastMonth->year)
-            ->where('status', 'completed')
-            ->sum('total');
-        
-        $revenueTrend = $lastMonthRevenue > 0 
-            ? (($totalRevenue - $lastMonthRevenue) / $lastMonthRevenue * 100)
-            : 0;
-        
-        $lastMonthOrders = Order::whereMonth('order_date', $lastMonth->month)
-            ->whereYear('order_date', $lastMonth->year)
-            ->count();
-        
-        $ordersTrend = $lastMonthOrders > 0
-            ? (($totalOrders - $lastMonthOrders) / $lastMonthOrders * 100)
-            : 0;
-        
-        $yesterday = Carbon::yesterday();
-        $yesterdayPending = Order::whereDate('order_date', $yesterday)
-            ->where('status', 'pending')
-            ->count();
-        
-        $pendingTrend = $yesterdayPending > 0
-            ? (($pendingOrders - $yesterdayPending) / $yesterdayPending * 100)
-            : 0;
-        
-        return view('dashboard', compact(
-            'totalOrders',
-            'pendingOrders',
-            'totalRevenue',
-            'todayRevenue',
-            'todayOrders',
-            'todayPending',
-            'todayProcessing',
-            'todayCompleted',
+
+        return view('dashboard', array_merge($stats, compact(
             'recentOrders',
             'topServices',
             'chartData',
             'revenueTrend',
             'ordersTrend',
             'pendingTrend'
-        ));
+        )));
     }
-    
+
     /**
      * Get dashboard stats for AJAX requests.
      */
     public function getStats()
     {
-        $today = Carbon::today();
-        
-        $totalOrders = Order::count();
-        $pendingOrders = Order::where('status', 'pending')->count();
-        $totalRevenue = Order::where('status', 'completed')->sum('total');
-        $todayRevenue = Order::whereDate('order_date', $today)
-            ->where('status', 'completed')
-            ->sum('total');
-        
-        // Today's stats for income card
-        $todayCompleted = Order::whereDate('order_date', $today)
-            ->where('status', 'completed')
-            ->count();
-        $todayProcessing = Order::whereDate('order_date', $today)
-            ->where('status', 'processing')
-            ->count();
-        $todayPending = Order::whereDate('order_date', $today)
-            ->where('status', 'pending')
-            ->count();
-        
         return response()->json([
             'success' => true,
-            'stats' => [
-                'totalOrders' => $totalOrders,
-                'pendingOrders' => $pendingOrders,
-                'totalRevenue' => $totalRevenue,
-                'todayRevenue' => $todayRevenue,
-                'todayCompleted' => $todayCompleted,
-                'todayProcessing' => $todayProcessing,
-                'todayPending' => $todayPending
-            ]
+            'stats' => $this->stats(),
         ]);
     }
-    
+
     /**
      * Get chart data for specific period.
      */
-    public function getChartData($period)
+    public function getChartData(string $period)
     {
-        $data = [];
-        
-        if ($period === 'week') {
-            for ($i = 6; $i >= 0; $i--) {
-                $date = Carbon::today()->subDays($i);
-                $dayName = $date->format('D');
-                
-                $sales = Order::whereDate('order_date', $date)
-                    ->where('status', 'completed')
-                    ->sum('total');
-                
-                $orders = Order::whereDate('order_date', $date)
-                    ->where('status', 'completed')
-                    ->count();
-                
-                $data['labels'][] = $dayName;
-                $data['sales'][] = $sales;
-                $data['orders'][] = $orders;
-            }
-        } elseif ($period === 'month') {
-            $currentMonth = Carbon::now()->month;
-            $currentYear = Carbon::now()->year;
-            
-            for ($week = 1; $week <= 4; $week++) {
-                $weekStart = Carbon::create($currentYear, $currentMonth, ($week - 1) * 7 + 1);
-                $weekEnd = Carbon::create($currentYear, $currentMonth, min($week * 7, 30));
-                
-                $sales = Order::whereBetween('order_date', [$weekStart, $weekEnd])
-                    ->where('status', 'completed')
-                    ->sum('total');
-                
-                $orders = Order::whereBetween('order_date', [$weekStart, $weekEnd])
-                    ->where('status', 'completed')
-                    ->count();
-                
-                $data['labels'][] = "Week $week";
-                $data['sales'][] = $sales;
-                $data['orders'][] = $orders;
-            }
-        } elseif ($period === 'year') {
-            $currentYear = Carbon::now()->year;
-            
-            for ($month = 1; $month <= 12; $month++) {
-                $monthName = Carbon::create($currentYear, $month, 1)->format('M');
-                
-                $sales = Order::whereMonth('order_date', $month)
-                    ->whereYear('order_date', $currentYear)
-                    ->where('status', 'completed')
-                    ->sum('total');
-                
-                $orders = Order::whereMonth('order_date', $month)
-                    ->whereYear('order_date', $currentYear)
-                    ->where('status', 'completed')
-                    ->count();
-                
-                $data['labels'][] = $monthName;
-                $data['sales'][] = $sales;
-                $data['orders'][] = $orders;
-            }
-        }
-        
         return response()->json([
             'success' => true,
-            'data' => $data
+            'data' => $this->chartData($period),
         ]);
+    }
+
+    /**
+     * Headline numbers, computed with two aggregate queries.
+     */
+    private function stats(): array
+    {
+        $overall = Order::query()
+            ->selectRaw('COUNT(*) as total_orders')
+            ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as total_revenue")
+            ->first();
+
+        $today = Order::today()
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as revenue")
+            ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed")
+            ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing")
+            ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending")
+            ->first();
+
+        return [
+            'totalOrders' => (int) $overall->total_orders,
+            'pendingOrders' => (int) $overall->pending_orders,
+            'totalRevenue' => (float) $overall->total_revenue,
+            'todayRevenue' => (float) $today->revenue,
+            'todayCompleted' => (int) $today->completed,
+            'todayProcessing' => (int) $today->processing,
+            'todayPending' => (int) $today->pending,
+        ];
+    }
+
+    /**
+     * Completed revenue and order count for a date range.
+     */
+    private function periodTotals(Carbon $start, Carbon $end): object
+    {
+        $row = Order::betweenDates($start, $end)
+            ->selectRaw('COUNT(*) as orders')
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as revenue")
+            ->first();
+
+        return (object) ['orders' => (int) $row->orders, 'revenue' => (float) $row->revenue];
+    }
+
+    /**
+     * Chart series for "week" (last 7 days), "month" (weeks of this month) or
+     * "year" (months of this year), built from ONE grouped query.
+     */
+    private function chartData(string $period): array
+    {
+        $today = Carbon::today();
+
+        [$start, $end] = match ($period) {
+            'month' => [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()->startOfDay()],
+            'year' => [$today->copy()->startOfYear(), $today->copy()->endOfYear()->startOfDay()],
+            default => [$today->copy()->subDays(6), $today->copy()],
+        };
+
+        $daily = Order::betweenDates($start, $end)
+            ->where('status', 'completed')
+            ->selectRaw('substr(order_date, 1, 10) as day, COUNT(*) as orders, SUM(total) as sales')
+            ->groupBy('day')
+            ->get()
+            ->keyBy('day');
+
+        // Bucket the daily figures into the period's labels
+        $buckets = [];
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            $label = match ($period) {
+                'month' => 'Week ' . (intdiv($date->day - 1, 7) + 1),
+                'year' => $date->format('M'),
+                default => $date->format('D'),
+            };
+
+            $buckets[$label] ??= ['sales' => 0.0, 'orders' => 0];
+
+            if ($row = $daily->get($date->toDateString())) {
+                $buckets[$label]['sales'] += (float) $row->sales;
+                $buckets[$label]['orders'] += (int) $row->orders;
+            }
+        }
+
+        return [
+            'labels' => array_keys($buckets),
+            'sales' => array_map(fn ($b) => round($b['sales'], 2), array_values($buckets)),
+            'orders' => array_column($buckets, 'orders'),
+        ];
+    }
+
+    private function percentChange(float|int $current, float|int $previous): float
+    {
+        if ($previous == 0) {
+            return $current > 0 ? 100.0 : 0.0;
+        }
+
+        return round(($current - $previous) / $previous * 100, 1);
     }
 }

@@ -5,46 +5,47 @@
 @section('active-services-type', 'active')
 
 @section('content')
-<!-- Include the reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 /* --- Service Type Page Styles --- */
-.table-container { 
-    background:#fff; 
-    border-radius:10px; 
-    box-shadow:0 2px 6px rgba(0,0,0,0.05); 
-    padding:25px; 
+.table-container {
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    padding:25px;
     overflow-x: auto;
 }
 
-.header-actions { 
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center; 
-    margin-bottom:20px; 
+.header-actions {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
     flex-wrap: wrap;
     gap: 15px;
 }
 
-.search-box input { 
-    padding:10px 15px; 
-    border-radius:6px; 
-    border:1px solid #ccc; 
+.search-box input {
+    padding:10px 15px;
+    border-radius:6px;
+    border:1px solid #ccc;
     width: 250px;
     min-width: 200px;
     font-family: 'Poppins', sans-serif;
 }
 
-.add-btn { 
-    background:var(--blue); 
-    color:white; 
-    border:none; 
-    border-radius:6px; 
-    padding:10px 18px; 
-    font-size:14px; 
-    cursor:pointer; 
-    transition:.2s; 
+.add-btn {
+    background:var(--blue);
+    color:white;
+    border:none;
+    border-radius:6px;
+    padding:10px 18px;
+    font-size:14px;
+    cursor:pointer;
+    transition:.2s;
     white-space: nowrap;
 }
 
@@ -67,41 +68,41 @@ tbody tr:hover {
     object-fit: cover;
 }
 
-.type-tag { 
-    display:inline-block; 
-    background:rgba(0,123,255,0.1); 
-    color:var(--blue); 
-    font-size:12px; 
-    padding:2px 8px; 
-    border-radius:12px; 
-    margin-right:4px; 
-    margin-bottom:2px; 
+.type-tag {
+    display:inline-block;
+    background:rgba(0,123,255,0.1);
+    color:var(--blue);
+    font-size:12px;
+    padding:2px 8px;
+    border-radius:12px;
+    margin-right:4px;
+    margin-bottom:2px;
 }
 
-.status-active { 
-    background:#d4edda; 
-    color:#155724; 
-    padding:5px 12px; 
-    border-radius:20px; 
-    font-size:13px; 
-    font-weight:500; 
+.status-active {
+    background:#d4edda;
+    color:#155724;
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:500;
 }
 
-.status-inactive { 
-    background:#f8d7da; 
-    color:#721c24; 
-    padding:5px 12px; 
-    border-radius:20px; 
-    font-size:13px; 
-    font-weight:500; 
+.status-inactive {
+    background:#f8d7da;
+    color:#721c24;
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:500;
 }
 
 .action-btns { display:flex; gap:10px; }
-.action-btns i { 
-    font-size:14px; 
-    padding:8px; 
-    border-radius:50%; 
-    cursor:pointer; 
+.action-btns i {
+    font-size:14px;
+    padding:8px;
+    border-radius:50%;
+    cursor:pointer;
 }
 
 .edit { background: rgba(0,123,255,0.1); color:var(--blue); }
@@ -141,27 +142,27 @@ tbody tr:hover {
         margin: 0 -15px;
         border-radius: 0;
     }
-    
+
     .header-actions {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .search-box input {
         width: 100%;
         margin-bottom: 10px;
     }
-    
+
     .add-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     table {
         font-size: 13px;
         min-width: 600px;
     }
-    
+
     th, td {
         padding: 10px;
     }
@@ -233,7 +234,7 @@ tbody tr:hover {
             <h3>Add New Service</h3>
             <button type="button" class="close-btn" id="closeAddModal">&times;</button>
         </div>
-        
+
         <form id="addServiceForm" enctype="multipart/form-data">
             @csrf
             <div class="modal-body">
@@ -244,7 +245,7 @@ tbody tr:hover {
                     <input type="text" name="name" id="name" placeholder="Enter service name" required>
                     <div class="error-message" id="name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="icon_file" class="file-upload-label">
                         Service Icon
@@ -253,7 +254,7 @@ tbody tr:hover {
                     <div class="helper-text">Optional. JPG, PNG or GIF. Max 2MB.</div>
                     <div class="error-message" id="icon_file_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="service_type_id">
                         Service Type <span class="required-star">*</span>
@@ -266,7 +267,7 @@ tbody tr:hover {
                     </select>
                     <div class="error-message" id="service_type_id_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="price">
                         Price <span class="required-star">*</span>
@@ -274,7 +275,7 @@ tbody tr:hover {
                     <input type="number" name="price" id="price" placeholder="0.00" step="0.01" min="0" required>
                     <div class="error-message" id="price_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="is_active">
                         Status <span class="required-star">*</span>
@@ -287,7 +288,7 @@ tbody tr:hover {
                     <div class="error-message" id="is_active_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
                 <button type="submit" class="btn-primary">Save Service</button>
@@ -303,12 +304,12 @@ tbody tr:hover {
             <h3>Edit Service</h3>
             <button type="button" class="close-btn" id="closeEditModal">&times;</button>
         </div>
-        
+
         <form id="editServiceForm" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <input type="hidden" name="id" id="editServiceId">
-            
+
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit_name">
@@ -317,7 +318,7 @@ tbody tr:hover {
                     <input type="text" name="name" id="edit_name" placeholder="Enter service name" required>
                     <div class="error-message" id="edit_name_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_icon_file" class="file-upload-label">
                         Service Icon
@@ -327,7 +328,7 @@ tbody tr:hover {
                     <div id="currentIconPreview" class="file-upload-preview"></div>
                     <div class="error-message" id="edit_icon_file_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_service_type_id">
                         Service Type <span class="required-star">*</span>
@@ -339,7 +340,7 @@ tbody tr:hover {
                     </select>
                     <div class="error-message" id="edit_service_type_id_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_price">
                         Price <span class="required-star">*</span>
@@ -347,7 +348,7 @@ tbody tr:hover {
                     <input type="number" name="price" id="edit_price" placeholder="0.00" step="0.01" min="0" required>
                     <div class="error-message" id="edit_price_error"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_is_active">
                         Status <span class="required-star">*</span>
@@ -360,7 +361,7 @@ tbody tr:hover {
                     <div class="error-message" id="edit_is_active_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
                 <button type="submit" class="btn-primary">Update Service</button>
@@ -422,27 +423,27 @@ document.addEventListener('DOMContentLoaded', function() {
         openModal(addModal);
         document.getElementById('addServiceForm').reset();
         document.getElementById('is_active').value = '1'; // Set default to Active
-        
+
         // Auto-focus on name field
         setTimeout(() => {
             document.getElementById('name')?.focus();
         }, 300);
     });
-    
+
     // Close Add Modal
     cancelAddBtn.addEventListener('click', () => closeModal(addModal));
     closeAddModal.addEventListener('click', () => closeModal(addModal));
-    
+
     // Close Edit Modal
     cancelEditBtn.addEventListener('click', () => closeModal(editModal));
     closeEditModal.addEventListener('click', () => closeModal(editModal));
-    
+
     // Close modals on outside click
     window.addEventListener('click', e => {
         if (e.target === addModal) closeModal(addModal);
         if (e.target === editModal) closeModal(editModal);
     });
-    
+
     // Close modals on escape key
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
@@ -450,13 +451,13 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModal(editModal);
         }
     });
-    
+
     // Search functionality
     searchInput.addEventListener('input', function() {
         const filter = this.value.toLowerCase();
         const rows = document.querySelectorAll('#servicesTable tbody tr');
         let hasVisibleRows = false;
-        
+
         rows.forEach(row => {
             const rowText = row.innerText.toLowerCase();
             if (rowText.includes(filter)) {
@@ -467,70 +468,70 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     // Add Service Form Submission
     document.getElementById('addServiceForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         // Basic validation
         let valid = true;
         clearAllErrors();
-        
+
         const name = document.getElementById('name').value.trim();
         const serviceTypeId = document.getElementById('service_type_id').value;
         const price = document.getElementById('price').value;
         const status = document.getElementById('is_active').value;
-        
+
         if (!name) {
             showError('name_error', 'Service name is required');
             valid = false;
         }
-        
+
         if (!serviceTypeId) {
             showError('service_type_id_error', 'Service type is required');
             valid = false;
         }
-        
+
         if (!price || parseFloat(price) < 0) {
             showError('price_error', 'Valid price is required');
             valid = false;
         }
-        
+
         if (!status) {
             showError('is_active_error', 'Status is required');
             valid = false;
         }
-        
+
         if (!valid) return;
-        
+
         // File validation (optional)
         const iconFile = document.getElementById('icon_file').files[0];
         if (iconFile) {
             const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
             const maxSize = 2 * 1024 * 1024; // 2MB
-            
+
             if (!validTypes.includes(iconFile.type)) {
                 showError('icon_file_error', 'File must be JPG, PNG or GIF');
                 return;
             }
-            
+
             if (iconFile.size > maxSize) {
                 showError('icon_file_error', 'File size must be less than 2MB');
                 return;
             }
         }
-        
+
         let formData = new FormData(this);
-        
-        fetch('/services/list', {
+
+        fetch(appUrl('services/list'), {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
             body: formData
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
+        .then(async res => {
+                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
+                return res.json();
+            })
         .then(data => {
             if (data.success) {
                 closeModal(addModal);
@@ -540,76 +541,75 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Server error, please try again');
+            alert(error.message || 'Server error, please try again');
         });
     });
-    
+
     // Edit Service Form Submission
     document.getElementById('editServiceForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         // Basic validation
         let valid = true;
         clearAllErrors();
-        
+
         const name = document.getElementById('edit_name').value.trim();
         const serviceTypeId = document.getElementById('edit_service_type_id').value;
         const price = document.getElementById('edit_price').value;
         const status = document.getElementById('edit_is_active').value;
-        
+
         if (!name) {
             showError('edit_name_error', 'Service name is required');
             valid = false;
         }
-        
+
         if (!serviceTypeId) {
             showError('edit_service_type_id_error', 'Service type is required');
             valid = false;
         }
-        
+
         if (!price || parseFloat(price) < 0) {
             showError('edit_price_error', 'Valid price is required');
             valid = false;
         }
-        
+
         if (!status) {
             showError('edit_is_active_error', 'Status is required');
             valid = false;
         }
-        
+
         if (!valid) return;
-        
+
         // File validation (optional)
         const iconFile = document.getElementById('edit_icon_file').files[0];
         if (iconFile) {
             const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
             const maxSize = 2 * 1024 * 1024; // 2MB
-            
+
             if (!validTypes.includes(iconFile.type)) {
                 showError('edit_icon_file_error', 'File must be JPG, PNG or GIF');
                 return;
             }
-            
+
             if (iconFile.size > maxSize) {
                 showError('edit_icon_file_error', 'File size must be less than 2MB');
                 return;
             }
         }
-        
+
         let id = document.getElementById('editServiceId').value;
         let formData = new FormData(this);
         formData.append('_method', 'PUT');
-        
-        fetch(`/services/list/${id}`, {
+
+        fetch(appUrl(`services/list/${id}`), {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
             body: formData
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
+        .then(async res => {
+                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
+                return res.json();
+            })
         .then(data => {
             if (data.success) {
                 closeModal(editModal);
@@ -619,11 +619,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Server error, please try again');
+            alert(error.message || 'Server error, please try again');
         });
     });
-    
+
     // Clear errors on input
     document.querySelectorAll('#addServiceForm input, #addServiceForm select').forEach(field => {
         field.addEventListener('input', function() {
@@ -632,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (errorElement) errorElement.style.display = 'none';
         });
     });
-    
+
     document.querySelectorAll('#editServiceForm input, #editServiceForm select').forEach(field => {
         field.addEventListener('input', function() {
             this.style.borderColor = '#ddd';
@@ -648,15 +647,15 @@ function openEditModal(id) {
         alert('Service data not found');
         return;
     }
-    
+
     const service = servicesData[id];
-    
+
     document.getElementById('editServiceId').value = service.id;
     document.getElementById('edit_name').value = service.name;
     document.getElementById('edit_service_type_id').value = service.service_type_id;
     document.getElementById('edit_price').value = service.price;
     document.getElementById('edit_is_active').value = service.is_active ? '1' : '0'; // Set dropdown value
-    
+
     // Show current icon preview if exists
     const previewContainer = document.getElementById('currentIconPreview');
     if (service.icon_url) {
@@ -667,9 +666,9 @@ function openEditModal(id) {
     } else {
         previewContainer.innerHTML = '<div class="helper-text">No current icon</div>';
     }
-    
+
     openModal(editModal);
-    
+
     // Auto-focus on name field
     setTimeout(() => {
         document.getElementById('edit_name')?.focus();
@@ -680,23 +679,24 @@ function openEditModal(id) {
 function deleteService(id) {
     const service = servicesData[id];
     if (!service) return;
-    
+
     if (!confirm(`Are you sure you want to delete the service "${service.name}"?`)) {
         return;
     }
-    
-    fetch(`/services/list/${id}`, {
+
+    fetch(appUrl(`services/list/${id}`), {
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         },
         body: JSON.stringify({ id: id })
     })
-    .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-    })
+    .then(async res => {
+                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
+                return res.json();
+            })
     .then(data => {
         if (data.success) {
             location.reload();
@@ -705,8 +705,7 @@ function deleteService(id) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to delete service');
+        alert(error.message || 'Failed to delete service');
     });
 }
 </script>

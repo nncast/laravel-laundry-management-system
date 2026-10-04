@@ -5,8 +5,9 @@
 @section('active-inventory-products', 'active')
 
 @section('content')
-<!-- Include the reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 /* --- Inventory Products Page Specific Styles --- */
@@ -145,27 +146,27 @@ tbody tr:hover {
         margin: 0 -15px;
         border-radius: 0;
     }
-    
+
     .header-actions {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .search-box input {
         width: 100%;
         margin-bottom: 10px;
     }
-    
+
     .add-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     table {
         font-size: 13px;
         min-width: 600px;
     }
-    
+
     th, td {
         padding: 10px;
     }
@@ -238,7 +239,7 @@ tbody tr:hover {
             <h3>Add New Product</h3>
             <button type="button" class="close-btn" id="closeAddModal">&times;</button>
         </div>
-        
+
         <form method="POST" action="{{ route('products.store') }}" id="addProductForm">
             @csrf
             <div class="modal-body">
@@ -249,7 +250,7 @@ tbody tr:hover {
                     <input type="text" name="name" id="name" placeholder="Enter product name" required>
                     <div class="error-message" id="name_error"></div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="category_id">
@@ -263,7 +264,7 @@ tbody tr:hover {
                         </select>
                         <div class="error-message" id="category_id_error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="unit_id">
                             Unit <span class="required-star">*</span>
@@ -277,7 +278,7 @@ tbody tr:hover {
                         <div class="error-message" id="unit_id_error"></div>
                     </div>
                 </div>
-                
+
                 <!-- CHANGED: Use purchase_price -->
                 <div class="form-group">
                     <label for="purchase_price">
@@ -286,7 +287,7 @@ tbody tr:hover {
                     <input type="number" step="0.01" min="0" name="purchase_price" id="purchase_price" placeholder="0.00" required>
                     <div class="error-message" id="purchase_price_error"></div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="available_stock">
@@ -295,7 +296,7 @@ tbody tr:hover {
                         <input type="number" min="0" name="available_stock" id="available_stock" placeholder="0" required>
                         <div class="error-message" id="available_stock_error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="minimum_stock_level">
                             Minimum Stock Level <span class="required-star">*</span>
@@ -305,7 +306,7 @@ tbody tr:hover {
                         <div class="helper-text">Alert when stock goes below this level</div>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="status">
                         Status <span class="required-star">*</span>
@@ -318,7 +319,7 @@ tbody tr:hover {
                     <div class="error-message" id="status_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
                 <button type="submit" class="btn-primary">Add Product</button>
@@ -334,12 +335,12 @@ tbody tr:hover {
             <h3>Edit Product</h3>
             <button type="button" class="close-btn" id="closeEditModal">&times;</button>
         </div>
-        
+
         <form method="POST" action="{{ route('products.update') }}" id="editForm">
             @csrf
             @method('PUT')
             <input type="hidden" name="product_id" id="edit_product_id">
-            
+
             <div class="modal-body">
                 <div class="form-group">
                     <label for="edit_name">
@@ -348,7 +349,7 @@ tbody tr:hover {
                     <input type="text" name="name" id="edit_name" placeholder="Enter product name" required>
                     <div class="error-message" id="edit_name_error"></div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="edit_category_id">
@@ -361,7 +362,7 @@ tbody tr:hover {
                         </select>
                         <div class="error-message" id="edit_category_id_error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="edit_unit_id">
                             Unit <span class="required-star">*</span>
@@ -374,7 +375,7 @@ tbody tr:hover {
                         <div class="error-message" id="edit_unit_id_error"></div>
                     </div>
                 </div>
-                
+
                 <!-- CHANGED: Use purchase_price -->
                 <div class="form-group">
                     <label for="edit_purchase_price">
@@ -383,7 +384,7 @@ tbody tr:hover {
                     <input type="number" step="0.01" min="0" name="purchase_price" id="edit_purchase_price" placeholder="0.00" required>
                     <div class="error-message" id="edit_purchase_price_error"></div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="edit_available_stock">
@@ -392,7 +393,7 @@ tbody tr:hover {
                         <input type="number" min="0" name="available_stock" id="edit_available_stock" placeholder="0" required>
                         <div class="error-message" id="edit_available_stock_error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="edit_minimum_stock_level">
                             Minimum Stock Level <span class="required-star">*</span>
@@ -402,7 +403,7 @@ tbody tr:hover {
                         <div class="helper-text">Alert when stock goes below this level</div>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="edit_status">
                         Status <span class="required-star">*</span>
@@ -414,7 +415,7 @@ tbody tr:hover {
                     <div class="error-message" id="edit_status_error"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
                 <button type="submit" class="btn-primary">Update Product</button>
@@ -462,17 +463,17 @@ function validateProductForm(form) {
 
     // CHANGED: Use 'purchase_price' instead of 'price'
     const requiredFields = ['name', 'category_id', 'unit_id', 'purchase_price', 'available_stock', 'minimum_stock_level', 'status'];
-    
+
     requiredFields.forEach(field => {
         const input = form.querySelector(`[name="${field}"]`);
         const isEdit = form.id === 'editForm';
         const errorId = isEdit ? `edit_${field}_error` : `${field}_error`;
-        
+
         if (input && !input.value.trim()) {
             showError(errorId, 'This field is required');
             valid = false;
         }
-        
+
         // Validate numeric fields
         if (field === 'purchase_price' || field === 'available_stock' || field === 'minimum_stock_level') {
             if (input && (parseFloat(input.value) < 0)) {
@@ -521,15 +522,15 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_name').value = row.cells[1].textContent.trim();
             document.getElementById('edit_category_id').value = row.dataset.categoryId;
             document.getElementById('edit_unit_id').value = row.dataset.unitId;
-            
+
             // CHANGED: Extract purchase price value
             const priceText = row.cells[4].textContent.trim();
             const priceValue = priceText.replace(/[^\d.-]/g, '');
             document.getElementById('edit_purchase_price').value = priceValue; // CHANGED
-            
+
             document.getElementById('edit_available_stock').value = row.cells[5].textContent.trim();
             document.getElementById('edit_minimum_stock_level').value = row.cells[6].textContent.trim();
-            
+
             const statusText = row.cells[7].textContent.trim().toLowerCase();
             document.getElementById('edit_status').value = statusText;
 
@@ -562,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function () {
         rows.forEach(row => {
             // Skip the "no products" row
             if (row.cells.length < 2) return;
-            
+
             const name = row.cells[1].textContent.toLowerCase();
             if (name.includes(query)) {
                 row.style.display = '';
@@ -637,10 +638,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ product_id: productId })
             })
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error('Network response was not ok');
-                }
+            .then(async res => {
+                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
                 return res.json();
             })
             .then(data => {
@@ -648,14 +647,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Remove the row from the table
                     const row = e.target.closest('tr');
                     row.remove();
-                    
+
                     // Reset row numbers
                     resetTableNumbers();
-                    
+
                     // If no rows left, show empty message
                     const remainingRows = document.querySelectorAll('#productTable tr:not([colspan])');
                     const noResultsRow = document.querySelector('#productTable tr[colspan]');
-                    
+
                     if (remainingRows.length === 0 && !noResultsRow) {
                         const tbody = document.getElementById('productTable');
                         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#888;">No products found.</td></tr>';
@@ -665,8 +664,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(err => {
-                console.error('Delete error:', err);
-                alert("Error deleting product. Please try again.");
+                alert(err.message || "Error deleting product. Please try again.");
             });
         });
     });

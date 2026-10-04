@@ -180,15 +180,15 @@
 
 /* Original styles remain the same */
 /* Reset & Base - Mobile First */
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-body { 
-    font-family: 'Poppins', sans-serif; 
-    background: #f2f5f7; 
-    color: #2c3e50; 
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f2f5f7;
+    color: #2c3e50;
     font-size: 14px;
     line-height: 1.5;
 }
@@ -314,7 +314,7 @@ body {
     border-bottom: 1px solid #eee;
 }
 
-.box-section:last-child { 
+.box-section:last-child {
     border-bottom: none;
     margin-bottom: 0;
 }
@@ -339,7 +339,7 @@ body {
     gap: 8px;
 }
 
-.section-title i { 
+.section-title i {
     color: #007bff;
     font-size: 14px;
 }
@@ -377,19 +377,19 @@ body {
     vertical-align: top;
 }
 
-.order-table tr:hover { 
-    background: #f9f9f9; 
+.order-table tr:hover {
+    background: #f9f9f9;
 }
 
-.service-name { 
-    font-weight: 500; 
+.service-name {
+    font-weight: 500;
     color: #2c3e50;
     font-size: 13px;
     margin-bottom: 2px;
 }
 
-.service-variant { 
-    font-size: 11px; 
+.service-variant {
+    font-size: 11px;
     color: #999;
     line-height: 1.3;
 }
@@ -410,15 +410,15 @@ body {
     flex-wrap: wrap;
 }
 
-.info-label { 
-    color: #6c757d; 
+.info-label {
+    color: #6c757d;
     font-size: 12px;
     min-width: 80px;
 }
 
-.info-value { 
-    color: #2c3e50; 
-    font-weight: 500; 
+.info-value {
+    color: #2c3e50;
+    font-weight: 500;
     font-size: 12px;
     text-align: right;
     flex: 1;
@@ -446,14 +446,14 @@ body {
     font-weight: 700;
 }
 
-.payment-label { 
-    color: #6c757d; 
+.payment-label {
+    color: #6c757d;
     font-size: 13px;
 }
 
-.payment-value { 
-    color: #2c3e50; 
-    font-weight: 500; 
+.payment-value {
+    color: #2c3e50;
+    font-weight: 500;
     font-size: 13px;
 }
 
@@ -568,13 +568,13 @@ body {
 .btn-action i {
     font-size: 13px;
 }
-.btn-payment { 
-    background: #6f42c1; 
-    color: white; 
+.btn-payment {
+    background: #6f42c1;
+    color: white;
 }
-.btn-payment:hover { 
-    background: #5a32a3; 
-    color: white; 
+.btn-payment:hover {
+    background: #5a32a3;
+    color: white;
 }
 .btn-edit { background: #007bff; color: white; }
 .btn-edit:hover { background: #0056b3; color: white; }
@@ -653,81 +653,81 @@ body {
         padding: 15px;
         max-width: 100%;
     }
-    
+
     .order-header {
         flex-direction: row;
         align-items: center;
         padding: 20px;
     }
-    
+
     .order-number {
         width: auto;
         min-width: 200px;
         font-size: 20px;
     }
-    
+
     .order-meta {
         flex: 1;
     }
-    
+
     .meta-label {
         font-size: 13px;
     }
-    
+
     .meta-value {
         font-size: 13px;
     }
-    
+
     .status-badge {
         font-size: 12px;
         min-width: 100px;
     }
-    
+
     .status-dropdown {
         min-width: 120px;
     }
-    
+
     .section-title {
         font-size: 16px;
     }
-    
+
     .order-table th,
     .order-table td {
         padding: 12px 10px;
         font-size: 13px;
     }
-    
+
     .service-name {
         font-size: 14px;
     }
-    
+
     .info-label,
     .info-value {
         font-size: 13px;
     }
-    
+
     .payment-label,
     .payment-value {
         font-size: 14px;
     }
-    
+
     .notes-textarea {
         font-size: 13px;
     }
-    
+
     .store-name {
         font-size: 20px;
     }
-    
+
     .store-details {
         font-size: 13px;
     }
-    
+
     .btn-action {
         font-size: 13px;
         padding: 12px 15px;
     }
-    
+
     .order-footer {
         font-size: 13px;
         padding: 20px;
@@ -735,7 +735,7 @@ body {
         justify-content: space-between;
         gap: 20px;
     }
-    
+
     .footer-row {
         flex: 1;
         border-bottom: none;
@@ -749,44 +749,44 @@ body {
     .order-container {
         max-width: 90%;
     }
-    
+
     .two-columns {
         flex-direction: row;
         gap: 20px;
     }
-    
+
     .left-main {
         flex: 1;
     }
-    
+
     .right-sidebar {
         width: 350px;
         flex-shrink: 0;
     }
-    
+
     .content-box {
         margin-bottom: 0;
     }
-    
+
     .info-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 12px;
     }
-    
+
     .info-row {
         flex-direction: column;
         border-bottom: none;
         padding: 0;
         gap: 4px;
     }
-    
+
     .info-label,
     .info-value {
         width: 100%;
         text-align: left;
     }
-    
+
     .btn-save {
         width: auto;
         align-self: flex-start;
@@ -798,7 +798,7 @@ body {
     .order-container {
         max-width: 1200px;
     }
-    
+
     .order-header {
         display: flex;
         flex-direction: row;
@@ -806,7 +806,7 @@ body {
         gap: 30px;
         padding: 20px;
     }
-    
+
     .order-number {
         font-size: 24px;
         min-width: 220px;
@@ -814,7 +814,7 @@ body {
         padding: 12px 20px;
         margin: 0;
     }
-    
+
     .order-meta {
         flex: 1;
         display: flex;
@@ -824,7 +824,7 @@ body {
         align-items: center;
         justify-content: flex-start;
     }
-    
+
     .meta-item {
         display: flex;
         flex-direction: row;
@@ -834,14 +834,14 @@ body {
         padding: 0;
         min-height: auto;
     }
-    
+
     .meta-label {
         font-size: 13px;
         min-width: auto;
         white-space: nowrap;
         color: #6c757d;
     }
-    
+
     .meta-value {
         font-size: 13px;
         text-align: left;
@@ -849,35 +849,35 @@ body {
         color: #2c3e50;
         white-space: nowrap;
     }
-    
+
     /* Status selector adjustments */
     .meta-item:nth-child(3) {
         min-width: 200px;
     }
-    
+
     .status-selector {
         flex-direction: row;
         align-items: center;
         gap: 8px;
         width: auto;
     }
-    
+
     .status-badge {
         min-width: 90px;
         font-size: 11px;
     }
-    
+
     .status-dropdown {
         width: 120px;
         min-width: 120px;
         font-size: 12px;
         padding: 5px 8px;
     }
-    
+
     .order-table {
         min-width: 100%;
     }
-    
+
     .order-footer {
         justify-content: space-around;
         padding: 20px 40px;
@@ -889,37 +889,37 @@ body {
     .order-container {
         padding: 20px 15px;
     }
-    
+
     .order-header {
         gap: 40px;
     }
-    
+
     .order-meta {
         gap: 40px;
         justify-content: space-between;
     }
-    
+
     .meta-item {
         gap: 10px;
     }
-    
+
     .meta-label,
     .meta-value {
         font-size: 14px;
     }
-    
+
     .box-section {
         padding: 20px;
     }
-    
+
     .section-title {
         font-size: 17px;
     }
-    
+
     .store-name {
         font-size: 22px;
     }
-    
+
     .order-footer {
         padding: 20px 50px;
     }
@@ -932,11 +932,11 @@ body {
     .status-dropdown {
         min-height: 44px; /* Minimum touch target size */
     }
-    
+
     .notes-textarea {
         font-size: 16px; /* Prevent iOS zoom on focus */
     }
-    
+
     select.status-dropdown {
         font-size: 16px; /* Prevent iOS zoom on focus */
     }
@@ -948,13 +948,13 @@ body {
         background: white !important;
         font-size: 12pt !important;
     }
-    
+
     .order-container {
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
     }
-    
+
     .btn-action,
     .btn-save,
     .status-dropdown,
@@ -962,7 +962,7 @@ body {
     .order-footer {
         display: none !important;
     }
-    
+
     .content-box,
     .store-info-box {
         box-shadow: none !important;
@@ -993,7 +993,7 @@ body {
                 <span class="meta-label">Status:</span>
                 <div class="status-selector">
                     <span class="status-badge {{ $order->status }}">{{ ucfirst($order->status) }}</span>
-                    <select class="status-dropdown" data-order-id="{{ $order->id }}">
+                    <select class="status-dropdown" data-order-id="{{ $order->id }}" data-current="{{ $order->status }}" aria-label="Order status">
                         <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Processing</option>
                         <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }}>Completed</option>
@@ -1067,10 +1067,12 @@ body {
                             <span class="info-label">Phone:</span>
                             <span class="info-value">{{ $order->customer->contact ?? '-' }}</span>
                         </div>
+                        @if($order->customer->address)
                         <div class="info-row">
-                            <span class="info-label">Email:</span>
-                            <span class="info-value">{{ $order->customer->email ?? '-' }}</span>
+                            <span class="info-label">Address:</span>
+                            <span class="info-value">{{ $order->customer->address }}</span>
                         </div>
+                        @endif
                         @else
                         <div class="info-row">
                             <span class="info-value" style="color: #666; font-style: italic;">
@@ -1094,7 +1096,7 @@ body {
                         @if($order->addons->count() > 0)
                         <div class="payment-row">
                             <span class="payment-label">Addons:</span>
-                            <span class="payment-value">{{ number_format($order->addons->sum('price'), 2) }} PHP</span>
+                            <span class="payment-value">{{ number_format($order->addons->sum('pivot.price'), 2) }} PHP</span>
                         </div>
                         @endif
                         <div class="payment-row">
@@ -1132,8 +1134,8 @@ body {
                     <div class="notes-display">
                         {{ $order->notes ?? 'No notes available' }}
                     </div>
-                    <textarea class="notes-textarea" placeholder="Add new notes..." rows="3" data-order-id="{{ $order->id }}"></textarea>
-                    <button class="btn-save" data-order-id="{{ $order->id }}">Edit Notes</button>
+                    <textarea class="notes-textarea" placeholder="Add notes for this order..." rows="3" maxlength="1000" data-order-id="{{ $order->id }}">{{ $order->notes }}</textarea>
+                    <button type="button" class="btn-save" data-order-id="{{ $order->id }}">Save Notes</button>
                 </div>
             </div>
         </div>
@@ -1161,22 +1163,30 @@ body {
                     <h2 class="store-name"><i class="fas fa-cogs"></i> Actions</h2>
                 </div>
                 <div class="action-buttons">
-                    <!-- Payment Button - FIXED: Added correct data attributes -->
-                    <button class="btn-action btn-payment add-payment-btn" 
+                    @if($order->status !== 'cancelled' && $order->balance > 0)
+                    <button type="button" class="btn-action btn-payment add-payment-btn"
                             data-order-id="{{ $order->id }}"
                             data-order-total="{{ $order->total }}"
                             data-paid-amount="{{ $order->paid_amount }}">
                         <i class="fas fa-credit-card"></i> Add Payment
                     </button>
-                    
+                    @endif
+
+                    @if($order->can_edit)
                     <a href="{{ route('pos.edit', $order) }}" class="btn-action btn-edit">
                         <i class="fas fa-edit"></i> Edit Order
                     </a>
-                    <button class="btn-action btn-complete btn-mark-complete" data-order-id="{{ $order->id }}">
+                    @endif
+                    @if(!in_array($order->status, ['completed', 'cancelled']))
+                    <button type="button" class="btn-action btn-complete btn-mark-complete" data-order-id="{{ $order->id }}">
                         <i class="fas fa-check"></i> Mark Complete
                     </button>
-                    <button class="btn-action btn-cancel btn-cancel-order" data-order-id="{{ $order->id }}">
+                    <button type="button" class="btn-action btn-cancel btn-cancel-order" data-order-id="{{ $order->id }}">
                         <i class="fas fa-times"></i> Cancel Order
+                    </button>
+                    @endif
+                    <button type="button" class="btn-action btn-edit" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
                     </button>
                 </div>
             </div>
@@ -1212,11 +1222,11 @@ body {
             <h3>Add Payment</h3>
             <button type="button" class="close-btn" id="closePaymentModal">&times;</button>
         </div>
-        
+
         <form method="POST" id="paymentForm">
             @csrf
             <input type="hidden" id="paymentOrderId" name="order_id">
-            
+
             <div class="modal-body">
                 <div class="form-group">
                     <label for="amount">
@@ -1225,9 +1235,9 @@ body {
                     <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
                     <div class="error-message" id="amount_error"></div>
                 </div>
-                
+
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelPayment">Cancel</button>
                 <button type="submit" class="btn-primary" id="submitPayment">Add Payment</button>
@@ -1269,136 +1279,33 @@ function showPaymentError(fieldId, message) {
     }
 }
 
-// Helper function to show notifications
+// Notifications use the shared toast from the layout
 function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            ${message}
-        </div>
-        <button class="notification-close">&times;</button>
-    `;
-    
-    // Add styles
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        border-radius: 8px;
-        color: white;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        min-width: 300px;
-        max-width: 400px;
-        z-index: 9999;
-        animation: slideIn 0.3s ease-out;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    
-    // Set background color based on type
-    if (type === 'success') {
-        notification.style.backgroundColor = '#28a745';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = '#dc3545';
-    } else if (type === 'warning') {
-        notification.style.backgroundColor = '#ffc107';
-        notification.style.color = '#212529';
-    } else {
-        notification.style.backgroundColor = '#007bff';
-    }
-    
-    // Add close button styles
-    const closeBtn = notification.querySelector('.notification-close');
-    closeBtn.style.cssText = `
-        background: none;
-        border: none;
-        color: inherit;
-        font-size: 20px;
-        cursor: pointer;
-        margin-left: 10px;
-        padding: 0;
-        line-height: 1;
-    `;
-    
-    // Add close functionality
-    closeBtn.addEventListener('click', () => {
-        notification.style.animation = 'slideOut 0.3s ease-in forwards';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    });
-    
-    // Add CSS animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Add to page
-    document.body.appendChild(notification);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.style.animation = 'slideOut 0.3s ease-in forwards';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }
-    }, 5000);
+    window.showToast(message, type);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     // Status dropdown change handler
     const statusDropdown = document.querySelector('.status-dropdown');
     const statusBadge = document.querySelector('.status-badge');
-    
+
     if(statusDropdown) {
         statusDropdown.addEventListener('change', function() {
             const status = this.value;
             const orderId = this.dataset.orderId;
-            
-            // Store the original value in case we need to revert
-            const originalStatus = this.value;
-            
+
+            // The value before this change, so we can revert on failure
+            const originalStatus = this.dataset.current || status;
+
             // Update badge immediately
             statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
             statusBadge.className = 'status-badge ' + status;
-            
+
             // Show loading state
             statusDropdown.disabled = true;
-            
+
             // Send AJAX request to update status - USE POST ONLY
-            fetch(`/orders/${orderId}/update-status`, {
+            fetch(appUrl(`orders/${orderId}/update-status`), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1406,13 +1313,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     status: status
                 })
             })
             .then(async response => {
                 const text = await response.text();
-                
+
                 try {
                     const data = JSON.parse(text);
                     return { response: response, data: data };
@@ -1422,11 +1329,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(({ response, data }) => {
                 statusDropdown.disabled = false;
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${data.message || 'Server error'}`);
                 }
-                
+
                 if (data.success) {
                     // Success - update UI with server response
                     if (data.order && data.order.status) {
@@ -1434,15 +1341,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         statusBadge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
                         statusBadge.className = 'status-badge ' + newStatus;
                         statusDropdown.value = newStatus;
+                        statusDropdown.dataset.current = newStatus;
                     }
-                    
+
                     // Show success message
                     showNotification('Status updated successfully!', 'success');
-                    
+
                 } else {
                     // Server returned error
                     showNotification(data.message || 'Failed to update status', 'error');
-                    
+
                     // Revert to original status
                     if (statusDropdown && statusBadge) {
                         statusDropdown.value = originalStatus;
@@ -1454,10 +1362,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Fetch error details:', error);
                 statusDropdown.disabled = false;
-                
+
                 // Show error message
                 showNotification('Error: ' + error.message, 'error');
-                
+
                 // Revert to original status
                 if (statusDropdown && statusBadge) {
                     statusDropdown.value = originalStatus;
@@ -1467,26 +1375,22 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     // Save notes button
     const saveNotesBtn = document.querySelector('.btn-save');
     if(saveNotesBtn) {
         saveNotesBtn.addEventListener('click', function() {
             const orderId = this.dataset.orderId;
             const notes = document.querySelector('.notes-textarea').value;
-            
-            if (!notes.trim()) {
-                alert('Please enter notes to save.');
-                return;
-            }
-            
+
+
             // Disable button and show loading
             const originalText = this.textContent;
             this.textContent = 'Saving...';
             this.disabled = true;
-            
+
             // Send AJAX request to save notes
-            fetch(`/orders/${orderId}/add-notes`, {
+            fetch(appUrl(`orders/${orderId}/add-notes`), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1494,18 +1398,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ 
-                    notes: notes 
+                body: JSON.stringify({
+                    notes: notes
                 })
             })
-            .then(response => response.json())
+            .then(async response => {
+                if (!response.ok) throw new Error(await window.responseErrorMessage(response, 'Request failed'));
+                return response.json();
+            })
             .then(data => {
                 this.textContent = originalText;
                 this.disabled = false;
-                
+
                 if (data.success) {
-                    alert('Notes saved successfully!');
-                    location.reload();
+                    const display = document.querySelector('.notes-display');
+                    if (display) display.textContent = data.notes || 'No notes available';
+                    showNotification('Notes saved successfully!', 'success');
                 } else {
                     alert('Failed to save notes: ' + data.message);
                 }
@@ -1514,17 +1422,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 this.textContent = originalText;
                 this.disabled = false;
-                alert('Network error. Please try again.');
+                alert(error.message || 'Network error. Please try again.');
             });
         });
     }
-    
+
     // Mark as complete button
     const markCompleteBtn = document.querySelector('.btn-mark-complete');
     if(markCompleteBtn) {
         markCompleteBtn.addEventListener('click', function() {
             const orderId = this.dataset.orderId;
-            
+
             if (confirm('Are you sure you want to mark this order as complete?')) {
                 // Update the status dropdown and badge first
                 if (statusDropdown) {
@@ -1532,14 +1440,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusBadge.textContent = 'Completed';
                     statusBadge.className = 'status-badge completed';
                 }
-                
+
                 // Disable button and show loading
                 const originalText = this.textContent;
                 this.textContent = 'Processing...';
                 this.disabled = true;
-                
+
                 // Send AJAX request to update status to completed
-                fetch(`/orders/${orderId}/update-status`, {
+                fetch(appUrl(`orders/${orderId}/update-status`), {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1547,15 +1455,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         status: 'completed'
                     })
                 })
-                .then(response => response.json())
+                .then(async response => {
+                    if (!response.ok) throw new Error(await window.responseErrorMessage(response, 'Request failed'));
+                    return response.json();
+                })
                 .then(data => {
                     this.textContent = originalText;
                     this.disabled = false;
-                    
+
                     if (data.success) {
                         alert('Order marked as complete!');
                         location.reload();
@@ -1567,18 +1478,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error:', error);
                     this.textContent = originalText;
                     this.disabled = false;
-                    alert('Network error. Please try again.');
+                    alert(error.message || 'Network error. Please try again.');
                 });
             }
         });
     }
-    
+
     // Cancel order button
     const cancelOrderBtn = document.querySelector('.btn-cancel-order');
     if(cancelOrderBtn) {
         cancelOrderBtn.addEventListener('click', function() {
             const orderId = this.dataset.orderId;
-            
+
             if (confirm('Are you sure you want to cancel this order?')) {
                 // Update the status dropdown and badge first
                 if (statusDropdown) {
@@ -1586,14 +1497,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusBadge.textContent = 'Cancelled';
                     statusBadge.className = 'status-badge cancelled';
                 }
-                
+
                 // Disable button and show loading
                 const originalText = this.textContent;
                 this.textContent = 'Cancelling...';
                 this.disabled = true;
-                
+
                 // Send AJAX request to change status to cancelled
-                fetch(`/orders/${orderId}/update-status`, {
+                fetch(appUrl(`orders/${orderId}/update-status`), {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1601,15 +1512,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         status: 'cancelled'
                     })
                 })
-                .then(response => response.json())
+                .then(async response => {
+                    if (!response.ok) throw new Error(await window.responseErrorMessage(response, 'Request failed'));
+                    return response.json();
+                })
                 .then(data => {
                     this.textContent = originalText;
                     this.disabled = false;
-                    
+
                     if (data.success) {
                         alert('Order cancelled successfully!');
                         location.reload();
@@ -1621,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error:', error);
                     this.textContent = originalText;
                     this.disabled = false;
-                    alert('Network error. Please try again.');
+                    alert(error.message || 'Network error. Please try again.');
                 });
             }
         });
@@ -1635,16 +1549,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitPaymentBtn = document.getElementById('submitPayment');
     const cancelPaymentBtn = document.getElementById('cancelPayment');
     const closePaymentModal = document.getElementById('closePaymentModal');
-    
+
     // Check if CSRF token exists, create if not
     if (!document.querySelector('meta[name="csrf-token"]')) {
         const csrfMeta = document.createElement('meta');
         csrfMeta.name = 'csrf-token';
         csrfMeta.content = '{{ csrf_token() }}';
         document.head.appendChild(csrfMeta);
-        console.log('CSRF meta tag added dynamically');
     }
-    
+
     // Open payment modal
     document.addEventListener('click', function(e) {
         const paymentBtn = e.target.closest('.add-payment-btn');
@@ -1654,13 +1567,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const orderTotal = parseFloat(paymentBtn.getAttribute('data-order-total') || 0);
             const paidAmount = parseFloat(paymentBtn.getAttribute('data-paid-amount') || 0);
             const remaining = orderTotal - paidAmount;
-            
+
             // Set order ID
             const orderIdField = document.getElementById('paymentOrderId');
             if (orderIdField) {
                 orderIdField.value = orderId;
             }
-            
+
             // Set amount to remaining balance
             const amountField = document.getElementById('amount');
             if (amountField) {
@@ -1670,13 +1583,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     amountField.value = '';
                 }
             }
-            
+
             // Clear previous errors
             clearPaymentErrors();
-            
+
             // Open modal
             openModal(paymentModal);
-            
+
             // Auto-focus on amount field
             setTimeout(() => {
                 amountField?.focus();
@@ -1684,55 +1597,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }
     });
-    
+
     // Close payment modal
     cancelPaymentBtn.addEventListener('click', () => closeModal(paymentModal));
     closePaymentModal.addEventListener('click', () => closeModal(paymentModal));
-    
+
     // Handle form submission
     paymentForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         // Simple validation
         const amountField = document.getElementById('amount');
         const orderIdField = document.getElementById('paymentOrderId');
-        
+
         if (!amountField || !amountField.value) {
             showPaymentError('amount_error', 'Please enter an amount');
             amountField?.focus();
             return;
         }
-        
+
         const amount = parseFloat(amountField.value);
         if (isNaN(amount) || amount <= 0) {
             showPaymentError('amount_error', 'Please enter a valid amount greater than 0');
             amountField?.focus();
             return;
         }
-        
+
         if (!orderIdField || !orderIdField.value) {
             alert('Error: Order ID is missing');
             return;
         }
-        
+
         const orderId = orderIdField.value;
-        
+
         // Get CSRF token
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-        
+
         // Create form data
         const formData = new FormData();
         formData.append('amount', amount);
         formData.append('_token', csrfToken);
-        
+
         // Disable button and show loading
         const originalText = submitPaymentBtn.innerHTML;
         submitPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
         submitPaymentBtn.disabled = true;
-        
+
         try {
             // Submit via AJAX
-            const response = await fetch(`/orders/${orderId}/add-payment`, {
+            const response = await fetch(appUrl(`orders/${orderId}/add-payment`), {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -1740,22 +1653,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: formData
             });
-            
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                showPaymentError('amount_error', await window.responseErrorMessage(response, 'Could not add the payment.'));
+                return;
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
-                showNotification('Payment added successfully!', 'success');
+                let msg = 'Payment added successfully!';
+                if (data.change > 0) msg += ` Change due: ${Number(data.change).toFixed(2)} PHP`;
+                showNotification(msg, 'success');
                 closeModal(paymentModal);
                 paymentForm.reset();
-                
+
                 // Reload page after a short delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+                setTimeout(() => window.location.reload(), 1200);
             } else {
                 alert('Error: ' + (data.message || 'Something went wrong'));
             }
@@ -1768,19 +1682,19 @@ document.addEventListener('DOMContentLoaded', function() {
             submitPaymentBtn.disabled = false;
         }
     });
-    
+
     // Clear errors on input
     document.getElementById('amount')?.addEventListener('input', function() {
         this.style.borderColor = '#ddd';
         const errorElement = document.getElementById('amount_error');
         if (errorElement) errorElement.style.display = 'none';
     });
-    
+
     // Close modal on outside click
     window.addEventListener('click', e => {
         if(e.target === paymentModal) closeModal(paymentModal);
     });
-    
+
     // Close modal on escape key
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
@@ -1789,4 +1703,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+@if(request()->boolean('print'))
+<script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
+@endif
 @endsection

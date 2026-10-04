@@ -5,8 +5,9 @@
 @section('active-settings-mastersettings', 'active')
 
 @section('content')
-<!-- Include the reusable modal CSS -->
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 /* ================================
@@ -242,6 +243,44 @@
     100% { opacity: 0.6; }
 }
 
+/* Backup / restore controls */
+.backup-btn,
+.restore-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    color: #fff;
+}
+.backup-btn { background: var(--blue); }
+.backup-btn:hover { background: #0056b3; }
+.backup-btn.is-loading { pointer-events: none; opacity: 0.7; }
+.restore-btn { background: #dc3545; }
+.restore-btn:hover { background: #b02a37; }
+.restore-form {
+    border-top: 1px solid #eee;
+    padding-top: 18px;
+    margin-top: 5px;
+}
+.restore-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: #856404;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+.restore-confirm input { width: auto; margin-top: 4px; }
+
 /* ================================
    MOBILE RESPONSIVENESS
    ================================ */
@@ -249,18 +288,18 @@
     .settings-container {
         padding: 15px;
     }
-    
+
     .tools-grid {
         grid-template-columns: 1fr;
         gap: 15px;
         max-width: 100%;
     }
-    
+
     .tool-card {
         min-height: 130px;
         padding: 20px 15px;
     }
-    
+
     .tool-card i {
         font-size: 28px;
         margin-bottom: 12px;
@@ -271,11 +310,11 @@
     .settings-header h3 {
         font-size: 1.3rem;
     }
-    
+
     .settings-header p {
         font-size: 13px;
     }
-    
+
     .settings-container {
         padding: 15px 12px; /* Reduced padding on mobile */
     }
@@ -311,45 +350,43 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="business_name">Business Name <span class="required-star">*</span></label>
-                    <input type="text" name="business_name" id="business_name" 
-                           value="{{ old('business_name', $settings->business_name ?? '') }}" 
+                    <input type="text" name="business_name" id="business_name"
+                           value="{{ old('business_name', $settings->business_name ?? '') }}"
                            placeholder="Enter business name" required>
                     <div class="error-message" id="business_name_error"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="address">Address</label>
-                    <textarea name="address" id="address" rows="3" 
+                    <textarea name="address" id="address" rows="3"
                               placeholder="Enter business address">{{ old('address', $settings->address ?? '') }}</textarea>
                     <div class="error-message" id="address_error"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="contact">Contact Number</label>
-                    <input type="text" name="contact" id="contact" 
-                           value="{{ old('contact', $settings->contact ?? '') }}" 
+                    <input type="text" name="contact" id="contact"
+                           value="{{ old('contact', $settings->contact ?? '') }}"
                            placeholder="e.g., 09123456789">
                     <div class="error-message" id="contact_error"></div>
                     <div class="helper-text">Optional - 10 to 15 digits only</div>
                 </div>
 
                 <div class="form-group">
-                    <label for="logo">Logo (Favicon)</label>
-                    <input type="file" name="logo" id="logo" accept=".ico" onchange="previewIcoFile(this)">
-                    <div class="error-message" id="logo_error"></div>
-                    
+                    <label for="favicon">Logo (Favicon)</label>
+                    <input type="file" name="favicon" id="favicon" accept=".ico,image/x-icon,image/vnd.microsoft.icon">
+                    <div class="error-message" id="favicon_error"></div>
+
                     <div class="helper-text info">
                         <i class="fas fa-info-circle"></i>
                         Only .ico files are allowed (recommended size: 16x16, 32x32, or 48x48 pixels)
                     </div>
-                    
-                    @if(!empty($settings->logo))
+
+                    @if(!empty($settings->favicon))
                         <div class="logo-preview">
-                            <img src="{{ asset('storage/' . $settings->logo) }}" alt="Current Logo" 
-                                 onerror="this.style.display='none'">
-                            <span class="helper-text">
-                                Current logo: <a href="{{ asset('storage/' . $settings->logo) }}" target="_blank">View</a>
-                            </span>
+                            <img src="{{ asset($settings->favicon) }}?v={{ optional($settings->updated_at)->timestamp }}" alt="Current Logo"
+                                 onerror="this.parentElement.style.display='none'">
+                            <span class="helper-text">Current logo</span>
                         </div>
                     @endif
                 </div>
@@ -357,7 +394,7 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeModal('businessProfileModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Settings</button>
+                <button type="submit" class="btn-primary" id="saveSettingsBtn">Save Settings</button>
             </div>
         </form>
     </div>
@@ -370,21 +407,19 @@
             <h3><i class="fas fa-database"></i> Data Backup & Restore</h3>
             <button type="button" class="close-btn" onclick="closeModal('dataBackupModal')">&times;</button>
         </div>
-        
+
         <div class="modal-body">
             <div class="form-group">
                 <label>Create Backup</label>
-                <form method="GET" action="/backup/download" id="backupForm">
-                    <button type="submit" class="btn-primary" style="width: 100%;" id="createBackupBtn">
-                        <i class="fas fa-download"></i> Download Backup File
-                    </button>
-                </form>
-                
+                <a href="{{ route('backup.download') }}" class="btn-primary backup-btn" id="createBackupBtn">
+                    <i class="fas fa-download"></i> Download Backup File
+                </a>
+
                 <div class="helper-text" id="lastBackupText">
-                    @if(!empty($settings->last_backup) && $settings->last_backup != 'Never')
+                    @if(!empty($lastBackup))
                         <div class="status-indicator">
                             <span class="dot"></span>
-                            Last backup: {{ \Carbon\Carbon::parse($settings->last_backup)->format('M d, Y H:i') }}
+                            Last backup: {{ \Carbon\Carbon::createFromTimestamp($lastBackup)->timezone(config('app.timezone'))->format('M d, Y h:i A') }}
                         </div>
                     @else
                         <div class="helper-text" style="color: #dc3545;">
@@ -393,17 +428,33 @@
                     @endif
                 </div>
             </div>
-            
+
             <div class="warning-box">
                 <h4><i class="fas fa-exclamation-triangle"></i> Important</h4>
                 <p>
-                    <strong>Backup your data regularly</strong> to prevent data loss. 
-                    The backup file contains all your business data and settings.
-                    Store it in a safe location.
+                    <strong>Backup your data regularly</strong> to prevent data loss.
+                    The backup file (.sql) contains all your business data and settings.
+                    Store it in a safe location (USB drive, cloud storage).
                 </p>
             </div>
+
+            <form method="POST" action="{{ route('backup.restore') }}" enctype="multipart/form-data" id="restoreForm" class="restore-form">
+                @csrf
+                <div class="form-group">
+                    <label for="backup_file">Restore From Backup</label>
+                    <input type="file" name="backup_file" id="backup_file" accept=".sql" required>
+                    <div class="helper-text">Only .sql files downloaded from this page can be restored.</div>
+                </div>
+                <label class="restore-confirm">
+                    <input type="checkbox" name="confirm" value="1" required>
+                    <span>I understand this will <strong>replace all current data</strong>. A safety backup is saved automatically first.</span>
+                </label>
+                <button type="submit" class="btn-danger restore-btn" id="restoreBtn">
+                    <i class="fas fa-upload"></i> Restore Backup
+                </button>
+            </form>
         </div>
-        
+
         <div class="modal-footer">
             <button type="button" class="btn-cancel" onclick="closeModal('dataBackupModal')">Close</button>
         </div>
@@ -416,7 +467,7 @@ function openModal(modalId) {
     const modal = document.getElementById(modalId);
     modal.classList.add('active');
     document.body.classList.add('modal-open');
-    
+
     // Auto-focus on first input
     setTimeout(() => {
         const firstInput = modal.querySelector('input:not([type="file"]), textarea, button');
@@ -452,36 +503,23 @@ function showError(fieldId, message) {
     }
 }
 
-// Function to preview ICO file name
-function previewIcoFile(input) {
-    const logoError = document.getElementById('logo_error');
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const fileName = file.name;
-        const fileExt = fileName.split('.').pop().toLowerCase();
-        
-        // Clear previous error
-        logoError.style.display = 'none';
-        logoError.textContent = '';
-        
-        // Check if it's an ICO file
-        if (fileExt !== 'ico') {
-            showError('logo_error', 'Only .ico files are allowed. Please select an ICO file.');
-            input.value = ''; // Clear the file input
-            return false;
-        }
-        
-        // Check file size (max 100KB for ICO files)
-        const maxSize = 100 * 1024; // 100KB
-        if (file.size > maxSize) {
-            showError('logo_error', 'ICO file size must be less than 100KB');
-            input.value = '';
-            return false;
-        }
-        
-        // You could add more validation here if needed
-        return true;
+// Validate the selected .ico file
+function validateIcoFile(input) {
+    if (!input.files || !input.files[0]) return true;
+    const file = input.files[0];
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext !== 'ico') {
+        showError('favicon_error', 'Only .ico files are allowed. Please select an ICO file.');
+        input.value = '';
+        return false;
     }
+    if (file.size > 200 * 1024) {
+        showError('favicon_error', 'ICO file size must be less than 200KB');
+        input.value = '';
+        return false;
+    }
+    return true;
 }
 
 // Form validation for Business Profile
@@ -492,14 +530,14 @@ document.addEventListener('DOMContentLoaded', () => {
         businessProfileForm.addEventListener('submit', function(e) {
             clearErrors('businessProfileModal');
             let valid = true;
-            
+
             // Business Name validation
             const businessName = document.getElementById('business_name');
             if (!businessName || !businessName.value.trim()) {
                 showError('business_name_error', 'Business name is required');
                 valid = false;
             }
-            
+
             // Contact number validation (optional but must be valid if provided)
             const contact = document.getElementById('contact');
             if (contact && contact.value.trim()) {
@@ -509,44 +547,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     valid = false;
                 }
             }
-            
+
             // ICO file validation (optional)
-            const logo = document.getElementById('logo');
-            if (logo && logo.files.length > 0) {
-                const file = logo.files[0];
-                const validTypes = ['image/vnd.microsoft.icon', 'image/x-icon'];
-                const maxSize = 100 * 1024; // 100KB
-                
-                // Check file extension
-                const fileName = file.name;
-                const fileExt = fileName.split('.').pop().toLowerCase();
-                
-                if (fileExt !== 'ico') {
-                    showError('logo_error', 'Only .ico files are allowed');
-                    valid = false;
-                }
-                
-                // Check MIME type (some browsers might not detect ICO correctly)
-                if (!validTypes.includes(file.type) && file.type !== '') {
-                    // Some browsers might not recognize .ico MIME type
-                    if (fileExt !== 'ico') {
-                        showError('logo_error', 'Please upload a valid .ico file');
-                        valid = false;
-                    }
-                }
-                
-                if (file.size > maxSize) {
-                    showError('logo_error', 'ICO file size must be less than 100KB');
-                    valid = false;
-                }
+            const favicon = document.getElementById('favicon');
+            if (favicon && favicon.files.length > 0 && !validateIcoFile(favicon)) {
+                valid = false;
             }
-            
+
             if (!valid) {
                 e.preventDefault();
             }
         });
     }
-    
+
     // Close modals on outside click & escape (match customers page)
     window.addEventListener('click', e => {
         if (e.target.classList.contains('modal')) {
@@ -554,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.remove('modal-open');
         }
     });
-    
+
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal.active').forEach(modal => {
@@ -563,48 +576,49 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-    
-    // Simple backup button handler
-    const backupForm = document.getElementById('backupForm');
-    if (backupForm) {
-        backupForm.addEventListener('submit', function(e) {
-            const btn = this.querySelector('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Backup...';
-            btn.disabled = true;
-            
-            // Show processing message
-            const lastBackupText = document.getElementById('lastBackupText');
-            const originalBackupText = lastBackupText.innerHTML;
-            lastBackupText.innerHTML = '<div class="status-indicator"><span class="dot"></span>Creating backup, please wait...</div>';
-            
-            // Update last backup time display after a short delay
+
+    // Backup download: show progress briefly (the browser handles the file download)
+    const backupBtn = document.getElementById('createBackupBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', function () {
+            const originalHtml = this.innerHTML;
+            this.classList.add('is-loading');
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing backup...';
             setTimeout(() => {
-                const now = new Date();
-                const formattedDate = now.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                lastBackupText.innerHTML = `<div class="status-indicator"><span class="dot"></span>Last backup: ${formattedDate}</div>`;
-                
-                // Reset button after download starts
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    // Don't close modal automatically - let user see the updated time
-                }, 2000);
-            }, 1500);
+                this.classList.remove('is-loading');
+                this.innerHTML = originalHtml;
+            }, 4000);
         });
     }
-    
-    // Real-time ICO file validation on change
-    document.getElementById('logo')?.addEventListener('change', function() {
-        previewIcoFile(this);
+
+    // Restore: final confirmation
+    document.getElementById('restoreForm')?.addEventListener('submit', function (e) {
+        const file = document.getElementById('backup_file').files[0];
+        if (!file || !file.name.toLowerCase().endsWith('.sql')) {
+            e.preventDefault();
+            showToast('Please choose a .sql backup file.', 'error');
+            return;
+        }
+        if (!confirm('Restore "' + file.name + '"?\n\nAll current orders, customers, services and settings will be replaced by the backup. You will be logged out afterwards.')) {
+            e.preventDefault();
+            return;
+        }
+        const btn = document.getElementById('restoreBtn');
+        setTimeout(() => { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restoring...'; }, 0);
     });
+
+    document.getElementById('favicon')?.addEventListener('change', function() {
+        clearErrors('businessProfileModal');
+        validateIcoFile(this);
+    });
+
+    // Re-open the profile modal when the server rejected the input
+    @if($errors->hasAny(['business_name', 'address', 'contact', 'favicon']))
+        openModal('businessProfileModal');
+    @endif
+    @if($errors->hasAny(['backup_file', 'confirm']))
+        openModal('dataBackupModal');
+    @endif
 });
 
 // Real-time validation for contact field

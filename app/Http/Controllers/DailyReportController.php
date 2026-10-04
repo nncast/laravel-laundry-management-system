@@ -6,141 +6,116 @@ use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DailyReportController extends Controller
 {
     public function index(Request $request)
     {
+        $date = $this->dateInput($request, 'date', date('Y-m-d'));
+
         try {
-            // Get date from request or default to today
-            $date = $request->input('date', date('Y-m-d'));
-            
-            // Validate date format
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-                $date = date('Y-m-d');
-            }
-            
-            // Get daily statistics
             $stats = $this->getDailyStats($date);
-            
-            // Return view with data
+        } catch (\Throwable $e) {
+            Log::error('Daily Report Error: ' . $e->getMessage());
+
             return view('report-daily', [
                 'selectedDate' => $date,
-                'stats' => $stats
-            ]);
-            
-        } catch (\Exception $e) {
-            // Log error and return with default stats
-            \Log::error('Daily Report Error: ' . $e->getMessage());
-            
-            return view('report-daily', [
-                'selectedDate' => date('Y-m-d'),
-                'stats' => $this->getDefaultStats(),
-                'error' => 'Unable to load report data. Please try again.'
+                'stats' => $this->getDefaultStats($date),
+                'error' => 'Unable to load report data. Please try again.',
             ]);
         }
+
+        return view('report-daily', [
+            'selectedDate' => $date,
+            'stats' => $stats,
+        ]);
     }
-    
-    private function getDailyStats($date)
+
+    public function download(Request $request)
     {
-        // Get orders for the selected date
-        $orders = Order::whereDate('order_date', $date)->get();
-        
-        // Calculate total orders
-        $totalOrders = $orders->count();
-        
-        // Calculate completed orders
-        $completedOrders = $orders->where('status', 'completed')->count();
-        
-        // Calculate total sales (from orders total field)
-        $totalSales = $orders->sum('total');
-        
-        // Calculate total payments for the date - FIXED: using payments table
-        $totalPayments = Payment::whereHas('order', function ($query) use ($date) {
-            $query->whereDate('order_date', $date);
-        })->sum('amount');
-        
-        // If payments table is empty or has issues, fall back to orders.paid_amount
-        if ($totalPayments == 0 && $orders->sum('paid_amount') > 0) {
-            $totalPayments = $orders->sum('paid_amount');
+        $date = $this->dateInput($request, 'date', date('Y-m-d'));
+
+        try {
+            $stats = $this->getDailyStats($date);
+        } catch (\Throwable $e) {
+            Log::error('Daily Report Download Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'data' => $this->getDefaultStats($date),
+                'message' => 'Error generating report. Please try again.',
+            ], 500);
         }
-        
-        // Calculate paid amount from orders
-        $paidAmount = $orders->sum('paid_amount');
-        
-        // Calculate outstanding amount
-        $outstanding = max(0, $totalSales - $paidAmount);
-        
-        // Get order breakdown by status
-        $statusBreakdown = $orders->groupBy('status')->map->count();
-        
-        // Get top services for the day
+
+        unset($stats['orders']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats,
+            'message' => 'Report data retrieved successfully',
+        ]);
+    }
+
+    private function getDailyStats(string $date): array
+    {
+        $orders = Order::with('customer:id,name')
+            ->onDate($date)
+            ->orderBy('id')
+            ->get();
+
+        // Cancelled orders are not sales
+        $billable = $orders->where('status', '!=', 'cancelled');
+
+        $totalSales = (float) $billable->sum('total');
+        $paidAmount = (float) $billable->sum('paid_amount');
+
+        // Money actually received on this day (for any order)
+        $totalPayments = (float) Payment::whereDate('created_at', $date)->sum('amount');
+
         $topServices = DB::table('order_items')
             ->join('services', 'order_items.service_id', '=', 'services.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->whereDate('orders.order_date', $date)
-            ->select('services.name', DB::raw('SUM(order_items.qty) as total_qty'), DB::raw('SUM(order_items.total) as total_amount'))
-            ->groupBy('services.id', 'services.name') // Group by id and name for better compatibility
+            ->where('orders.order_date', '>=', $date)
+            ->where('orders.order_date', '<', date('Y-m-d', strtotime($date . ' +1 day')))
+            ->where('orders.status', '!=', 'cancelled')
+            ->select(
+                'services.name',
+                DB::raw('SUM(order_items.qty) as total_qty'),
+                DB::raw('SUM(order_items.total) as total_amount')
+            )
+            ->groupBy('services.id', 'services.name')
             ->orderByDesc('total_amount')
             ->limit(5)
             ->get();
-        
+
         return [
             'date' => $date,
-            'total_orders' => $totalOrders,
-            'delivered_orders' => $completedOrders, // FIXED: Changed from 'completed_orders' to 'delivered_orders'
+            'total_orders' => $orders->count(),
+            'delivered_orders' => $orders->where('status', 'completed')->count(),
             'total_sales' => $totalSales,
             'total_payments' => $totalPayments,
             'paid_amount' => $paidAmount,
-            'outstanding' => $outstanding,
-            'status_breakdown' => $statusBreakdown,
+            'outstanding' => max(0, round($totalSales - $paidAmount, 2)),
+            'status_breakdown' => $orders->groupBy('status')->map->count(),
             'top_services' => $topServices,
-            'orders' => $orders
+            'orders' => $orders,
         ];
     }
-    
-    private function getDefaultStats()
+
+    private function getDefaultStats(string $date): array
     {
         return [
-            'date' => date('Y-m-d'),
+            'date' => $date,
             'total_orders' => 0,
-            'delivered_orders' => 0, // FIXED: Changed from 'completed_orders' to 'delivered_orders'
+            'delivered_orders' => 0,
             'total_sales' => 0,
             'total_payments' => 0,
             'paid_amount' => 0,
             'outstanding' => 0,
-            'status_breakdown' => [],
-            'top_services' => collect([]),
-            'orders' => collect([])
+            'status_breakdown' => collect(),
+            'top_services' => collect(),
+            'orders' => collect(),
         ];
-    }
-    
-    public function download(Request $request)
-    {
-        try {
-            $date = $request->input('date', date('Y-m-d'));
-            
-            // Validate date format
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-                $date = date('Y-m-d');
-            }
-            
-            $stats = $this->getDailyStats($date);
-            
-            return response()->json([
-                'success' => true,
-                'data' => $stats,
-                'message' => 'Report data retrieved successfully'
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Daily Report Download Error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'data' => $this->getDefaultStats(),
-                'message' => 'Error generating report. Please try again.'
-            ], 500);
-        }
     }
 }

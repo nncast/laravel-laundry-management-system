@@ -2,51 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    private const RULES = [
+        'name' => 'required|string|max:255',
+        'category_id' => 'required|exists:categories,id',
+        'unit_id' => 'required|exists:units,id',
+        'purchase_price' => 'required|numeric|min:0',
+        'available_stock' => 'required|integer|min:0',
+        'minimum_stock_level' => 'required|integer|min:0',
+        'status' => 'required|in:active,inactive',
+    ];
+
+    public function index()
     {
-        $query = Product::with(['category', 'unit']);
+        $products = Product::with(['category:id,name', 'unit:id,name,short_form'])
+            ->orderBy('id')
+            ->get();
 
-        if ($request->has('search')) {
-            $search = $request->get('search');
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        $products = $query->orderBy('id', 'asc')->get();
-
-        $categories = Category::where('status', 1)->get();
-        $units = Unit::where('status', 'active')->get();
+        $categories = Category::where('status', 1)->orderBy('name')->get(['id', 'name']);
+        $units = Unit::where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_form']);
 
         return view('inventory-products', compact('products', 'categories', 'units'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'unit_id' => 'required|exists:units,id',
-            'purchase_price' => 'required|numeric|min:0',  // fixed
-            'available_stock' => 'required|integer|min:0',
-            'minimum_stock_level' => 'required|integer|min:0',
-            'status' => 'required|in:active,inactive',
-        ]);
-
-        $product = Product::create([
-            'name' => $request->name,
-            'category_id' => $request->category_id,
-            'unit_id' => $request->unit_id,
-            'purchase_price' => $request->purchase_price,  // fixed
-            'available_stock' => $request->available_stock,
-            'minimum_stock_level' => $request->minimum_stock_level,
-            'status' => $request->status,
-        ]);
+        Product::create($request->validate(self::RULES));
 
         return redirect()->route('products.index')
             ->with('success', 'Product added successfully!');
@@ -54,28 +41,10 @@ class ProductController extends Controller
 
     public function update(Request $request)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'unit_id' => 'required|exists:units,id',
-            'purchase_price' => 'required|numeric|min:0',  // fixed
-            'available_stock' => 'required|integer|min:0',
-            'minimum_stock_level' => 'required|integer|min:0',
-            'status' => 'required|in:active,inactive',
-        ]);
+        $validated = $request->validate(['product_id' => 'required|exists:products,id'] + self::RULES);
 
-        $product = Product::findOrFail($request->product_id);
-        
-        $product->update([
-            'name' => $request->name,
-            'category_id' => $request->category_id,
-            'unit_id' => $request->unit_id,
-            'purchase_price' => $request->purchase_price,  // fixed
-            'available_stock' => $request->available_stock,
-            'minimum_stock_level' => $request->minimum_stock_level,
-            'status' => $request->status,
-        ]);
+        Product::findOrFail($validated['product_id'])
+            ->update(collect($validated)->except('product_id')->all());
 
         return back()->with('success', 'Product updated.');
     }
@@ -86,8 +55,7 @@ class ProductController extends Controller
             'product_id' => 'required|exists:products,id',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
-        $product->delete();
+        Product::findOrFail($request->product_id)->delete();
 
         return response()->json(['success' => true]);
     }

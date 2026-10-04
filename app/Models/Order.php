@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Order extends Model
 {
     use HasFactory;
+
+    public const STATUSES = ['pending', 'processing', 'completed', 'cancelled'];
 
     /**
      * The attributes that are mass assignable.
@@ -54,10 +57,7 @@ class Order extends Model
         'status_label',
         'can_edit',
     ];
-    public function orderItems(): HasMany
-{
-    return $this->hasMany(OrderItem::class);
-}
+
     /**
      * Bootstrap the model and its traits.
      */
@@ -68,24 +68,21 @@ class Order extends Model
             if (empty($order->order_number)) {
                 $order->order_number = 'ORD-' . strtoupper(uniqid());
             }
-            
+
             // Set order date to today if not set
             if (empty($order->order_date)) {
-                $order->order_date = now();
+                $order->order_date = now()->toDateString();
             }
         });
+    }
 
-        static::saving(function ($order) {
-            // Calculate totals before saving
-            $order->calculateTotals();
-        });
-
-        static::created(function ($order) {
-            // Ensure totals are calculated after creation if needed
-            if ($order->wasChanged(['subtotal', 'discount', 'total'])) {
-                $order->saveQuietly(); // Save without firing events again
-            }
-        });
+    /**
+     * Store dates as plain Y-m-d so that date comparisons behave the same on
+     * SQLite (which stores text) and MySQL (which has a real DATE column).
+     */
+    public function setOrderDateAttribute($value): void
+    {
+        $this->attributes['order_date'] = $value ? Carbon::parse($value)->toDateString() : null;
     }
 
     /**
@@ -113,6 +110,14 @@ class Order extends Model
     }
 
     /**
+     * Alias of items(), kept for existing callers.
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
      * Get the payments for the order.
      */
     public function payments(): HasMany
@@ -131,29 +136,40 @@ class Order extends Model
     }
 
     /**
-     * Calculate all totals for the order.
-     * Use query methods instead of loaded relationships to avoid N+1 issues.
+     * Recalculate subtotal/total from the items and add-ons stored in the database.
+     *
+     * subtotal = sum of item totals (services only)
+     * total    = subtotal + add-ons - discount (never negative)
      */
     public function calculateTotals(): void
     {
-        // If order doesn't exist yet, skip calculation (will be done after creation)
         if (!$this->exists) {
             return;
         }
 
-        // Calculate items subtotal using query (not loaded relationships)
-        $itemsTotal = $this->items()->sum('total');
-        
-        // Calculate addons total using query
-        $addonsTotal = $this->addons()->sum('order_addons.price');
-        
-        $this->subtotal = (float) $itemsTotal + (float) $addonsTotal;
-        $this->total = $this->subtotal - $this->discount;
-        
-        // Ensure total is not negative
-        if ($this->total < 0) {
-            $this->total = 0;
-        }
+        $itemsTotal = (float) $this->items()->sum('total');
+        $addonsTotal = (float) $this->addons()->sum('order_addons.price');
+
+        $this->subtotal = round($itemsTotal, 2);
+        $this->total = max(0, round($itemsTotal + $addonsTotal - (float) $this->discount, 2));
+    }
+
+    /**
+     * Recalculate the paid amount from the payment records.
+     */
+    public function syncPaidAmount(): void
+    {
+        $this->paid_amount = round((float) $this->payments()->sum('amount'), 2);
+    }
+
+    /**
+     * Recalculate totals and paid amount, then persist.
+     */
+    public function updateTotals(): void
+    {
+        $this->calculateTotals();
+        $this->syncPaidAmount();
+        $this->save();
     }
 
     /**
@@ -161,27 +177,27 @@ class Order extends Model
      */
     public function addService(Service $service, int $quantity = 1): OrderItem
     {
-        // Check if service already exists in order
         $existingItem = $this->items()
             ->where('service_id', $service->id)
             ->first();
 
         if ($existingItem) {
-            // Update quantity
             $existingItem->qty += $quantity;
-            $existingItem->total = $existingItem->price * $existingItem->qty;
             $existingItem->save();
+            $this->updateTotals();
             return $existingItem;
         }
 
-        // Create new order item
-        return $this->items()->create([
+        $item = $this->items()->create([
             'service_id' => $service->id,
             'price' => $service->price,
-            'rate' => 1, // Default rate
+            'rate' => 1,
             'qty' => $quantity,
-            'total' => $service->price * $quantity,
         ]);
+
+        $this->updateTotals();
+
+        return $item;
     }
 
     /**
@@ -189,13 +205,11 @@ class Order extends Model
      */
     public function addAddon(Addon $addon): void
     {
-        $this->addons()->attach($addon->id, [
-            'price' => $addon->price
+        $this->addons()->syncWithoutDetaching([
+            $addon->id => ['price' => $addon->price],
         ]);
-        
-        // Recalculate totals after adding addon
-        $this->calculateTotals();
-        $this->save();
+
+        $this->updateTotals();
     }
 
     /**
@@ -203,8 +217,8 @@ class Order extends Model
      */
     public function applyDiscount(float $discount): void
     {
-        $this->discount = $discount;
-        $this->save(); // calculateTotals() will be called by the saving event
+        $this->discount = max(0, $discount);
+        $this->updateTotals();
     }
 
     /**
@@ -216,11 +230,10 @@ class Order extends Model
             'amount' => $amount,
             'payment_method' => $method,
         ]);
-        
-        // Update paid amount by querying the database
-        $this->paid_amount = (float) $this->payments()->sum('amount');
-        $this->saveQuietly(); // Save without firing events
-        
+
+        $this->syncPaidAmount();
+        $this->save();
+
         return $payment;
     }
 
@@ -229,10 +242,7 @@ class Order extends Model
      */
     public function getBalanceAttribute(): float
     {
-        // Use actual database values, not the ones that might be in memory
-        $total = $this->getAttribute('total');
-        $paid = $this->getAttribute('paid_amount');
-        return (float) $total - (float) $paid;
+        return round((float) $this->getAttribute('total') - (float) $this->getAttribute('paid_amount'), 2);
     }
 
     /**
@@ -253,7 +263,7 @@ class Order extends Model
             'processing' => 'Processing',
             'completed' => 'Completed',
             'cancelled' => 'Cancelled',
-            default => ucfirst($this->status)
+            default => ucfirst((string) $this->status)
         };
     }
 
@@ -266,11 +276,34 @@ class Order extends Model
     }
 
     /**
+     * Scope: orders whose order_date falls within [start, end] (inclusive, Y-m-d).
+     *
+     * Uses a half-open range on the raw column so it can use the index and also
+     * matches rows stored as "Y-m-d 00:00:00" by older versions of the app.
+     */
+    public function scopeBetweenDates($query, $start, $end)
+    {
+        $start = Carbon::parse($start)->toDateString();
+        $endExclusive = Carbon::parse($end)->addDay()->toDateString();
+
+        return $query->where('order_date', '>=', $start)
+                     ->where('order_date', '<', $endExclusive);
+    }
+
+    /**
+     * Scope: orders on a single day.
+     */
+    public function scopeOnDate($query, $date)
+    {
+        return $query->betweenDates($date, $date);
+    }
+
+    /**
      * Scope a query to only include orders from today.
      */
     public function scopeToday($query)
     {
-        return $query->whereDate('order_date', today());
+        return $query->onDate(today());
     }
 
     /**
@@ -295,13 +328,5 @@ class Order extends Model
     public function scopeProcessing($query)
     {
         return $query->where('status', 'processing');
-    }
-
-    /**
-     * Scope a query to only include ready orders.
-     */
-    public function scopeReady($query)
-    {
-        return $query->where('status', 'ready');
     }
 }

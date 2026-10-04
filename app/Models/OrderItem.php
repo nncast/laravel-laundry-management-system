@@ -58,7 +58,7 @@ class OrderItem extends Model
     protected static function booted(): void
     {
         static::saving(function (OrderItem $item) {
-            $item->total = $item->price * $item->rate * $item->qty;
+            $item->total = round((float) $item->price * (float) ($item->rate ?? 1) * (int) $item->qty, 2);
         });
     }
 

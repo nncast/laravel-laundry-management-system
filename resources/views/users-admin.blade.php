@@ -5,7 +5,9 @@
 @section('active-users-admin', 'active')
 
 @section('content')
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
+@endpush
 
 <style>
 /* --- Administrator Page Styles --- */
@@ -300,59 +302,59 @@ td {
         margin: 0 -15px;
         border-radius: 0;
     }
-    
+
     .header-actions {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .search-box input {
         width: 100%;
         margin-bottom: 10px;
     }
-    
+
     .add-btn {
         width: 100%;
         justify-content: center;
     }
-    
+
     .modal-content {
         padding: 20px;
         border-radius: 10px;
         margin: 10px;
         max-height: 85vh;
     }
-    
+
     .modal-header h3 {
         font-size: 18px;
         padding-right: 30px;
     }
-    
+
     .close-btn {
         top: 15px;
         right: 15px;
     }
-    
+
     .form-group input,
     .form-group select {
         padding: 11px 12px;
         font-size: 13px;
     }
-    
+
     .modal-footer {
         flex-direction: column-reverse;
         gap: 8px;
     }
-    
+
     .modal-footer button {
         width: 100%;
         padding: 12px;
     }
-    
+
     table {
         font-size: 13px;
     }
-    
+
     th, td {
         padding: 10px;
     }
@@ -363,21 +365,21 @@ td {
         padding: 18px;
         margin: 5px;
     }
-    
+
     .modal-header {
         margin-bottom: 15px;
         padding-bottom: 10px;
     }
-    
+
     .form-group {
         margin-bottom: 12px;
     }
-    
+
     .summary-cards {
         flex-direction: column;
         gap: 15px;
     }
-    
+
     .summary-card {
         min-width: 100%;
     }
@@ -387,21 +389,24 @@ td {
     .modal-content {
         padding: 15px;
     }
-    
+
     .modal-header h3 {
         font-size: 16px;
     }
-    
+
     .close-btn {
         top: 10px;
         right: 10px;
         font-size: 18px;
     }
-    
+
     .form-group label {
         font-size: 13px;
     }
 }
+
+.staff-delete { background:none; border:none; color:#dc3545; cursor:pointer; font-size:15px; margin-left:8px; }
+.staff-delete:hover { color:#a71d2a; }
 
 /* Prevent body scroll when modal is open */
 body.modal-open {
@@ -437,11 +442,12 @@ body.modal-open {
             <tbody>
                 @forelse($users as $index => $user)
                 <tr class="staff-row"
-                data-id="{{ $user->id }}" 
-                data-phone="{{ $user->phone }}" 
-                data-role="{{ $user->role }}" 
+                data-id="{{ $user->id }}"
+                data-update-url="{{ route('staff.update', $user) }}"
+                data-phone="{{ $user->phone }}"
+                data-role="{{ $user->role }}"
                 data-status="{{ $user->is_active ? 1 : 0 }}">
-                    <td>{{ $index + 1 }}</td>
+                    <td>{{ $users->firstItem() + $index }}</td>
                     <td class="staff-name">{{ $user->name }}</td>
                     <td class="staff-username">{{ $user->username }}</td>
                     <td class="staff-role">{{ $user->role }}</td>
@@ -452,10 +458,17 @@ body.modal-open {
                             <span class="status-inactive">Inactive</span>
                         @endif
                     </td>
-                    <td>{{ $user->created_at->format('M d, Y') }}</td>
+                    <td>{{ optional($user->created_at)->format('M d, Y') }}</td>
                     <td>
                         <div class="action-btns">
-                            <i class="fas fa-edit edit" title="Edit"></i>
+                            <i class="fas fa-edit edit" title="Edit" role="button" tabindex="0"></i>
+                            @if($user->id !== (int) session('staff.id'))
+                            <form method="POST" action="{{ route('staff.destroy', $user) }}" style="display:inline" onsubmit="return confirm('Delete {{ addslashes($user->name) }}? Staff with orders can only be deactivated.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="staff-delete" title="Delete"><i class="fas fa-trash"></i></button>
+                            </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -466,6 +479,7 @@ body.modal-open {
                 @endforelse
             </tbody>
     </table>
+    {{ $users->links() }}
 </div>
 
 <div class="summary-cards">
@@ -486,7 +500,7 @@ body.modal-open {
             <h3>Add New User</h3>
             <button type="button" class="close-btn" id="closeAddModal">&times;</button>
         </div>
-        
+
         <form id="addUserForm" method="POST" action="{{ route('staff.store') }}">
             @csrf
             <div class="form-group">
@@ -496,7 +510,7 @@ body.modal-open {
                 <input type="text" name="name" id="name" required>
                 <div class="error-message" id="name_error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="phone">
                     Phone Number
@@ -505,7 +519,7 @@ body.modal-open {
                 <div class="error-message" id="phone_error"></div>
                 <div class="helper-text">Optional - 10 to 15 digits only</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="username">
                     Username <span class="required-star">*</span>
@@ -513,7 +527,7 @@ body.modal-open {
                 <input type="text" name="username" id="username" required>
                 <div class="error-message" id="username_error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="password">
                     Password <span class="required-star">*</span>
@@ -522,7 +536,7 @@ body.modal-open {
                 <div class="error-message" id="password_error"></div>
                 <div class="helper-text">Minimum 6 characters</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="role">
                     Role <span class="required-star">*</span>
@@ -535,7 +549,7 @@ body.modal-open {
                 </select>
                 <div class="error-message" id="role_error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="is_active">
                     Status <span class="required-star">*</span>
@@ -547,7 +561,7 @@ body.modal-open {
                 </select>
                 <div class="error-message" id="is_active_error"></div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
                 <button type="submit" class="submit-btn">Save</button>
@@ -563,12 +577,12 @@ body.modal-open {
             <h3>Edit User</h3>
             <button type="button" class="close-btn" id="closeEditModal">&times;</button>
         </div>
-        
+
         <form id="editUserForm" method="POST" action="">
             @csrf
             @method('PUT')
             <input type="hidden" name="id" id="edit_user_id">
-            
+
             <div class="form-group">
                 <label for="edit_name">
                     Full Name <span class="required-star">*</span>
@@ -576,7 +590,7 @@ body.modal-open {
                 <input type="text" name="name" id="edit_name" required>
                 <div class="error-message" id="edit_name_error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="edit_phone">
                     Phone Number
@@ -585,7 +599,7 @@ body.modal-open {
                 <div class="error-message" id="edit_phone_error"></div>
                 <div class="helper-text">Optional - 10 to 15 digits only</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="edit_username">
                     Username <span class="required-star">*</span>
@@ -593,7 +607,7 @@ body.modal-open {
                 <input type="text" name="username" id="edit_username" required>
                 <div class="error-message" id="edit_username_error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="edit_password">
                     Password
@@ -602,7 +616,7 @@ body.modal-open {
                 <div class="error-message" id="edit_password_error"></div>
                 <div class="helper-text">Leave blank to keep current password</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="edit_role">
                     Role <span class="required-star">*</span>
@@ -615,7 +629,7 @@ body.modal-open {
                 </select>
                 <div class="error-message" id="edit_role_error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="edit_is_active">
                     Status <span class="required-star">*</span>
@@ -627,7 +641,7 @@ body.modal-open {
                 </select>
                 <div class="error-message" id="edit_is_active_error"></div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="cancel-btn" id="editCancelBtn">Cancel</button>
                 <button type="submit" class="submit-btn">Update</button>
@@ -723,7 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("edit_phone").value = phone;
                 document.getElementById("edit_role").value = role;
                 document.getElementById("edit_is_active").value = isActive;
-                document.getElementById("editUserForm").action = `/staff/${userId}`;
+                document.getElementById("editUserForm").action = row.dataset.updateUrl;
 
                 openModal(editModal);
             });
