@@ -8,35 +8,17 @@
 <img src="https://img.shields.io/badge/SQLite-supported-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
 </div>
 
-
 <p align="center">
   <b>Download v1.0.1:</b>
   <a href="https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v1.0.1.zip">Source (.zip)</a> |
   <a href="https://github.com/nncast/laravel-laundry-management-system/releases">All releases</a>
 </p>
 
-
-
 **Laundry Management System** is a web-based **Laravel** application for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone.
 
 > **Current version: v1.0.1** — fixes the dashboard sales chart on phones and refreshes the login page (frosted-glass panel, app logo, fits on phones). Built on v1.0.0, the first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
 
-<p align="center">
-  <img width="400" alt="Login" src="docs/screenshots/login.jpg" />
-  <img width="400" alt="Dashboard" src="docs/screenshots/dashboard.png" />
-  <img width="400" alt="Point of sale" src="docs/screenshots/pos.png" />
-  <img width="400" alt="Orders" src="docs/screenshots/orders.png" />
-  <img width="400" alt="Order details" src="docs/screenshots/order-details.png" />
-  <img width="400" alt="Sales report" src="docs/screenshots/sales-report.png" />
-</p>
-
-<p align="center">
-  <img width="190" alt="Mobile login" src="docs/screenshots/mobile-login.jpg" />
-  <img width="190" alt="Mobile dashboard" src="docs/screenshots/mobile-dashboard.png" />
-  <img width="190" alt="Mobile menu" src="docs/screenshots/mobile-menu.png" />
-  <img width="190" alt="Mobile POS" src="docs/screenshots/mobile-pos.png" />
-</p>
 
 ## Features
 
