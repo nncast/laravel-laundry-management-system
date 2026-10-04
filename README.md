@@ -1,6 +1,5 @@
 <div align="center"><img src="docs/logo.png" width="100" alt="Soap Opera logo"></div>
 <h1 align="center">Soap Opera</h1>
-<p align="center"><i>Fresh loads. Zero drama.</i></p>
 <div align="center">
 <img src="https://img.shields.io/badge/version-1.1.0-1F74F0?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
