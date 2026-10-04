@@ -18,13 +18,18 @@ class DashboardController extends Controller
         $yesterday = Carbon::yesterday();
         $startOfMonth = $today->copy()->startOfMonth();
         $startOfLastMonth = $startOfMonth->copy()->subMonthNoOverflow();
-        $endOfLastMonth = $startOfMonth->copy()->subDay();
+
+        // Compare this month so far with the SAME days of last month
+        // (e.g. Oct 1-4 vs Sep 1-4), otherwise early in the month every
+        // trend would look like a large drop.
+        $sameDayLastMonth = $startOfLastMonth->copy()
+            ->addDays($today->day - 1)
+            ->min($startOfLastMonth->copy()->endOfMonth()->startOfDay());
 
         $stats = $this->stats();
 
-        // Month-over-month trends (this month so far vs. the whole of last month)
         $thisMonth = $this->periodTotals($startOfMonth, $today);
-        $lastMonth = $this->periodTotals($startOfLastMonth, $endOfLastMonth);
+        $lastMonth = $this->periodTotals($startOfLastMonth, $sameDayLastMonth);
 
         $revenueTrend = $this->percentChange($thisMonth->revenue, $lastMonth->revenue);
         $ordersTrend = $this->percentChange($thisMonth->orders, $lastMonth->orders);

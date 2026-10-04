@@ -1,6 +1,6 @@
 <div align="center">
 
-# Laundry Management System
+<img src="docs/logo.png" width="160" alt="Laundry Management System logo">
 
 <img src="https://img.shields.io/badge/version-1.0.0-4169E1?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
@@ -13,8 +13,8 @@
 
 
 <p align="center">
-  <b>Download 1.0.0:</b>
-  <a href="https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/1.0.0.zip">Source (.zip)</a> |
+  <b>Download v1.0.0:</b>
+  <a href="https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v1.0.0.zip">Source (.zip)</a> |
   <a href="https://github.com/nncast/laravel-laundry-management-system/releases">All releases</a>
 </p>
 
@@ -23,7 +23,22 @@
 **Laundry Management System** is a web-based **Laravel** application for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone.
 
-> **Current version: 1.0.0** — first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
+> **Current version: v1.0.0** — first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
+
+<p align="center">
+  <img width="400" alt="Login" src="docs/screenshots/login.jpg" />
+  <img width="400" alt="Dashboard" src="docs/screenshots/dashboard.png" />
+  <img width="400" alt="Point of sale" src="docs/screenshots/pos.png" />
+  <img width="400" alt="Orders" src="docs/screenshots/orders.png" />
+  <img width="400" alt="Order details" src="docs/screenshots/order-details.png" />
+  <img width="400" alt="Sales report" src="docs/screenshots/sales-report.png" />
+</p>
+
+<p align="center">
+  <img width="200" alt="Mobile dashboard" src="docs/screenshots/mobile-dashboard.png" />
+  <img width="200" alt="Mobile menu" src="docs/screenshots/mobile-menu.png" />
+  <img width="200" alt="Mobile POS" src="docs/screenshots/mobile-pos.png" />
+</p>
 
 ## Features
 
@@ -92,7 +107,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 git clone https://github.com/nncast/laravel-laundry-management-system.git
 cd laravel-laundry-management-system
 ```
-Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/1.0.0.zip) and extract it.
+Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v1.0.0.zip) and extract it.
 
 ### 3. Install dependencies
 ```bash
@@ -189,13 +204,17 @@ Open `http://localhost:8000` in your browser.
 
 Go to **Settings → Master Setting → Data Backup**.
 
+<p align="center">
+  <img width="600" alt="Backup and restore" src="docs/screenshots/backup.png" />
+</p>
+
 - **Download Backup File** saves a `.sql` file with every table and record. Keep it somewhere safe (USB drive or cloud storage).
 - **Restore Backup** replaces all current data with a backup made by this system. A safety backup of the current data is saved to `storage/app/backups` first, and you are logged out afterwards.
 
 ## Upgrading from 0.9.0
 
 1. Download a backup from **Settings → Master Setting** first.
-2. Pull or download version 1.0.0, then run:
+2. Pull or download version v1.0.0, then run:
    ```bash
    composer install
    php artisan migrate

@@ -125,7 +125,7 @@
 /* Main Content Grid */
 .main-content-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     gap: 30px;
     margin-bottom: 40px;
 }
@@ -469,6 +469,22 @@ hr {
     }
 }
 
+/* Recent orders: keep the order number on one line */
+.recent-orders .dashboard-table th,
+.recent-orders .dashboard-table td {
+    padding: 12px 10px;
+    font-size: 13px;
+}
+.recent-orders .dashboard-table .order-no,
+.recent-orders .dashboard-table td:last-child {
+    white-space: nowrap;
+    font-weight: 600;
+}
+.recent-orders .status-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
 /* Wide tables scroll inside their card instead of stretching the page */
 .recent-orders,
 .services-section {
@@ -515,7 +531,7 @@ hr {
             <div class="stat-value">{{ number_format($totalOrders) }}</div>
             <div class="stat-trend {{ $ordersTrend >= 0 ? 'positive' : 'negative' }}">
                 <i class="fas fa-arrow-{{ $ordersTrend >= 0 ? 'up' : 'down' }}"></i>
-                <span>{{ number_format(abs($ordersTrend), 1) }}% {{ $ordersTrend >= 0 ? 'increase' : 'decrease' }} from last month</span>
+                <span>{{ number_format(abs($ordersTrend), 1) }}% {{ $ordersTrend >= 0 ? 'more' : 'fewer' }} orders than last month</span>
             </div>
         </div>
 
@@ -539,7 +555,7 @@ hr {
             <div class="stat-value">₱{{ number_format($totalRevenue, 2) }}</div>
             <div class="stat-trend {{ $revenueTrend >= 0 ? 'positive' : 'negative' }}">
                 <i class="fas fa-arrow-{{ $revenueTrend >= 0 ? 'up' : 'down' }}"></i>
-                <span>{{ number_format(abs($revenueTrend), 1) }}% {{ $revenueTrend >= 0 ? 'increase' : 'decrease' }} from last month</span>
+                <span>{{ number_format(abs($revenueTrend), 1) }}% {{ $revenueTrend >= 0 ? 'increase' : 'decrease' }} vs. last month</span>
             </div>
         </div>
     </div>
@@ -584,7 +600,7 @@ hr {
                 <tbody>
                     @forelse($recentOrders as $order)
                     <tr>
-                        <td>#{{ $order->order_number }}</td>
+                        <td class="order-no">{{ $order->order_number }}</td>
                         <td>{{ $order->customer->name ?? 'Walk-in Customer' }}</td>
                         <td><span class="status-badge status-{{ $order->status }}">{{ ucfirst($order->status) }}</span></td>
                         <td>₱{{ number_format($order->total, 2) }}</td>

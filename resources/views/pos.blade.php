@@ -802,6 +802,7 @@ button.qty-btn:hover {
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
 .product-price { font-size:11px; color:#28a745; font-weight:600; }
+textarea, input, select, button { font-family: inherit; }
 .order-section { min-width:0; overflow-x:auto; }
 .order-section table { min-width:320px; }
 .payment-buttons { display:flex; flex-wrap:wrap; gap:8px; }
