@@ -439,6 +439,39 @@ hr {
     .stat-value {
         font-size: 28px;
     }
+
+    .dashboard-container {
+        padding: 0;
+    }
+
+    .chart-section {
+        padding: 16px 12px;
+    }
+
+    .chart-section h2 {
+        font-size: 18px;
+    }
+
+    .chart-legend {
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    .chart-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .chart-actions .chart-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
     
     .stat-icon {
         font-size: 32px;
@@ -695,8 +728,39 @@ window.addEventListener('DOMContentLoaded', function() {
         });
     };
     
+    const formatCompact = (value) => {
+        const n = Number(value || 0);
+        if (Math.abs(n) >= 1000000) return '₱' + +(n / 1000000).toFixed(1) + 'M';
+        if (Math.abs(n) >= 1000) return '₱' + +(n / 1000).toFixed(1) + 'k';
+        return '₱' + n;
+    };
+
+    // Phones have little room: shorter tick labels, no axis titles, no tilted labels
+    const isSmallScreen = () => window.innerWidth < 576;
+
+    function applyResponsiveOptions(chart) {
+        const small = isSmallScreen();
+        const { x, y, y1 } = chart.options.scales;
+
+        y.title.display = !small;
+        y1.title.display = !small;
+        y.ticks.callback = (value) => small ? formatCompact(value) : formatCurrency(value);
+        y.ticks.maxTicksLimit = small ? 5 : 8;
+        y1.ticks.maxTicksLimit = small ? 5 : 8;
+
+        [x, y, y1].forEach(axis => { axis.ticks.font = { size: small ? 10 : 12 }; });
+        x.ticks.maxRotation = 0;
+        x.ticks.autoSkip = true;
+        x.ticks.autoSkipPadding = small ? 8 : 4;
+
+        chart.data.datasets.forEach(ds => {
+            ds.pointRadius = small ? 2 : 3;
+            ds.borderWidth = small ? 1.5 : 2;
+        });
+    }
+
     // Create chart
-    let salesChart = new Chart(ctx, {
+    const chartConfig = {
         type: 'line',
         data: {
             labels: chartData.week.labels,
@@ -748,6 +812,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         text: 'Sales (₱)',
                         color: '#007bff'
                     },
+                    beginAtZero: true,
                     grid: {
                         drawBorder: false
                     },
@@ -770,8 +835,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     grid: {
                         drawOnChartArea: false,
                     },
+                    beginAtZero: true,
                     ticks: {
-                        color: '#28a745'
+                        color: '#28a745',
+                        precision: 0
                     }
                 }
             },
@@ -802,8 +869,27 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+    };
+
+    // Apply the phone/desktop settings BEFORE creating the chart: changing them
+    // afterwards is overridden by the chart's opening animation, which left the
+    // points out of line with the day labels on phones.
+    applyResponsiveOptions(chartConfig);
+    let salesChart = new Chart(ctx, chartConfig);
+
+    let resizeTimer;
+    let wasSmall = isSmallScreen();
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (isSmallScreen() === wasSmall) return;
+            wasSmall = isSmallScreen();
+            salesChart.stop(); // cancel any running animation first
+            applyResponsiveOptions(salesChart);
+            salesChart.update('none');
+        }, 150);
     });
-    
+
     // Chart period buttons
     const periodButtons = document.querySelectorAll('.chart-btn');
     periodButtons.forEach(button => {
