@@ -35,9 +35,10 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 </p>
 
 <p align="center">
-  <img width="200" alt="Mobile dashboard" src="docs/screenshots/mobile-dashboard.png" />
-  <img width="200" alt="Mobile menu" src="docs/screenshots/mobile-menu.png" />
-  <img width="200" alt="Mobile POS" src="docs/screenshots/mobile-pos.png" />
+  <img width="190" alt="Mobile login" src="docs/screenshots/mobile-login.jpg" />
+  <img width="190" alt="Mobile dashboard" src="docs/screenshots/mobile-dashboard.png" />
+  <img width="190" alt="Mobile menu" src="docs/screenshots/mobile-menu.png" />
+  <img width="190" alt="Mobile POS" src="docs/screenshots/mobile-pos.png" />
 </p>
 
 ## Features
