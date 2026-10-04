@@ -230,13 +230,15 @@ The migration adds the payment method column and report indexes, and recalculate
 ```bash
 php artisan test
 ```
-## Developers
 
-- Frances Trisha G. Aganan
-- Janelle Ann F. Castillo
-- Romar D. De Asis
-- Hazel B. Sebastian
-- John Heinrich T. Valdez
+## Contributing
+
+Contributions are welcome. Fork the repository, work on a branch from `main`, and open a pull request describing what changed and why. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and code style, and [AUTHORS.md](AUTHORS.md) for the people who built it.
+
+## Security
+
+Please don't report vulnerabilities in public issues. Use the repository's **Security → Report a vulnerability** tab instead. See [SECURITY.md](SECURITY.md) for details.
+
 ---
 
 *Laundry Management System · 2025 · Laravel 12 · PHP 8.2 · MySQL / SQLite*
