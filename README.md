@@ -1,11 +1,16 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-4169E1?style=flat-square" alt="version">
-  <img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
-  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
-  <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
-  <img src="https://img.shields.io/badge/MySQL-XAMPP-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL">
-  <img src="https://img.shields.io/badge/SQLite-supported-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
-</p>
+<div align="center">
+
+# Laundry Management System
+
+<img src="https://img.shields.io/badge/version-1.0.0-4169E1?style=flat-square" alt="version">
+<img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
+<img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
+<img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
+<img src="https://img.shields.io/badge/MySQL-XAMPP-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL">
+<img src="https://img.shields.io/badge/SQLite-supported-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
+
+</div>
+
 
 <p align="center">
   <b>Download 1.0.0:</b>
@@ -13,7 +18,7 @@
   <a href="https://github.com/nncast/laravel-laundry-management-system/releases">All releases</a>
 </p>
 
-# Laundry Management System
+
 
 **Laundry Management System** is a web-based **Laravel** application for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone.
