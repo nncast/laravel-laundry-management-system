@@ -1,0 +1,248 @@
+/* ==========================================================================
+   Shared components. Pages still carry their own layout CSS; these rules
+   make buttons, inputs, tables, badges and row actions look the same on
+   every page. Scoped under ".main-content" so they take precedence over
+   the older per-page rules.
+   ========================================================================== */
+
+/* ---------- Buttons ---------- */
+body .main-content :is(.add-btn, .btn-primary, .add-order-btn, .add-customer-btn, .apply-btn, .generate-btn,
+    .submit-btn, .btn-save, .btn-payment, .add-payment-btn, .btn-complete, .btn-mark-complete, .backup-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--grad-button);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--gloss), var(--glow);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    transform: none;
+}
+body .main-content :is(.add-btn, .btn-primary, .add-order-btn, .add-customer-btn, .apply-btn, .generate-btn,
+    .submit-btn, .btn-save, .btn-payment, .add-payment-btn, .btn-complete, .btn-mark-complete, .backup-btn):hover {
+    background: var(--grad-button-hover);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: var(--gloss), 0 3px 8px -3px rgba(31, 116, 240, 0.45);
+}
+
+body .main-content :is(.btn-cancel, .cancel-btn, .btn-secondary, .btn-download, .btn-print, .restore-btn, .btn-action.btn-edit) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: none;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+    transform: none;
+}
+body .main-content :is(.btn-cancel, .cancel-btn, .btn-secondary, .btn-download, .btn-print, .restore-btn, .btn-action.btn-edit):hover {
+    background: var(--accent-soft);
+    border-color: #b9d6fb;
+    color: var(--accent);
+    transform: none;
+}
+
+body .main-content :is(.btn-danger, .btn-cancel-order, .btn-action.btn-cancel-order) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid #f7c9cb;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--danger);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transform: none;
+}
+body .main-content :is(.btn-danger, .btn-cancel-order, .btn-action.btn-cancel-order):hover { background: var(--danger-soft); color: var(--danger-hover); border-color: #f1a7aa; }
+
+body .main-content button:disabled,
+body .main-content button[disabled] { opacity: 0.55; cursor: not-allowed; }
+
+/* ---------- Row actions (view / edit / delete) ---------- */
+body .main-content :is(.action-buttons, .action-btns):not(:has(> .btn-action, > .btn-download, > .btn-print)) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+body .main-content :is(.action-btn, .edit-btn, .btn-edit, .btn-view, .btn-delete, .staff-delete, .delete-btn):not(.btn-action),
+body .main-content :is(.action-btns, .action-buttons) > :is(i, a, button):not(form, .btn-action, .btn-download, .btn-print) {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: none;
+    transform: none;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+body .main-content :is(.action-btn, .edit-btn, .btn-edit, .btn-view):not(.btn-action):hover,
+body .main-content :is(.action-btns, .action-buttons) > :is(i, a, button):not(.delete, .btn-delete, .staff-delete, .btn-action, .btn-download, .btn-print):hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-soft);
+    color: var(--accent);
+    transform: none;
+}
+body .main-content :is(.btn-delete, .staff-delete, .delete-btn, .action-btn.delete),
+body .main-content :is(.action-btns, .action-buttons) > i.delete { color: var(--text-muted); }
+body .main-content :is(.btn-delete, .staff-delete, .delete-btn, .action-btn.delete):hover,
+body .main-content :is(.action-btns, .action-buttons) > i.delete:hover {
+    background: var(--danger-soft);
+    border-color: var(--danger-soft);
+    color: var(--danger);
+}
+body .main-content :is(.action-btn, .btn-view, .btn-edit, .btn-delete, .staff-delete) i { font-size: 13px; color: inherit; }
+body .main-content :is(.action-btns, .action-buttons) form { display: inline-flex; margin: 0; }
+
+/* ---------- Inputs ---------- */
+body .main-content :is(input[type="text"], input[type="search"], input[type="number"], input[type="email"],
+    input[type="password"], input[type="date"], input[type="tel"], select, textarea) {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-muted);
+    color: var(--text);
+    font-size: 14px;
+    box-shadow: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+body .main-content :is(input, select, textarea):focus {
+    outline: none;
+    border-color: var(--accent);
+    background-color: var(--surface);
+    box-shadow: 0 0 0 4px var(--accent-ring);
+}
+body .main-content :is(input, textarea)::placeholder { color: var(--text-faint); }
+
+body .main-content .search-box { position: relative; }
+body .main-content .search-box input { height: 40px; padding-left: 16px; min-width: 240px; border-radius: var(--radius-pill); }
+/* Leave room for the magnifier only when the box has one */
+body .main-content .search-box:has(> i) input { padding-left: 40px; }
+body .main-content .search-box > i { color: var(--text-faint); }
+
+/* ---------- Tables ---------- */
+body .main-content :is(.table-container, .table-wrapper, .table-responsive) {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+body .main-content :is(.table-container, .table-wrapper, .table-responsive) table thead tr:first-child th:first-child { border-top-left-radius: calc(var(--radius) - 1px); }
+body .main-content :is(.table-container, .table-wrapper, .table-responsive) table thead tr:first-child th:last-child { border-top-right-radius: calc(var(--radius) - 1px); }
+body .main-content table thead th,
+body .main-content table th,
+body .main-content .table-header {
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    border-bottom: 1px solid var(--border);
+    padding-top: 11px;
+    padding-bottom: 11px;
+    white-space: nowrap;
+}
+body .main-content table td {
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+}
+body .main-content table tbody tr:last-child td { border-bottom: 0; }
+body .main-content table tbody tr { transition: background-color 0.12s; }
+body .main-content table tbody tr:hover td { background: #f7fbff; }
+
+/* ---------- Status badges ---------- */
+body .main-content :is(.status-pending, .status-processing, .status-completed, .status-cancelled,
+    .status-active, .status-inactive) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 0;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+body .main-content .status-pending { background: var(--warning-soft); color: var(--warning-text); }
+body .main-content .status-processing { background: var(--accent-soft); color: var(--accent); }
+body .main-content .status-completed, body .main-content .status-active { background: var(--success-soft); color: var(--success-text); }
+body .main-content .status-cancelled { background: var(--danger-soft); color: var(--danger-text); }
+body .main-content .status-inactive { background: var(--surface-sunken); color: var(--text-muted); }
+
+/* ---------- Cards ---------- */
+body .main-content :is(.content-card, .card, .report-card, .filter-section, .filters-card) {
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+/* ---------- Modals (bubble-soft) ---------- */
+body :is(.modal-content, .modal-box, .modal-dialog > div) { border-radius: var(--radius-lg); }
+body :is(.modal, .modal-overlay) { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+
+/* ---------- Inventory ---------- */
+body .main-content .stock-low {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--warning-soft);
+    color: var(--warning-text);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Long order numbers stay on one line in report tables */
+body .main-content [data-label="Order#"], body .main-content [data-label="Order #"] { white-space: nowrap; font-size: 13px; font-weight: 500; }
+
+/* Labelled action groups (order details, report downloads) */
+body .main-content .store-info-box .action-buttons { display: flex; flex-direction: column; gap: 8px; }
+body .main-content .store-info-box .action-buttons .btn-action { width: 100%; min-height: 42px; }
+body .main-content :is(.btn-download, .btn-print, .btn-action) { white-space: nowrap; }
+
+/* Finishing an order reads as "done", not as another primary action */
+body .main-content :is(.btn-complete, .btn-mark-complete) {
+    background: var(--success);
+    box-shadow: var(--gloss), 0 2px 6px -2px rgba(18, 161, 80, 0.35);
+}
+body .main-content :is(.btn-complete, .btn-mark-complete):hover {
+    background: var(--success-hover);
+    box-shadow: var(--gloss), 0 2px 6px -2px rgba(18, 161, 80, 0.4);
+}

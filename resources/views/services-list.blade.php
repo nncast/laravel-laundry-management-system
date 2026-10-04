@@ -31,10 +31,10 @@
 .search-box input {
     padding:10px 15px;
     border-radius:6px;
-    border:1px solid #ccc;
+    border:1px solid var(--border-strong);
     width: 250px;
     min-width: 200px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
 }
 
 .add-btn {
@@ -50,15 +50,15 @@
 }
 
 .add-btn i { margin-right:6px; }
-.add-btn:hover { opacity:.85; background:#0056b3; }
+.add-btn:hover { opacity:.85; background:var(--accent-hover); }
 
 table { width:100%; border-collapse:collapse; }
 th, td { text-align:left; padding:12px 15px; font-size:14px; }
-th { background:#f8f9fa; font-weight:600; color:#2c3e50; }
-td { border-bottom:1px solid #f1f1f1; color:#2c3e50; }
+th { background:var(--surface-muted); font-weight:600; color:var(--text); }
+td { border-bottom:1px solid var(--surface-sunken); color:var(--text); }
 
 tbody tr:hover {
-    background: #f9fbfd;
+    background: var(--surface-muted);
 }
 
 .service-icon {
@@ -70,7 +70,7 @@ tbody tr:hover {
 
 .type-tag {
     display:inline-block;
-    background:rgba(0,123,255,0.1);
+    background:rgba(37, 99, 235,0.1);
     color:var(--blue);
     font-size:12px;
     padding:2px 8px;
@@ -80,8 +80,8 @@ tbody tr:hover {
 }
 
 .status-active {
-    background:#d4edda;
-    color:#155724;
+    background:var(--success-soft);
+    color:var(--success-text);
     padding:5px 12px;
     border-radius:20px;
     font-size:13px;
@@ -89,8 +89,8 @@ tbody tr:hover {
 }
 
 .status-inactive {
-    background:#f8d7da;
-    color:#721c24;
+    background:var(--danger-soft);
+    color:var(--danger-text);
     padding:5px 12px;
     border-radius:20px;
     font-size:13px;
@@ -105,7 +105,7 @@ tbody tr:hover {
     cursor:pointer;
 }
 
-.edit { background: rgba(0,123,255,0.1); color:var(--blue); }
+.edit { background: rgba(37, 99, 235,0.1); color:var(--blue); }
 .delete { background: rgba(255,0,0,0.1); color:red; }
 .edit:hover, .delete:hover { opacity:.8; }
 
@@ -126,20 +126,20 @@ tbody tr:hover {
     display: block;
     margin-bottom: 5px;
     font-size: 13px;
-    color: #6c757d;
+    color: var(--text-muted);
 }
 
 /* Price formatting */
 .price-cell {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .table-container {
         padding: 15px;
-        margin: 0 -15px;
+        margin: 0;
         border-radius: 0;
     }
 
@@ -216,7 +216,7 @@ tbody tr:hover {
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align:center;color:#999;padding:20px;">
+                    <td colspan="6" style="text-align:center;color:var(--text-faint);padding:20px;">
                         <i class="fas fa-box-open" style="font-size:24px;margin-bottom:10px;display:block;"></i>
                         No services found.
                     </td>

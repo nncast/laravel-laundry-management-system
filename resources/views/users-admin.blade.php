@@ -31,14 +31,14 @@
 .search-box input {
     padding: 10px 15px;
     border-radius: 6px;
-    border: 1px solid #ccc;
-    font-family: 'Poppins', sans-serif;
+    border: 1px solid var(--border-strong);
+    font-family: var(--font);
     width: 250px;
     min-width: 200px;
 }
 
 .add-btn {
-    background: #007bff;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 6px;
@@ -50,7 +50,7 @@
     white-space: nowrap;
 }
 .add-btn i { margin-right: 6px; }
-.add-btn:hover { opacity: 0.85; background: #0056b3; }
+.add-btn:hover { opacity: 0.85; background: var(--accent-hover); }
 
 table {
     width: 100%;
@@ -63,18 +63,18 @@ th, td {
     font-size: 14px;
 }
 th {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
 }
 td {
-    border-bottom: 1px solid #f1f1f1;
-    color: #2c3e50;
+    border-bottom: 1px solid var(--surface-sunken);
+    color: var(--text);
 }
 
 .status-active {
-    background: #d4edda;
-    color: #155724;
+    background: var(--success-soft);
+    color: var(--success-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -82,8 +82,8 @@ td {
 }
 
 .status-inactive {
-    background: #fff3cd;
-    color: #856404;
+    background: var(--warning-soft);
+    color: var(--warning-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -100,7 +100,7 @@ td {
     border-radius: 50%;
     cursor: pointer;
 }
-.edit { background: rgba(0,123,255,0.1); color: #007bff; }
+.edit { background: rgba(37, 99, 235,0.1); color: var(--accent); }
 .delete { background: rgba(255,0,0,0.1); color: red; }
 .edit:hover, .delete:hover { opacity: 0.8; }
 
@@ -119,7 +119,7 @@ td {
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 .summary-card h4 {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 14px;
 }
 .summary-card p {
@@ -173,13 +173,13 @@ td {
 .modal-header {
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
     font-size: 20px;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
     margin: 0;
 }
 
@@ -190,7 +190,7 @@ td {
     background: none;
     border: none;
     font-size: 20px;
-    color: #999;
+    color: var(--text-faint);
     cursor: pointer;
     width: 30px;
     height: 30px;
@@ -202,8 +202,8 @@ td {
 }
 
 .close-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--surface-sunken);
+    color: var(--text);
 }
 
 .form-group {
@@ -212,7 +212,7 @@ td {
 
 .form-group label {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
     display: block;
     margin-bottom: 6px;
     font-size: 14px;
@@ -223,29 +223,29 @@ td {
     width: 100%;
     padding: 12px 15px;
     border-radius: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
     transition: border 0.2s;
     background: #fff;
 }
 
 .form-group input:focus,
 .form-group select:focus {
-    border-color: #007bff;
+    border-color: var(--accent);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235,0.1);
 }
 
 .error-message {
-    color: #dc3545;
+    color: var(--danger);
     font-size: 12px;
     margin-top: 5px;
     display: none;
 }
 
 .helper-text {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 11px;
     margin-top: 4px;
 }
@@ -260,7 +260,7 @@ td {
     gap: 10px;
     margin-top: 20px;
     padding-top: 15px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border);
     flex-wrap: wrap;
 }
 
@@ -276,21 +276,21 @@ td {
 }
 
 .cancel-btn {
-    background: #f8f9fa;
-    color: #495057;
+    background: var(--surface-muted);
+    color: var(--text-secondary);
 }
 
 .cancel-btn:hover {
-    background: #e9ecef;
+    background: var(--surface-sunken);
 }
 
 .submit-btn {
-    background: #007bff;
+    background: var(--accent);
     color: white;
 }
 
 .submit-btn:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 /* ==========================================================
@@ -299,7 +299,7 @@ td {
 @media (max-width: 768px) {
     .table-container {
         padding: 15px;
-        margin: 0 -15px;
+        margin: 0;
         border-radius: 0;
     }
 
@@ -405,8 +405,8 @@ td {
     }
 }
 
-.staff-delete { background:none; border:none; color:#dc3545; cursor:pointer; font-size:15px; margin-left:8px; }
-.staff-delete:hover { color:#a71d2a; }
+.staff-delete { background:none; border:none; color:var(--danger); cursor:pointer; font-size:15px; margin-left:8px; }
+.staff-delete:hover { color:var(--danger-hover); }
 
 /* Prevent body scroll when modal is open */
 body.modal-open {
@@ -474,7 +474,7 @@ body.modal-open {
                 </tr>
                 @empty
                 <tr id="noStaffFound">
-                    <td colspan="7" style="text-align:center; color:#999;">No records found.</td>
+                    <td colspan="7" style="text-align:center; color:var(--text-faint);">No records found.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -485,11 +485,11 @@ body.modal-open {
 <div class="summary-cards">
     <div class="summary-card">
         <h4>Total Staff</h4>
-        <p style="color:#007bff;">{{ $totalUsers }}</p>
+        <p style="color:var(--accent);">{{ $totalUsers }}</p>
     </div>
     <div class="summary-card">
         <h4>Active Accounts</h4>
-        <p style="color:#28a745;">{{ $activeUsers }}</p>
+        <p style="color:var(--success);">{{ $activeUsers }}</p>
     </div>
 </div>
 

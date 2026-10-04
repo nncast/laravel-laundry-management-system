@@ -1,4 +1,6 @@
-<div align="center"><img src="docs/logo.png" width="100" alt="Laundry Management System logo"></div>
+<div align="center"><img src="docs/logo.png" width="100" alt="Soap Opera logo"></div>
+<h1 align="center">Soap Opera</h1>
+<p align="center"><i>Fresh loads. Zero drama.</i></p>
 <div align="center">
 <img src="https://img.shields.io/badge/version-1.0.1-4169E1?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
@@ -9,21 +11,13 @@
 </div>
 
 
-<p align="center">
-  <b>Download v1.0.1:</b>
-  <a href="https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v1.0.1.zip">Source (.zip)</a> |
-  <a href="https://github.com/nncast/laravel-laundry-management-system/releases">All releases</a>
-</p>
-
-
-
-**Laundry Management System** is a web-based **Laravel** application for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
-It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone.
+**Soap Opera** is a web-based **Laravel** laundry management system for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
+It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone. The interface uses a soft blue-and-white bubble theme with rounded cards and glossy, 3D-style icons.
 
 > **Current version: v1.0.1** — fixes the dashboard sales chart on phones and refreshes the login page (frosted-glass panel, app logo, fits on phones). Built on v1.0.0, the first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
 
 <p align="center">
-  <img width="400" alt="Login" src="docs/screenshots/login.jpg" />
+  <img width="400" alt="Login" src="docs/screenshots/login.png" />
   <img width="400" alt="Dashboard" src="docs/screenshots/dashboard.png" />
   <img width="400" alt="Point of sale" src="docs/screenshots/pos.png" />
   <img width="400" alt="Orders" src="docs/screenshots/orders.png" />
@@ -32,7 +26,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 </p>
 
 <p align="center">
-  <img width="190" alt="Mobile login" src="docs/screenshots/mobile-login.jpg" />
+  <img width="190" alt="Mobile login" src="docs/screenshots/mobile-login.png" />
   <img width="190" alt="Mobile dashboard" src="docs/screenshots/mobile-dashboard.png" />
   <img width="190" alt="Mobile menu" src="docs/screenshots/mobile-menu.png" />
   <img width="190" alt="Mobile POS" src="docs/screenshots/mobile-pos.png" />
@@ -42,6 +36,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 
 **Point of Sale & Orders**
 - POS screen to pick services, quantities and add-ons, apply a discount and take payment
+- Services grouped into sections by service type, with category filters, search and a count badge on items already in the order
 - Change is calculated for cash payments; only the amount owed is recorded
 - Partial payments, with the remaining balance tracked per order
 - Order status flow: **Pending → Processing → Completed** (or Cancelled)
@@ -241,4 +236,4 @@ Please don't report vulnerabilities in public issues. Use the repository's **Sec
 
 ---
 
-*Laundry Management System · 2025 · Laravel 12 · PHP 8.2 · MySQL / SQLite*
+*Soap Opera · Laundry Management System · 2025 · Laravel 12 · PHP 8.2 · MySQL / SQLite*

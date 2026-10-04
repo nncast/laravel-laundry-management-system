@@ -42,7 +42,7 @@
 
 .search-box input {
     padding: 10px 15px 10px 40px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
     width: 250px;
@@ -52,7 +52,7 @@
 .search-box input:focus {
     outline: none;
     border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
 .search-box i {
@@ -78,7 +78,7 @@
 }
 
 .add-order-btn:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
     color: white;
 }
 
@@ -92,11 +92,11 @@
 .table-header {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1fr 1.2fr;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     padding: 15px 20px;
     font-weight: 600;
     color: var(--text-dark);
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid var(--border);
     gap: 10px;
     text-align: center;
     font-size: 14px;
@@ -106,7 +106,7 @@
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1fr 1.2fr;
     padding: 15px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--surface-sunken);
     align-items: center;
     gap: 10px;
     text-align: center;
@@ -118,7 +118,7 @@
 }
 
 .table-row:hover {
-    background: #fafafa;
+    background: var(--surface-muted);
 }
 
 .order-info {
@@ -176,27 +176,27 @@
 }
 
 .status-pending {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
+    background: var(--warning-soft);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-soft);
 }
 
 .status-processing {
-    background: #cce5ff;
-    color: #004085;
-    border: 1px solid #b8daff;
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+    border: 1px solid var(--accent-soft);
 }
 
 .status-completed {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background: var(--success-soft);
+    color: var(--success-text);
+    border: 1px solid var(--success-soft);
 }
 
 .status-cancelled {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    border: 1px solid var(--danger-soft);
 }
 
 .status-badge i {
@@ -215,7 +215,7 @@
 }
 
 .payment-paid {
-    color: #28a745;
+    color: var(--success);
     font-weight: 500;
 }
 
@@ -229,21 +229,21 @@
 }
 
 .payment-fully-paid {
-    background: #e7f4e4;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
+    background: var(--success-soft);
+    color: var(--success-text);
+    border: 1px solid var(--success-soft);
 }
 
 .payment-partial {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
+    background: var(--warning-soft);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-soft);
 }
 
 .payment-unpaid {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    border: 1px solid var(--danger-soft);
 }
 
 .created-by {
@@ -276,26 +276,26 @@
 }
 
 .btn-view:hover {
-    color: #0056b3;
-    background: #f0f8ff;
+    color: var(--accent-hover);
+    background: var(--accent-soft);
 }
 
 .btn-edit {
-    color: #28a745;
+    color: var(--success);
 }
 
 .btn-edit:hover {
-    color: #218838;
-    background: #e7f4e4;
+    color: var(--success-hover);
+    background: var(--success-soft);
 }
 
 .btn-delete {
-    color: #dc3545;
+    color: var(--danger);
 }
 
 .btn-delete:hover {
-    color: #c82333;
-    background: #f8d7da;
+    color: var(--danger-hover);
+    background: var(--danger-soft);
 }
 
 /* Pagination */
@@ -328,12 +328,12 @@
 
 .pagination a {
     color: var(--blue);
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     background: white;
 }
 
 .pagination a:hover {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     border-color: var(--blue);
 }
 
@@ -344,28 +344,28 @@
 }
 
 .pagination .disabled span {
-    color: #6c757d;
-    border: 1px solid #ddd;
-    background: #f8f9fa;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
 }
 
 /* Empty state */
 .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: #6c757d;
+    color: var(--text-muted);
 }
 
 .empty-state i {
     font-size: 48px;
     margin-bottom: 15px;
-    color: #dee2e6;
+    color: var(--border);
 }
 
 .empty-state h3 {
     font-size: 18px;
     margin-bottom: 10px;
-    color: #495057;
+    color: var(--text-secondary);
 }
 
 .empty-state p {
@@ -378,7 +378,7 @@
     .table-header { display: none; }
     .table-row {
         grid-template-columns: 1fr;
-        border: 1px solid #eaeaea;
+        border: 1px solid var(--border);
         border-radius: 8px;
         margin-bottom: 10px;
         gap: 10px;
@@ -396,6 +396,23 @@
         min-width: auto;
         justify-content: flex-start;
     }
+}
+
+/* ---- Refreshed list layout ---- */
+.orders-table { border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.order-id { font-weight: 600; letter-spacing: 0.01em; }
+.order-date-item { font-size: 12.5px; color: var(--text-muted); }
+.order-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+.payment-total { display: none; } /* same figure as the Amount column */
+.payment-info { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.payment-paid { color: var(--text-muted); font-weight: 500; font-size: 13px; }
+.payment-status { margin: 0; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 0; }
+.created-by { font-weight: 500; color: var(--text-secondary); }
+@media (min-width: 769px) {
+    .table-header, .table-row { text-align: left; padding: 12px 20px; }
+    .table-header { font-size: 12px; color: var(--text-muted); }
+    .table-row .status-container, .table-row .action-buttons { justify-content: flex-start; }
+    .table-header > :last-child, .table-row > :last-child { justify-self: end; }
 }
 </style>
 

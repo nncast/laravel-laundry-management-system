@@ -16,7 +16,7 @@
 
 .report-header h3 {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
     margin-bottom: 5px;
     font-size: 1.5rem;
 }
@@ -39,16 +39,16 @@
 
 .date-picker label {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
     font-size: 14px;
     white-space: nowrap;
 }
 
 .date-picker input {
     padding: 10px 15px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
     font-size: 14px;
     min-width: 200px;
     transition: 0.3s;
@@ -57,7 +57,7 @@
 .date-picker input:focus {
     outline: none;
     border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
 .report-table {
@@ -74,9 +74,9 @@
     grid-template-columns: 1fr 150px;
     width: 100%;
     padding: 15px 20px;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid var(--border);
     font-size: 14px;
     text-align: left;
 }
@@ -86,7 +86,7 @@
     grid-template-columns: 1fr 150px;
     width: 100%;
     padding: 15px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--surface-sunken);
     align-items: center;
     font-size: 14px;
 }
@@ -100,10 +100,10 @@
     font-weight: 600;
 }
 
-.value.orange { color: #ff9f43; }
-.value.green { color: #28a745; }
-.value.blue { color: #17a2b8; }
-.value.red { color: #dc3545; }
+.value.orange { color: var(--warning); }
+.value.green { color: var(--success); }
+.value.blue { color: var(--info); }
+.value.red { color: var(--danger); }
 
 .action-buttons {
     display: flex;
@@ -123,28 +123,28 @@
     align-items: center;
     gap: 8px;
     transition: all 0.2s ease;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
 }
 
 .btn-download {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
+    background: var(--warning-soft);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-soft);
 }
 
 .btn-print {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background: var(--success-soft);
+    color: var(--success-text);
+    border: 1px solid var(--success-soft);
 }
 
 .btn-download:hover {
-    background: #ffeaa7;
+    background: var(--warning-soft);
     transform: translateY(-1px);
 }
 
 .btn-print:hover {
-    background: #c3e6cb;
+    background: var(--success-soft);
     transform: translateY(-1px);
 }
 
@@ -159,13 +159,13 @@
     background: #fff;
     border-radius: 8px;
     padding: 20px;
-    border: 1px solid #eaeaea;
+    border: 1px solid var(--border);
     text-align: center;
 }
 
 .summary-card h4 {
     font-size: 14px;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-bottom: 10px;
     font-weight: 500;
 }
@@ -175,23 +175,23 @@
     font-weight: 600;
 }
 
-.summary-value.orders { color: #ff9f43; }
-.summary-value.delivered { color: #28a745; }
-.summary-value.sales { color: #28a745; }
-.summary-value.payment { color: #17a2b8; }
-.summary-value.outstanding { color: #dc3545; }
+.summary-value.orders { color: var(--warning); }
+.summary-value.delivered { color: var(--success); }
+.summary-value.sales { color: var(--success); }
+.summary-value.payment { color: var(--info); }
+.summary-value.outstanding { color: var(--danger); }
 
 /* Status breakdown */
 .status-breakdown {
     margin-top: 25px;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     padding: 20px;
     border-radius: 8px;
 }
 
 .status-breakdown h4 {
     font-size: 16px;
-    color: #2c3e50;
+    color: var(--text);
     margin-bottom: 15px;
     font-weight: 600;
 }
@@ -209,10 +209,10 @@
     font-weight: 500;
 }
 
-.status-pending { background: #fff3cd; color: #856404; }
-.status-processing { background: #cce5ff; color: #004085; }
-.status-completed { background: #d4edda; color: #155724; }
-.status-cancelled { background: #f8d7da; color: #721c24; }
+.status-pending { background: var(--warning-soft); color: var(--warning-text); }
+.status-processing { background: var(--accent-soft); color: var(--accent-hover); }
+.status-completed { background: var(--success-soft); color: var(--success-text); }
+.status-cancelled { background: var(--danger-soft); color: var(--danger-text); }
 
 /* Top services */
 .top-services {
@@ -221,7 +221,7 @@
 
 .top-services h4 {
     font-size: 16px;
-    color: #2c3e50;
+    color: var(--text);
     margin-bottom: 15px;
     font-weight: 600;
 }
@@ -230,7 +230,7 @@
     display: flex;
     justify-content: space-between;
     padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--surface-sunken);
 }
 
 .service-item:last-child {
@@ -238,17 +238,17 @@
 }
 
 .service-name {
-    color: #495057;
+    color: var(--text-secondary);
 }
 
 .service-qty {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 13px;
 }
 
 .service-amount {
     font-weight: 600;
-    color: #28a745;
+    color: var(--success);
 }
 
 /* Mobile Responsiveness */
@@ -273,7 +273,7 @@
     
     .table-row {
         grid-template-columns: 1fr;
-        border: 1px solid #eaeaea;
+        border: 1px solid var(--border);
         border-radius: 8px;
         margin-bottom: 10px;
         padding: 12px;
@@ -514,25 +514,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create print-friendly version
         const printContent = `
-            <div style="font-family: 'Poppins', sans-serif; padding: 20px;">
-                <h2 style="color: #2c3e50; margin-bottom: 5px;">Daily Report</h2>
-                <p style="color: #6c757d; margin-bottom: 20px;">${formattedDate}</p>
+            <div style="font-family: var(--font); padding: 20px;">
+                <h2 style="color: var(--text); margin-bottom: 5px;">Daily Report</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">${formattedDate}</p>
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f8f9fa;">
-                            <th style="padding: 12px 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Particulars</th>
-                            <th style="padding: 12px 15px; text-align: right; border-bottom: 2px solid #dee2e6;">Value</th>
+                        <tr style="background: var(--surface-muted);">
+                            <th style="padding: 12px 15px; text-align: left; border-bottom: 2px solid var(--border);">Particulars</th>
+                            <th style="padding: 12px 15px; text-align: right; border-bottom: 2px solid var(--border);">Value</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid #f1f1f1;">Total Orders</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid #f1f1f1; color: #ff9f43;">${stats.total_orders}</td></tr>
-                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid #f1f1f1;">Completed Orders</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid #f1f1f1; color: #28a745;">${stats.delivered_orders}</td></tr>
-                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid #f1f1f1;">Total Sales</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid #f1f1f1; color: #28a745;">${stats.total_sales}</td></tr>
-                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid #f1f1f1;">Total Payment</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid #f1f1f1; color: #17a2b8;">${stats.total_payments}</td></tr>
-                        ${stats.outstanding !== '0.00 PHP' ? `<tr><td style="padding: 12px 15px; border-bottom: 1px solid #f1f1f1;">Outstanding Amount</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid #f1f1f1; color: #dc3545;">${stats.outstanding}</td></tr>` : ''}
+                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid var(--surface-sunken);">Total Orders</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--surface-sunken); color: var(--warning);">${stats.total_orders}</td></tr>
+                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid var(--surface-sunken);">Completed Orders</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--surface-sunken); color: var(--success);">${stats.delivered_orders}</td></tr>
+                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid var(--surface-sunken);">Total Sales</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--surface-sunken); color: var(--success);">${stats.total_sales}</td></tr>
+                        <tr><td style="padding: 12px 15px; border-bottom: 1px solid var(--surface-sunken);">Total Payment</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--surface-sunken); color: var(--info);">${stats.total_payments}</td></tr>
+                        ${stats.outstanding !== '0.00 PHP' ? `<tr><td style="padding: 12px 15px; border-bottom: 1px solid var(--surface-sunken);">Outstanding Amount</td><td style="padding: 12px 15px; text-align: right; border-bottom: 1px solid var(--surface-sunken); color: var(--danger);">${stats.outstanding}</td></tr>` : ''}
                     </tbody>
                 </table>
-                <p style="margin-top: 30px; font-size: 12px; color: #999;">Generated on ${new Date().toLocaleString()}</p>
+                <p style="margin-top: 30px; font-size: 12px; color: var(--text-faint);">Generated on ${new Date().toLocaleString()}</p>
             </div>
         `;
         
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <head>
                     <title>Daily Report - ${formattedDate}</title>
                     <style>
-                        body { font-family: 'Poppins', sans-serif; margin: 20px; }
+                        body { font-family: var(--font); margin: 20px; }
                         @media print {
                             body { margin: 0; }
                             @page { margin: 20mm; }

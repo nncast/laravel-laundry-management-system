@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 420 360" role="img" aria-label="Bubble mascot">
+  <defs>
+    <!-- soap-film bubble, drawn in a 100x100 box and reused at any size -->
+    <radialGradient id="film" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.04"/>
+      <stop offset="0.72" stop-color="#e6f4ff" stop-opacity="0.16"/>
+      <stop offset="0.9" stop-color="#fff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.9"/>
+    </radialGradient>
+    <linearGradient id="irid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb8e4"/>
+      <stop offset="0.35" stop-color="#fff2a8"/>
+      <stop offset="0.65" stop-color="#9ff5e6"/>
+      <stop offset="1" stop-color="#8ccaff"/>
+    </linearGradient>
+    <radialGradient id="ringFade" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.62" stop-color="#000"/>
+      <stop offset="1" stop-color="#fff"/>
+    </radialGradient>
+    <mask id="ring" maskContentUnits="objectBoundingBox">
+      <rect width="1" height="1" fill="url(#ringFade)"/>
+    </mask>
+    <symbol id="bubble" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="49" fill="url(#film)"/>
+      <circle cx="50" cy="50" r="49" fill="url(#irid)" mask="url(#ring)" opacity="0.75"/>
+      <ellipse cx="32" cy="28" rx="15" ry="8" fill="#fff" opacity="0.85" transform="rotate(-38 32 28)"/>
+      <circle cx="52" cy="18" r="3.5" fill="#fff" opacity="0.8"/>
+    </symbol>
+
+    <!-- mascot body -->
+    <radialGradient id="body" cx="0.42" cy="0.36" r="0.7">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#eef7ff"/>
+      <stop offset="1" stop-color="#b9defc"/>
+    </radialGradient>
+    <clipPath id="bodyClip"><circle cx="208" cy="186" r="108"/></clipPath>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="16"/></filter>
+    <filter id="blur6" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+    <radialGradient id="cloud" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- soft glow behind -->
+  <ellipse cx="210" cy="190" rx="190" ry="150" fill="url(#cloud)"/>
+
+  <!-- ground shadow -->
+  <ellipse cx="210" cy="318" rx="86" ry="11" fill="#0a3c96" opacity="0.22" filter="url(#blur6)"/>
+
+  <!-- mascot -->
+  <circle cx="208" cy="186" r="108" fill="url(#body)"/>
+  <g clip-path="url(#bodyClip)" filter="url(#soft)" opacity="0.85">
+    <circle cx="160" cy="150" r="46" fill="#ffc8ea"/>
+    <circle cx="246" cy="138" r="40" fill="#fff0b3"/>
+    <circle cx="232" cy="236" r="52" fill="#a3f2e2"/>
+    <circle cx="160" cy="238" r="44" fill="#9fd6ff"/>
+  </g>
+  <circle cx="208" cy="186" r="107" fill="none" stroke="#fff" stroke-width="3" opacity="0.8"/>
+  <ellipse cx="160" cy="118" rx="34" ry="16" fill="#fff" opacity="0.9" transform="rotate(-34 160 118)"/>
+  <circle cx="198" cy="96" r="6" fill="#fff" opacity="0.9"/>
+  <!-- face -->
+  <rect x="181" y="160" width="11" height="24" rx="5.5" fill="#1d5fd6"/>
+  <rect x="226" y="160" width="11" height="24" rx="5.5" fill="#1d5fd6"/>
+  <path d="M184 206 Q209 228 234 206" fill="none" stroke="#1d5fd6" stroke-width="6.5" stroke-linecap="round"/>
+  <ellipse cx="168" cy="206" rx="11" ry="6" fill="#ff9fd0" opacity="0.45"/>
+  <ellipse cx="250" cy="206" rx="11" ry="6" fill="#ff9fd0" opacity="0.45"/>
+
+  <!-- floating bubbles -->
+  <use href="#bubble" xlink:href="#bubble" x="318" y="40" width="74" height="74"/>
+  <use href="#bubble" xlink:href="#bubble" x="44" y="58" width="52" height="52"/>
+  <use href="#bubble" xlink:href="#bubble" x="22" y="226" width="64" height="64"/>
+  <use href="#bubble" xlink:href="#bubble" x="342" y="232" width="40" height="40"/>
+  <use href="#bubble" xlink:href="#bubble" x="300" y="146" width="24" height="24"/>
+  <use href="#bubble" xlink:href="#bubble" x="104" y="18" width="22" height="22"/>
+</svg>

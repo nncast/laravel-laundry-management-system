@@ -22,13 +22,13 @@
 
 .settings-header h3 {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
     margin-bottom: 5px;
     font-size: 1.5rem;
 }
 
 .settings-header p {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 14px;
     margin: 0;
 }
@@ -60,7 +60,7 @@
     padding: 25px 20px;
     text-align: center;
     cursor: pointer;
-    border: 1px solid #eaeaea;
+    border: 1px solid var(--border);
     transition: all 0.25s ease;
     display: flex;
     flex-direction: column;
@@ -75,22 +75,26 @@
     border-color: var(--blue);
 }
 
-.tool-card i {
-    font-size: 32px;
-    color: var(--blue);
-    margin-bottom: 15px;
+.tool-card .tool-tile {
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
+    font-size: 24px;
+    margin-bottom: 16px;
 }
+.tool-card { border-radius: var(--radius-lg); }
+.tool-card:hover { border-color: #b9d6fb; box-shadow: 0 16px 30px -18px rgba(16, 64, 140, 0.45); }
 
 .tool-card h4 {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 8px;
-    color: #2c3e50;
+    color: var(--text);
 }
 
 .tool-card p {
     font-size: 13px;
-    color: #6c757d;
+    color: var(--text-muted);
     margin: 0;
     line-height: 1.4;
 }
@@ -109,20 +113,20 @@
     height: 40px;
     object-fit: contain;
     border-radius: 4px;
-    border: 1px solid #ddd;
-    background: #f8f9fa;
+    border: 1px solid var(--border);
+    background: var(--surface-muted);
     padding: 3px;
 }
 
 .logo-preview .helper-text {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--text-muted);
 }
 
 /* Warning Box for Backup */
 .warning-box {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
+    background: var(--warning-soft);
+    border: 1px solid var(--warning-soft);
     border-radius: 8px;
     padding: 15px;
     margin-top: 20px;
@@ -130,7 +134,7 @@
 }
 
 .warning-box h4 {
-    color: #856404;
+    color: var(--warning-text);
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 8px;
@@ -140,7 +144,7 @@
 }
 
 .warning-box p {
-    color: #856404;
+    color: var(--warning-text);
     font-size: 13px;
     margin: 0;
     line-height: 1.5;
@@ -155,7 +159,7 @@
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
     font-size: 14px;
 }
 
@@ -164,10 +168,10 @@
 .form-group select {
     width: 100%;
     padding: 10px 15px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
     transition: 0.3s;
 }
 
@@ -176,7 +180,7 @@
 .form-group select:focus {
     outline: none;
     border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
 .form-group textarea {
@@ -186,16 +190,16 @@
 
 .helper-text {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-top: 5px;
 }
 
 .helper-text.info {
-    color: #17a2b8;
-    background: #e7f7f9;
+    color: var(--info);
+    background: var(--info-soft);
     padding: 8px 12px;
     border-radius: 6px;
-    border-left: 3px solid #17a2b8;
+    border-left: 3px solid var(--info);
     margin-top: 10px;
 }
 
@@ -205,12 +209,12 @@
 
 /* Required star */
 .required-star {
-    color: #dc3545;
+    color: var(--danger);
 }
 
 /* Error messages */
 .error-message {
-    color: #dc3545;
+    color: var(--danger);
     font-size: 12px;
     margin-top: 5px;
     display: none;
@@ -222,10 +226,10 @@
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    background: #e7f7f9;
+    background: var(--info-soft);
     border-radius: 12px;
     font-size: 12px;
-    color: #17a2b8;
+    color: var(--info);
     margin-top: 8px;
 }
 
@@ -233,7 +237,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #17a2b8;
+    background: var(--info);
     animation: pulse 2s infinite;
 }
 
@@ -261,12 +265,12 @@
     color: #fff;
 }
 .backup-btn { background: var(--blue); }
-.backup-btn:hover { background: #0056b3; }
+.backup-btn:hover { background: var(--accent-hover); }
 .backup-btn.is-loading { pointer-events: none; opacity: 0.7; }
-.restore-btn { background: #dc3545; }
-.restore-btn:hover { background: #b02a37; }
+.restore-btn { background: var(--danger); }
+.restore-btn:hover { background: var(--danger-hover); }
 .restore-form {
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border);
     padding-top: 18px;
     margin-top: 5px;
 }
@@ -275,7 +279,7 @@
     align-items: flex-start;
     gap: 8px;
     font-size: 13px;
-    color: #856404;
+    color: var(--warning-text);
     margin-bottom: 15px;
     cursor: pointer;
 }
@@ -300,8 +304,10 @@
         padding: 20px 15px;
     }
 
-    .tool-card i {
-        font-size: 28px;
+    .tool-card .tool-tile {
+        width: 52px;
+        height: 52px;
+        font-size: 21px;
         margin-bottom: 12px;
     }
 }
@@ -324,13 +330,13 @@
 <div class="settings-container">
     <div class="tools-grid">
         <div class="tool-card" onclick="openModal('businessProfileModal')">
-            <i class="fas fa-store"></i>
+            <span class="bubble-tile tone-blue tool-tile"><i class="fas fa-store"></i></span>
             <h4>Business Profile</h4>
             <p>Business identity and branding</p>
         </div>
 
         <div class="tool-card" onclick="openModal('dataBackupModal')">
-            <i class="fas fa-database"></i>
+            <span class="bubble-tile tone-aqua tool-tile"><i class="fas fa-database"></i></span>
             <h4>Data Backup</h4>
             <p>Backup and restore</p>
         </div>
@@ -422,7 +428,7 @@
                             Last backup: {{ \Carbon\Carbon::createFromTimestamp($lastBackup)->timezone(config('app.timezone'))->format('M d, Y h:i A') }}
                         </div>
                     @else
-                        <div class="helper-text" style="color: #dc3545;">
+                        <div class="helper-text" style="color: var(--danger);">
                             <i class="fas fa-exclamation-circle"></i> No backup created yet
                         </div>
                     @endif

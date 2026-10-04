@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', 'Dashboard') - {{ $system->business_name ?? 'Laundry' }}</title>
+<title>@yield('title', 'Dashboard') - {{ $system->business_name ?? 'Soap Opera' }}</title>
 
 <!-- Favicon -->
 @if(!empty($system->favicon))
 <link rel="icon" href="{{ asset($system->favicon) }}?v={{ optional($system->updated_at)->timestamp }}" type="image/x-icon">
+@else
+<link rel="icon" href="{{ asset('images/brand/mark.svg') }}" type="image/svg+xml">
 @endif
 
 <!-- Open connections to the CDNs early -->
@@ -17,7 +19,8 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
 <!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
 
 <!-- Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -25,6 +28,7 @@
 <!-- Main CSS (version = file time so browsers re-download only after a change) -->
 <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ @filemtime(public_path('css/style.css')) }}">
 @stack('styles')
+<link rel="stylesheet" href="{{ asset('css/components.css') }}?v={{ @filemtime(public_path('css/components.css')) }}">
 
 <script>
     // Base URL of the app – lets AJAX calls work even when the app runs in a sub-folder
@@ -46,8 +50,17 @@
 
     <aside class="sidebar" aria-label="Main navigation">
         <div class="logo">
-            <i class="fas fa-soap"></i>
-            <span>{{ $system->business_name ?? 'LAUNDRY' }}</span>
+            <a href="{{ route('dashboard') }}" class="brand" aria-label="Soap Opera home">
+                <img class="brand-mark" src="{{ asset('images/brand/mark.svg') }}" alt="" width="40" height="40">
+                <span class="brand-text">
+                    <span class="brand-name">Soap <em>Opera</em></span>
+                    @if(!empty($system->business_name) && strcasecmp($system->business_name, 'Soap Opera') !== 0)
+                    <span class="brand-sub">{{ $system->business_name }}</span>
+                    @else
+                    <span class="brand-sub">Laundry management</span>
+                    @endif
+                </span>
+            </a>
             <button type="button" class="sidebar-close" aria-label="Close menu"><i class="fas fa-times"></i></button>
         </div>
 
@@ -99,22 +112,29 @@
             </div>
             @endif
 
+        </nav>
+
+        <div class="sidebar-footer">
+            <span class="avatar" aria-hidden="true">{{ strtoupper(mb_substr($staffName ?? '?', 0, 1)) }}</span>
+            <span class="account">
+                <span class="account-name">{{ $staffName }}</span>
+                <span class="account-role">{{ ucfirst($role) }}</span>
+            </span>
             <form action="{{ route('logout') }}" method="POST" class="logout-form">
                 @csrf
-                <button type="submit" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <button type="submit" class="logout-btn" title="Log out" aria-label="Log out"><i class="fas fa-arrow-right-from-bracket"></i></button>
             </form>
-        </nav>
+        </div>
     </aside>
 
     <!-- Desktop Topbar -->
     <header class="desktop-topbar">
-        <h2>@yield('page-title', 'Dashboard Overview')</h2>
-        @if($staffName)
-        <div class="topbar-user" title="Logged in as {{ $staffName }}">
-            <i class="fas fa-user-circle"></i>
-            <span>{{ $staffName }}</span>
-            <small>{{ ucfirst($role) }}</small>
+        <div class="topbar-title">
+            <h2>@yield('page-title', 'Dashboard Overview')</h2>
+            <span class="topbar-date">{{ now()->format('l, F j, Y') }}</span>
         </div>
+        @if(in_array($role, ['cashier', 'manager', 'admin']) && !request()->is('pos*'))
+        <a href="{{ route('pos.index') }}" class="topbar-cta"><i class="fas fa-plus"></i> New Order</a>
         @endif
     </header>
 

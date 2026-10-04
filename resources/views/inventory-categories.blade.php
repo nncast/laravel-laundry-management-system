@@ -36,7 +36,7 @@
     width: 240px;
     padding: 10px 15px;
     border-radius: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     font-size: 14px;
     transition: 0.2s ease;
 }
@@ -44,7 +44,7 @@
 .search-box input:focus {
     outline: none;
     border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235,0.25);
 }
 
 .add-btn {
@@ -62,7 +62,7 @@
 }
 
 .add-btn:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 /* ================================
@@ -75,7 +75,7 @@ table {
 }
 
 thead {
-    background: #f8f9fa;
+    background: var(--surface-muted);
 }
 
 th {
@@ -84,18 +84,18 @@ th {
     padding: 14px 16px;
     color: var(--text-dark);
     text-align: left;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid var(--border);
 }
 
 td {
     padding: 14px 16px;
     font-size: 14px;
     color: var(--text-dark);
-    border-bottom: 1px solid #f1f1f1;
+    border-bottom: 1px solid var(--surface-sunken);
 }
 
 tbody tr:hover {
-    background: #f9fbfd;
+    background: var(--surface-muted);
 }
 
 /* ================================
@@ -103,8 +103,8 @@ tbody tr:hover {
    ================================ */
 
 .status-active {
-    background: #e6f4ea;
-    color: #1e7e34;
+    background: var(--success-soft);
+    color: var(--success-hover);
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
@@ -112,8 +112,8 @@ tbody tr:hover {
 }
 
 .status-inactive {
-    background: #fdecea;
-    color: #a71d2a;
+    background: var(--danger-soft);
+    color: var(--danger-hover);
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 13px;
@@ -142,21 +142,21 @@ tbody tr:hover {
 }
 
 .edit {
-    background: rgba(0,123,255,0.12);
+    background: rgba(37, 99, 235,0.12);
     color: var(--blue);
 }
 
 .delete {
-    background: rgba(220,53,69,0.12);
-    color: #dc3545;
+    background: rgba(220, 38, 38,0.12);
+    color: var(--danger);
 }
 
 .edit:hover {
-    background: rgba(0,123,255,0.2);
+    background: rgba(37, 99, 235,0.2);
 }
 
 .delete:hover {
-    background: rgba(220,53,69,0.2);
+    background: rgba(220, 38, 38,0.2);
 }
 
 /* ================================
@@ -179,7 +179,7 @@ tbody tr:hover {
 
     table tbody tr {
         display: block;
-        border: 1px solid #eaeaea;
+        border: 1px solid var(--border);
         border-radius: 8px;
         margin-bottom: 12px;
     }
@@ -198,13 +198,13 @@ tbody tr:hover {
 
 /* Override modal button styles to match your design */
 .modal-footer .btn-cancel {
-    background: #ccc;
-    color: #333;
+    background: var(--border-strong);
+    color: var(--text);
     border: none;
 }
 
 .modal-footer .btn-cancel:hover {
-    background: #bbb;
+    background: var(--text-faint);
 }
 
 .modal-footer .btn-primary {
@@ -214,7 +214,7 @@ tbody tr:hover {
 }
 
 .modal-footer .btn-primary:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 </style>
@@ -256,7 +256,7 @@ tbody tr:hover {
         </tr>
     @empty
         <tr>
-            <td colspan="4" style="text-align:center; color:#888; padding:20px;">
+            <td colspan="4" style="text-align:center; color:var(--text-faint); padding:20px;">
                 <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
                 No categories found.
             </td>
@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (remainingRows.length === 0 && !noResultsRow) {
                         const tbody = document.getElementById('categoryTable');
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No categories found.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-faint);">No categories found.</td></tr>';
                     }
                 } else {
                     alert("Delete failed: " + (data.message || "Unknown error"));

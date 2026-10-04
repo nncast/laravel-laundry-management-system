@@ -50,12 +50,12 @@
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
     margin: 0;
-    color: #2c3e50;
+    color: var(--text);
     font-size: 18px;
     font-weight: 600;
 }
@@ -64,7 +64,7 @@
     background: none;
     border: none;
     font-size: 24px;
-    color: #6c757d;
+    color: var(--text-muted);
     cursor: pointer;
     line-height: 1;
     padding: 0;
@@ -77,8 +77,8 @@
 }
 
 .close-btn:hover {
-    background: #f8f9fa;
-    color: #2c3e50;
+    background: var(--surface-muted);
+    color: var(--text);
 }
 
 .modal-body {
@@ -87,7 +87,7 @@
 
 .modal-footer {
     padding: 20px;
-    border-top: 1px solid #eaeaea;
+    border-top: 1px solid var(--border);
     display: flex;
     gap: 10px;
     justify-content: flex-end;
@@ -101,7 +101,7 @@
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
     font-size: 14px;
 }
 
@@ -110,10 +110,10 @@
 .form-group textarea {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
     transition: border-color 0.3s;
 }
 
@@ -121,8 +121,8 @@
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
 .form-group textarea {
@@ -131,18 +131,18 @@
 }
 
 .required-star {
-    color: #dc3545;
+    color: var(--danger);
 }
 
 .error-message {
-    color: #dc3545;
+    color: var(--danger);
     font-size: 12px;
     margin-top: 5px;
     display: none;
 }
 
 .btn-primary {
-    background: #007bff;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 6px;
@@ -154,11 +154,11 @@
 }
 
 .btn-primary:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: var(--text-muted);
     color: white;
     border: none;
     border-radius: 6px;
@@ -170,11 +170,11 @@
 }
 
 .btn-secondary:hover {
-    background: #545b62;
+    background: var(--text-secondary);
 }
 
 .btn-primary:disabled {
-    background: #ccc;
+    background: var(--border-strong);
     cursor: not-allowed;
 }
 
@@ -186,9 +186,9 @@
     box-sizing: border-box;
 }
 body {
-    font-family: 'Poppins', sans-serif;
-    background: #f2f5f7;
-    color: #2c3e50;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
     font-size: 14px;
     line-height: 1.5;
 }
@@ -215,8 +215,8 @@ body {
 .order-number {
     font-size: 18px;
     font-weight: 700;
-    color: #007bff;
-    background: #eef5ff;
+    color: var(--accent);
+    background: var(--accent-soft);
     padding: 10px 15px;
     border-radius: 8px;
     text-align: center;
@@ -235,18 +235,18 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed var(--border);
 }
 
 .meta-label {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 12px;
     font-weight: 500;
     min-width: 100px;
 }
 
 .meta-value {
-    color: #2c3e50;
+    color: var(--text);
     font-weight: 600;
     font-size: 12px;
     text-align: right;
@@ -271,18 +271,18 @@ body {
     display: inline-block;
 }
 
-.status-badge.pending { background: #fff3cd; color: #856404; }
-.status-badge.processing { background: #cce5ff; color: #004085; }
-.status-badge.completed { background: #d4edda; color: #155724; }
-.status-badge.cancelled { background: #f8d7da; color: #721c24; }
+.status-badge.pending { background: var(--warning-soft); color: var(--warning-text); }
+.status-badge.processing { background: var(--accent-soft); color: var(--accent-hover); }
+.status-badge.completed { background: var(--success-soft); color: var(--success-text); }
+.status-badge.cancelled { background: var(--danger-soft); color: var(--danger-text); }
 
 .status-dropdown {
     padding: 5px 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 6px;
     background: white;
     font-size: 12px;
-    color: #333;
+    color: var(--text);
     cursor: pointer;
     min-width: 100px;
     flex: 1;
@@ -311,7 +311,7 @@ body {
 
 .box-section {
     padding: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
 }
 
 .box-section:last-child {
@@ -325,7 +325,7 @@ body {
     align-items: flex-start;
     margin-bottom: 12px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #eef5ff;
+    border-bottom: 2px solid var(--accent-soft);
     flex-wrap: wrap;
     gap: 10px;
 }
@@ -333,14 +333,14 @@ body {
 .section-title {
     font-size: 15px;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .section-title i {
-    color: #007bff;
+    color: var(--accent);
     font-size: 14px;
 }
 
@@ -359,38 +359,38 @@ body {
 }
 
 .order-table th {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     padding: 10px 8px;
     text-align: left;
     font-weight: 600;
-    color: #495057;
+    color: var(--text-secondary);
     font-size: 12px;
-    border-bottom: 2px solid #eaeaea;
+    border-bottom: 2px solid var(--border);
     white-space: nowrap;
 }
 
 .order-table td {
     padding: 10px 8px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
     vertical-align: top;
 }
 
 .order-table tr:hover {
-    background: #f9f9f9;
+    background: var(--surface-muted);
 }
 
 .service-name {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
     font-size: 13px;
     margin-bottom: 2px;
 }
 
 .service-variant {
     font-size: 11px;
-    color: #999;
+    color: var(--text-faint);
     line-height: 1.3;
 }
 
@@ -406,18 +406,18 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     padding: 6px 0;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed var(--border);
     flex-wrap: wrap;
 }
 
 .info-label {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 12px;
     min-width: 80px;
 }
 
 .info-value {
-    color: #2c3e50;
+    color: var(--text);
     font-weight: 500;
     font-size: 12px;
     text-align: right;
@@ -434,11 +434,11 @@ body {
     display: flex;
     justify-content: space-between;
     padding: 8px 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
 }
 
 .payment-row.total {
-    border-top: 2px solid #333;
+    border-top: 2px solid var(--text);
     border-bottom: none;
     margin-top: 10px;
     padding-top: 12px;
@@ -447,30 +447,30 @@ body {
 }
 
 .payment-label {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 13px;
 }
 
 .payment-value {
-    color: #2c3e50;
+    color: var(--text);
     font-weight: 500;
     font-size: 13px;
 }
 
 .payment-row.total .payment-value {
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--text);
 }
 
-.balance-positive { color: #28a745 !important; }
-.balance-negative { color: #dc3545 !important; }
+.balance-positive { color: var(--success) !important; }
+.balance-negative { color: var(--danger) !important; }
 
 /* Notes Section */
 .notes-display {
     padding: 12px;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     border-radius: 6px;
-    color: #555;
+    color: var(--text-secondary);
     font-size: 12px;
     line-height: 1.5;
     min-height: 50px;
@@ -480,7 +480,7 @@ body {
 .notes-textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 12px;
     resize: vertical;
@@ -491,8 +491,8 @@ body {
 
 .notes-textarea:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235,0.1);
 }
 
 /* Store Info Box */
@@ -508,13 +508,13 @@ body {
     text-align: center;
     margin-bottom: 15px;
     padding-bottom: 12px;
-    border-bottom: 2px solid #eef5ff;
+    border-bottom: 2px solid var(--accent-soft);
 }
 
 .store-name {
     font-size: 18px;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--text);
     margin-bottom: 8px;
     word-break: break-word;
 }
@@ -524,7 +524,7 @@ body {
     flex-direction: column;
     gap: 6px;
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .store-details span {
@@ -535,7 +535,7 @@ body {
 }
 
 .store-details i {
-    color: #007bff;
+    color: var(--accent);
     width: 16px;
     text-align: center;
     flex-shrink: 0;
@@ -569,24 +569,24 @@ body {
     font-size: 13px;
 }
 .btn-payment {
-    background: #6f42c1;
+    background: var(--accent);
     color: white;
 }
 .btn-payment:hover {
-    background: #5a32a3;
+    background: var(--accent-hover);
     color: white;
 }
-.btn-edit { background: #007bff; color: white; }
-.btn-edit:hover { background: #0056b3; color: white; }
+.btn-edit { background: var(--accent); color: white; }
+.btn-edit:hover { background: var(--accent-hover); color: white; }
 
-.btn-complete { background: #28a745; color: white; }
-.btn-complete:hover { background: #218838; color: white; }
+.btn-complete { background: var(--success); color: white; }
+.btn-complete:hover { background: var(--success-hover); color: white; }
 
-.btn-cancel { background: #dc3545; color: white; }
-.btn-cancel:hover { background: #c82333; color: white; }
+.btn-cancel { background: var(--danger); color: white; }
+.btn-cancel:hover { background: var(--danger-hover); color: white; }
 
 .btn-save {
-    background: #007bff;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 6px;
@@ -599,7 +599,7 @@ body {
     margin-top: 5px;
 }
 
-.btn-save:hover { background: #0056b3; }
+.btn-save:hover { background: var(--accent-hover); }
 
 /* Footer */
 .order-footer {
@@ -611,7 +611,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    color: #666;
+    color: var(--text-muted);
     font-size: 12px;
 }
 
@@ -620,7 +620,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed var(--border);
 }
 
 .footer-row:last-child {
@@ -628,7 +628,7 @@ body {
 }
 
 .footer-label {
-    color: #6c757d;
+    color: var(--text-muted);
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -636,14 +636,14 @@ body {
 }
 
 .footer-label i {
-    color: #007bff;
+    color: var(--accent);
     font-size: 12px;
     width: 16px;
     text-align: center;
 }
 
 .footer-value {
-    color: #2c3e50;
+    color: var(--text);
     font-weight: 500;
 }
 
@@ -839,14 +839,14 @@ body {
         font-size: 13px;
         min-width: auto;
         white-space: nowrap;
-        color: #6c757d;
+        color: var(--text-muted);
     }
 
     .meta-value {
         font-size: 13px;
         text-align: left;
         font-weight: 600;
-        color: #2c3e50;
+        color: var(--text);
         white-space: nowrap;
     }
 
@@ -966,7 +966,7 @@ body {
     .content-box,
     .store-info-box {
         box-shadow: none !important;
-        border: 1px solid #ddd !important;
+        border: 1px solid var(--border) !important;
         page-break-inside: avoid;
     }
 }
@@ -1042,7 +1042,7 @@ body {
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="4" style="text-align: center; padding: 20px; color: #999;">
+                                    <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-faint);">
                                         No items in this order
                                     </td>
                                 </tr>
@@ -1075,7 +1075,7 @@ body {
                         @endif
                         @else
                         <div class="info-row">
-                            <span class="info-value" style="color: #666; font-style: italic;">
+                            <span class="info-value" style="color: var(--text-muted); font-style: italic;">
                                 Walk In Customer
                             </span>
                         </div>
@@ -1145,7 +1145,7 @@ body {
             <!-- Store Info Box -->
             <div class="store-info-box">
                 <div class="store-header">
-                    <h2 class="store-name">{{ $settings->business_name ?? 'LAUNDRY' }}</h2>
+                    <h2 class="store-name">{{ $settings->business_name ?? 'Soap Opera' }}</h2>
                 </div>
                 <div class="store-details">
                     @if($settings->contact)

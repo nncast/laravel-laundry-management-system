@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Soap Opera">
+  <defs>
+    <radialGradient id="big" cx="0.34" cy="0.3" r="0.78">
+      <stop offset="0" stop-color="#e3f2ff"/>
+      <stop offset="0.3" stop-color="#7cc2ff"/>
+      <stop offset="0.72" stop-color="#2a7ff4"/>
+      <stop offset="1" stop-color="#1157d8"/>
+    </radialGradient>
+    <radialGradient id="small" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#d4ecff"/>
+      <stop offset="1" stop-color="#8ac8ff"/>
+    </radialGradient>
+    <linearGradient id="glow" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#7fe3ff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#7fe3ff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- big glossy bubble -->
+  <circle cx="27" cy="37" r="22" fill="url(#big)"/>
+  <path d="M10 46a22 22 0 0 0 33 7" fill="none" stroke="url(#glow)" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <ellipse cx="19" cy="27" rx="8.5" ry="5" fill="#fff" opacity="0.85" transform="rotate(-38 19 27)"/>
+  <circle cx="29.5" cy="22" r="2" fill="#fff" opacity="0.75"/>
+  <!-- small bubble -->
+  <circle cx="50" cy="15" r="9.5" fill="url(#small)"/>
+  <ellipse cx="46.5" cy="11.5" rx="3.6" ry="2.2" fill="#fff" transform="rotate(-38 46.5 11.5)"/>
+</svg>

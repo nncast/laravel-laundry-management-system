@@ -39,17 +39,17 @@
     width: 250px;
     min-width: 200px;
     padding: 10px 15px 10px 40px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font);
     transition: 0.3s;
 }
 
 .search-box input:focus {
     outline: none;
     border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
 .search-box i {
@@ -74,7 +74,7 @@
 }
 
 .add-customer-btn:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 /* ================================
@@ -95,9 +95,9 @@
     grid-template-columns: 60px 2fr 1.5fr 2fr 1fr;
     width: 100%;
     padding: 15px 20px;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid var(--border);
     font-size: 14px;
     text-align: left;
 }
@@ -108,7 +108,7 @@
     grid-template-columns: 60px 2fr 1.5fr 2fr 1fr;
     width: 100%;
     padding: 15px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--surface-sunken);
     align-items: center;
     font-size: 14px;
 }
@@ -120,23 +120,23 @@
 .table-row.no-results {
     grid-template-columns: 1fr;
     text-align: center;
-    color: #999;
+    color: var(--text-faint);
     font-style: italic;
     padding: 30px 20px;
 }
 
 .customer-name {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
 }
 
 .customer-contact {
     font-weight: 500;
-    color: #495057;
+    color: var(--text-secondary);
 }
 
 .customer-address {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 13px;
     line-height: 1.4;
 }
@@ -162,13 +162,13 @@
 }
 
 .action-btn:hover {
-    background: rgba(0, 123, 255, 0.1);
-    color: #0056b3;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--accent-hover);
 }
 
 .action-btn.delete:hover {
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--danger);
 }
 
 /* ================================
@@ -202,7 +202,7 @@
 
     .table-row {
         grid-template-columns: 1fr;
-        border: 1px solid #eaeaea;
+        border: 1px solid var(--border);
         border-radius: 8px;
         margin-bottom: 10px;
         padding: 12px;

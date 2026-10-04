@@ -11,14 +11,14 @@
 
 <style>
 :root {
-    --blue: #007bff;
-    --text-dark: #2c3e50;
-    --text-light: #6c757d;
-    --success-bg: #d4edda;
-    --success-text: #155724;
-    --danger-bg: #f8d7da;
-    --danger-text: #721c24;
-    --table-border: #f1f1f1;
+    --blue: var(--accent);
+    --text-dark: var(--text);
+    --text-light: var(--text-muted);
+    --success-bg: var(--success-soft);
+    --success-text: var(--success-text);
+    --danger-bg: var(--danger-soft);
+    --danger-text: var(--danger-text);
+    --table-border: var(--surface-sunken);
     --shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     --transition: all 0.3s ease;
 }
@@ -52,8 +52,8 @@
 .addons-header .search-box input {
     padding: 10px 15px;
     border-radius: 6px;
-    border: 1px solid #ccc;
-    font-family: 'Poppins', sans-serif;
+    border: 1px solid var(--border-strong);
+    font-family: var(--font);
     width: 220px;
     transition: var(--transition);
 }
@@ -61,7 +61,7 @@
 .addons-header .search-box input:focus {
     outline: none;
     border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
 .addons-header .add-btn {
@@ -82,7 +82,7 @@
 
 .addons-header .add-btn:hover {
     opacity: 0.85;
-    background: #0056b3;
+    background: var(--accent-hover);
     transform: translateY(-1px);
 }
 
@@ -113,16 +113,16 @@
 }
 
 .addons-table th {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
     color: var(--text-dark);
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
 }
 
 .addons-table td {
-    border-bottom: 1px solid #f1f1f1;
+    border-bottom: 1px solid var(--surface-sunken);
     color: var(--text-dark);
 }
 
@@ -165,13 +165,13 @@
 }
 
 .edit-btn {
-    background: rgba(0, 123, 255, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--blue);
 }
 
 .delete-btn {
     background: rgba(255, 0, 0, 0.1);
-    color: #dc3545;
+    color: var(--danger);
 }
 
 .edit-btn:hover, .delete-btn:hover {
@@ -218,7 +218,7 @@
     }
 
     .table-wrapper {
-        border: 1px solid #f0f0f0;
+        border: 1px solid var(--surface-sunken);
         border-radius: 8px;
         background: white;
     }
@@ -344,7 +344,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" style="text-align:center;color:#999;padding:20px;">
+                    <td colspan="5" style="text-align:center;color:var(--text-faint);padding:20px;">
                         <i class="fas fa-box-open" style="font-size:24px;margin-bottom:10px;display:block;"></i>
                         No addons found.
                     </td>

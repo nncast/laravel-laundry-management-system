@@ -3,224 +3,180 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - {{ $system->business_name ?? 'Laundry' }}</title>
+<title>Sign in - {{ $system->business_name ?? 'Soap Opera' }}</title>
 @if(!empty($system->favicon))
 <link rel="icon" href="{{ asset($system->favicon) }}?v={{ optional($system->updated_at)->timestamp }}" type="image/x-icon">
+@else
+<link rel="icon" href="{{ asset('images/brand/mark.svg') }}" type="image/svg+xml">
 @endif
 
-<!-- Preload Fonts -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- FontAwesome -->
-<link rel="preload"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-      as="style"
-      onload="this.rel='stylesheet'">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 
 <style>
-:root {
-    --blue: #007bff;
-    --text-dark: #2c3e50;
-    --error: #b00020;
-}
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: 'Poppins', sans-serif;
     min-height: 100vh;
     min-height: 100dvh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(135deg, #1b1b1b, #3a3a3a);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: var(--text);
+    background-color: var(--bg);
+    background-image:
+        radial-gradient(640px 460px at 0% 0%, rgba(90, 170, 255, 0.22), transparent 70%),
+        radial-gradient(560px 460px at 100% 100%, rgba(120, 210, 255, 0.22), transparent 70%);
+}
+
+.login-shell {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    width: min(1040px, 100%);
+    min-height: 600px;
+    padding: 12px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Left: brand hero */
+.hero {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 32px;
+    border-radius: 24px;
+    background: var(--grad-brand);
+    color: #fff;
+    overflow: hidden;
 }
+.hero::before, .hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.32), rgba(255,255,255,0.05) 60%, transparent 70%);
+}
+.hero::before { width: 380px; height: 380px; right: -140px; top: -140px; }
+.hero::after { width: 300px; height: 300px; left: -120px; bottom: -150px; }
+.hero-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+.hero-brand img { width: 40px; height: 40px; padding: 4px; border-radius: 50%; background: rgba(255,255,255,0.92); box-shadow: 0 8px 18px -8px rgba(0,30,90,0.6); }
+.hero-art { position: relative; z-index: 1; width: min(380px, 100%); margin: 8px auto; animation: bubble-float 6s ease-in-out infinite; }
+.hero-copy { position: relative; z-index: 1; }
+.hero-copy h1 { font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; }
+.hero-copy p { margin-top: 10px; font-size: 15px; opacity: 0.88; max-width: 360px; }
+@keyframes bubble-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@media (prefers-reduced-motion: reduce) { .hero-art { animation: none; } }
 
-body.loaded {
-    background: url("{{ asset('images/laundry.jpeg') }}") no-repeat center/cover;
-}
+/* Right: form */
+.form-side { display: flex; align-items: center; justify-content: center; padding: 40px 32px; }
+.login-box { width: 100%; max-width: 360px; }
+.login-box .mark { width: 52px; height: 52px; margin-bottom: 18px; filter: drop-shadow(0 8px 14px rgba(31,116,240,0.3)); }
+.login-box h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.login-box .lead { margin: 6px 0 26px; color: var(--text-muted); font-size: 14.5px; }
 
-body::before {
-    content:"";
-    position:absolute;
-    inset:0;
-    background:rgba(0,0,0,0.45);
-    z-index:0;
-}
-
-.login-container {
-    position:relative;
-    z-index:1;
-    display:flex;
-    width:min(900px, calc(100% - 32px));
-    min-height:520px;
-    margin:16px;
-    border-radius:20px;
-    overflow:hidden;
-    box-shadow:0 20px 50px rgba(0,0,0,0.35);
-    border:1px solid rgba(255,255,255,0.18);
-}
-
-/* Left: frosted glass panel over the background photo */
-.image-section {
-    position:relative;
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:18px;
-    padding:40px 30px;
-    color:#fff;
-    text-shadow:0 2px 12px rgba(0,0,0,.35);
-    background:linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%);
-    -webkit-backdrop-filter:blur(16px) saturate(140%);
-    backdrop-filter:blur(16px) saturate(140%);
-    border-right:1px solid rgba(255,255,255,0.25);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.35);
-}
-/* Soft light sheen across the glass */
-.image-section::before {
-    content:"";
-    position:absolute;
-    inset:0;
-    background:radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%);
-    pointer-events:none;
-}
-/* Browsers without backdrop-filter: use a darker tint so the text stays readable */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .image-section { background:rgba(20,30,45,0.55); }
-}
-.image-section .brand-icon {
-    position:relative;
-    width:84px;
-    height:84px;
-    border-radius:22px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:40px;
-    color:#fff;
-    background:linear-gradient(135deg, rgba(0,123,255,0.9), rgba(0,86,179,0.9));
-    box-shadow:0 10px 25px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.35);
-    text-shadow:none;
-}
-.image-section h1 {
-    position:relative;
-    font-size:36px;
-    line-height:1.25;
-    font-weight:700;
-    text-align:center;
-}
-.image-section h1 span {
-    display:block;
-    margin-top:6px;
-    font-size:30px;
-}
-
-/* Right */
-.login-section {
-    flex:1;
-    background:rgba(255,255,255,0.97);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:40px 0;
-}
-
-.login-box { width:80%; max-width:340px; }
-.login-box h2 {
-    text-align:center;
-    margin-bottom:20px;
-    color:var(--text-dark);
-}
-
-/* Error */
 .login-error {
-    background:#ffe6e6;
-    color:var(--error);
-    border:1px solid #f5c2c7;
-    padding:10px 12px;
-    border-radius:8px;
-    font-size:14px;
-    margin-bottom:16px;
-    display:flex;
-    align-items:center;
-    gap:8px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px; padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    font-size: 14px; font-weight: 500;
 }
 
-/* Inputs */
-.input-group {
-    position:relative;
-    margin-bottom:16px;
+.field { margin-bottom: 16px; }
+.field label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.input-wrap { position: relative; }
+.input-wrap > i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 15px; pointer-events: none; transition: color .15s; }
+.input-wrap input {
+    width: 100%;
+    height: 50px;
+    padding: 0 48px 0 44px;
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    background: var(--surface-muted);
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+    transition: border-color .15s, box-shadow .15s, background-color .15s;
 }
-.input-group i {
-    position:absolute;
-    left:12px;
-    top:50%;
-    transform:translateY(-50%);
-    color:#777;
+.input-wrap input::placeholder { color: var(--text-faint); }
+.input-wrap input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 4px var(--accent-ring); }
+.input-wrap:focus-within > i { color: var(--accent); }
+.input-wrap input.error { border-color: var(--danger); }
+.toggle-pass {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border: 0; border-radius: 50%;
+    background: none; color: var(--text-faint); cursor: pointer; font-size: 15px;
 }
-.input-group input {
-    width:100%;
-    padding:12px 12px 12px 40px;
-    border:1px solid #bbb;
-    border-radius:8px;
-    transition:.2s;
-}
-.input-group input:focus {
-    border-color:var(--blue);
-    outline:none;
-}
-.input-group input.error {
-    border-color:var(--error);
-}
+.toggle-pass:hover { background: var(--surface-sunken); color: var(--text-secondary); }
 
-/* Button */
 .login-btn {
-    width:100%;
-    background:var(--blue);
-    color:white;
-    border:none;
-    padding:12px;
-    border-radius:8px;
-    font-size:15px;
-    cursor:pointer;
+    width: 100%;
+    height: 52px;
+    margin-top: 8px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--grad-button);
+    color: #fff;
+    font: inherit;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--gloss), var(--glow);
+    transition: transform .15s, background .15s;
 }
-.login-btn:hover { background:#0056b3; }
+.login-btn:hover { background: var(--grad-button-hover); transform: translateY(-1px); }
+.login-btn:disabled { opacity: 0.7; cursor: progress; transform: none; }
+.login-foot { margin-top: 26px; text-align: center; font-size: 12.5px; color: var(--text-faint); }
 
-.login-box h2 i { color:var(--blue); }
-
-@media(max-width:850px){
-    .image-section { display:none; }
-    .login-container { width:min(440px, calc(100% - 32px)); min-height:0; }
+@media (max-width: 860px) {
+    body { padding: 16px; place-items: start center; }
+    .login-shell { grid-template-columns: 1fr; min-height: 0; max-width: 460px; }
+    .hero { padding: 24px; min-height: 0; }
+    .hero-art { width: 190px; position: absolute; right: -18px; top: 6px; margin: 0; opacity: 0.95; }
+    .hero-copy { margin-top: 64px; max-width: 64%; }
+    .hero-copy h1 { font-size: 26px; }
+    .hero-copy p { font-size: 13.5px; }
+    .form-side { padding: 28px 16px 20px; }
+    .login-box .mark { display: none; }
 }
-@media(max-width:480px){
-    .login-box { width:86%; }
-    .input-group input { font-size:16px; } /* stop iOS zoom */
+@media (max-width: 420px) {
+    .hero-art { width: 150px; }
+    .hero-copy { max-width: 70%; }
+    .input-wrap input { font-size: 16px; } /* stop iOS zoom */
 }
 </style>
 </head>
 
 <body>
 
-<div class="login-container">
-    <div class="image-section">
-        <div class="brand-icon"><i class="fas fa-soap"></i></div>
-        <h1>Fresh Clothes, Fresh Start<span>Laundry Box</span></h1>
-    </div>
+<main class="login-shell">
+    <section class="hero" aria-hidden="true">
+        <div class="hero-brand"><img src="{{ asset('images/brand/mark.svg') }}" alt=""> Soap Opera</div>
+        <img class="hero-art" src="{{ asset('images/brand/bubbles.svg') }}" alt="" width="380" height="326">
+        <div class="hero-copy">
+            <h1>Fresh loads.<br>Zero drama.</h1>
+            <p>Orders, customers, inventory and sales for your laundry shop, all in one tidy place.</p>
+        </div>
+    </section>
 
-    <div class="login-section">
+    <section class="form-side">
         <div class="login-box">
+            <img class="mark" src="{{ asset('images/brand/mark.svg') }}" alt="">
+            <h2>Welcome back</h2>
+            <p class="lead">Sign in to {{ $system->business_name ?? 'Soap Opera' }}</p>
 
-            <h2><i class="fas fa-soap"></i> Sign In</h2>
-
-            {{-- Error Message --}}
             @if (session('error'))
-                <div class="login-error">
+                <div class="login-error" role="alert">
                     <i class="fas fa-circle-exclamation"></i>
                     {{ session('error') }}
                 </div>
@@ -229,37 +185,45 @@ body::before {
             <form action="{{ route('login.post') }}" method="post">
                 @csrf
 
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text"
-                           name="username"
-                           value="{{ old('username') }}"
-                           autocomplete="username"
-                           placeholder="Username"
-                           class="{{ session('error') ? 'error' : '' }}"
-                           required>
+                <div class="field">
+                    <label for="username">Username</label>
+                    <div class="input-wrap">
+                        <input type="text" id="username" name="username" value="{{ old('username') }}"
+                               autocomplete="username" placeholder="Enter your username"
+                               class="{{ session('error') ? 'error' : '' }}" required autofocus>
+                        <i class="fas fa-user"></i>
+                    </div>
                 </div>
 
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password"
-                           name="password"
-                           autocomplete="current-password"
-                           placeholder="Password"
-                           class="{{ session('error') ? 'error' : '' }}"
-                           required>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <input type="password" id="password" name="password"
+                               autocomplete="current-password" placeholder="Enter your password"
+                               class="{{ session('error') ? 'error' : '' }}" required>
+                        <i class="fas fa-lock"></i>
+                        <button type="button" class="toggle-pass" aria-label="Show password" aria-pressed="false"><i class="fas fa-eye"></i></button>
+                    </div>
                 </div>
 
-                <button type="submit" class="login-btn">Login</button>
+                <button type="submit" class="login-btn">Sign in</button>
             </form>
+
+            <p class="login-foot">&copy; {{ date('Y') }} Soap Opera &middot; Laundry management</p>
         </div>
-    </div>
-</div>
+    </section>
+</main>
 
 <script>
-const img = new Image();
-img.src = "{{ asset('images/laundry.jpeg') }}";
-img.onload = () => document.body.classList.add("loaded");
+// Show / hide password
+document.querySelector('.toggle-pass').addEventListener('click', function () {
+    const input = document.getElementById('password');
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    this.setAttribute('aria-pressed', show ? 'true' : 'false');
+    this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    this.querySelector('i').className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+});
 
 // Prevent double submits
 document.querySelector('form').addEventListener('submit', function () {

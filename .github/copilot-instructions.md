@@ -30,7 +30,7 @@ Laravel 12 web application for managing laundry operations (Fitters Laundry). St
 - **CSS Framework**: Tailwind CSS 4 via `@tailwindcss/vite` plugin
 - **Asset Pipeline**: Vite with `resources/css/app.css` entry point
 - **Custom CSS**: `public/css/style.css` (legacy styling for sidebar/layout)
-- **JS**: Minimal—`public/js/sidebar.js` handles menu toggles; `resources/js/bootstrap.js` configures Axios
+- **JS**: Minimal—menu toggles and toasts live in a small inline script in `resources/views/layouts/app.blade.php`; `resources/js/bootstrap.js` configures Axios
 - **Build**: `npm run dev` (watch), `npm run build` (production)
 
 ### User/Auth Management

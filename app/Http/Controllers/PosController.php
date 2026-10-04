@@ -148,10 +148,22 @@ class PosController extends Controller
 
     private function formData(): array
     {
+        $services = Service::with('serviceType:id,name')
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'icon', 'service_type_id']);
+
+        // POS sections: one per service type (A-Z), services without a type last
+        $serviceGroups = $services
+            ->groupBy(fn ($service) => $service->serviceType->name ?? 'Other')
+            ->sortKeys(SORT_NATURAL | SORT_FLAG_CASE);
+        if ($serviceGroups->has('Other')) {
+            $serviceGroups = $serviceGroups->except('Other')->put('Other', $serviceGroups->get('Other'));
+        }
+
         return [
-            'services' => Service::where('is_active', 1)
-                ->orderBy('name')
-                ->get(['id', 'name', 'price', 'icon']),
+            'services' => $services,
+            'serviceGroups' => $serviceGroups,
             'customers' => Customer::orderBy('name')->get(['id', 'name']),
             'addons' => Addon::where('is_active', 1)->orderBy('name')->get(['id', 'name', 'price']),
         ];

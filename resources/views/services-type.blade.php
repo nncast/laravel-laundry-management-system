@@ -31,8 +31,8 @@
 .search-box input {
     padding: 10px 15px;
     border-radius: 6px;
-    border: 1px solid #ccc;
-    font-family: 'Poppins', sans-serif;
+    border: 1px solid var(--border-strong);
+    font-family: var(--font);
     width: 250px;
     min-width: 200px;
 }
@@ -56,7 +56,7 @@
 
 .add-btn:hover {
     opacity: 0.85;
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 table {
@@ -71,23 +71,23 @@ th, td {
 }
 
 th {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
     color: var(--text-dark);
 }
 
 td {
-    border-bottom: 1px solid #f1f1f1;
+    border-bottom: 1px solid var(--surface-sunken);
     color: var(--text-dark);
 }
 
 tbody tr:hover {
-    background: #f9fbfd;
+    background: var(--surface-muted);
 }
 
 .status-active {
-    background: #d4edda;
-    color: #155724;
+    background: var(--success-soft);
+    color: var(--success-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -95,8 +95,8 @@ tbody tr:hover {
 }
 
 .status-inactive {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--danger-soft);
+    color: var(--danger-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -116,7 +116,7 @@ tbody tr:hover {
 }
 
 .edit {
-    background: rgba(0, 123, 255, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--blue);
 }
 
@@ -133,7 +133,7 @@ tbody tr:hover {
 @media (max-width: 768px) {
     .table-container {
         padding: 15px;
-        margin: 0 -15px;
+        margin: 0;
         border-radius: 0;
     }
     
@@ -200,7 +200,7 @@ tbody tr:hover {
                 </tr>
             @empty
                 <tr id="noServiceFound">
-                    <td colspan="4" style="text-align:center; color:#999; padding:20px;">
+                    <td colspan="4" style="text-align:center; color:var(--text-faint); padding:20px;">
                         <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
                         No records found.
                     </td>

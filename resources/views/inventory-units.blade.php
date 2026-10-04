@@ -31,8 +31,8 @@
 .search-box input {
     padding: 10px 15px;
     border-radius: 6px;
-    border: 1px solid #ccc;
-    font-family: 'Poppins', sans-serif;
+    border: 1px solid var(--border-strong);
+    font-family: var(--font);
     width: 220px;
     min-width: 200px;
 }
@@ -56,7 +56,7 @@
 
 .add-btn:hover {
     opacity: 0.85;
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 /* Table */
@@ -73,20 +73,20 @@ th, td {
 }
 
 th {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
 }
 
 td {
-    border-bottom: 1px solid #f1f1f1;
-    color: #2c3e50;
+    border-bottom: 1px solid var(--surface-sunken);
+    color: var(--text);
 }
 
 /* Status badges */
 .status-active {
-    background: #d4edda;
-    color: #155724;
+    background: var(--success-soft);
+    color: var(--success-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -94,8 +94,8 @@ td {
 }
 
 .status-inactive {
-    background: #fff3cd;
-    color: #856404;
+    background: var(--warning-soft);
+    color: var(--warning-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -117,7 +117,7 @@ td {
 }
 
 .edit {
-    background: rgba(0, 123, 255, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--blue);
 }
 
@@ -134,7 +134,7 @@ td {
 @media (max-width: 768px) {
     .table-container {
         padding: 15px;
-        margin: 0 -15px;
+        margin: 0;
         border-radius: 0;
     }
     
@@ -203,7 +203,7 @@ td {
     </tr>
 @empty
     <tr>
-        <td colspan="6" style="text-align:center; color:#999; padding:20px;">
+        <td colspan="6" style="text-align:center; color:var(--text-faint); padding:20px;">
             <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
             No units found.
         </td>

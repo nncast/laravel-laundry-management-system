@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>{{ isset($order) ? 'Edit Order' : 'POS' }} - {{ $system->business_name ?? 'Laundry' }}</title>
+<title>{{ isset($order) ? 'Edit Order' : 'POS' }} - {{ $system->business_name ?? 'Soap Opera' }}</title>
 @if(!empty($system->favicon))
 <link rel="icon" href="{{ asset($system->favicon) }}?v={{ optional($system->updated_at)->timestamp }}" type="image/x-icon">
+@else
+<link rel="icon" href="{{ asset('images/brand/mark.svg') }}" type="image/svg+xml">
 @endif
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,23 +16,24 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 
 <!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
 
 <!-- Font Awesome (same version as the rest of the app, so it is served from cache) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 
 <style>
 :root {
-    --blue: #007bff;
-    --text-dark: #2c3e50;
-    --text-light: #6c757d;
-    --hover-bg: #007bff;
+    --blue: var(--accent);
+    --text-dark: var(--text);
+    --text-light: var(--text-muted);
+    --hover-bg: var(--accent);
     --hover-text: #fff;
     --transition: all 0.3s ease;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-dark); }
+body { font-family: var(--font); background:var(--bg); color:var(--text-dark); }
 
 /* --- Modal Styles --- */
 .modal {
@@ -66,13 +69,13 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
     margin: 0;
 }
 
@@ -80,7 +83,7 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
     background: none;
     border: none;
     font-size: 24px;
-    color: #6c757d;
+    color: var(--text-muted);
     cursor: pointer;
     padding: 0;
     width: 30px;
@@ -93,8 +96,8 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 }
 
 .close-btn:hover {
-    background: #f8f9fa;
-    color: #dc3545;
+    background: var(--surface-muted);
+    color: var(--danger);
 }
 
 .modal-body {
@@ -103,7 +106,7 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 
 .modal-footer {
     padding: 15px 20px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -117,7 +120,7 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
     display: block;
     margin-bottom: 5px;
     font-size: 14px;
-    color: #495057;
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -126,7 +129,7 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 .form-group select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     font-size: 14px;
     transition: border-color 0.3s ease;
@@ -135,12 +138,12 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-    border-color: #007bff;
+    border-color: var(--accent);
     outline: none;
 }
 
 .error-message {
-    color: #dc3545;
+    color: var(--danger);
     font-size: 12px;
     margin-top: 5px;
     display: none;
@@ -148,16 +151,16 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 
 .helper-text {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-top: 5px;
 }
 
 .required-star {
-    color: #dc3545;
+    color: var(--danger);
 }
 
 .btn-primary {
-    background: #007bff;
+    background: var(--accent);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -169,11 +172,11 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 }
 
 .btn-primary:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 .btn-cancel {
-    background: #6c757d;
+    background: var(--text-muted);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -185,7 +188,7 @@ body { font-family: 'Poppins', sans-serif; background:#f2f5f7; color:var(--text-
 }
 
 .btn-cancel:hover {
-    background: #545b62;
+    background: var(--text-secondary);
 }
 
 .modal-sm .modal-content {
@@ -206,7 +209,7 @@ body.modal-open {
     justify-content:space-between;
     align-items:center;
     padding: 0 15px;
-    border-bottom:1px solid #e0e0e0;
+    border-bottom:1px solid var(--border);
     z-index:1000;
 }
 .topbar h2 { font-size:18px; font-weight:600; }
@@ -230,7 +233,7 @@ body.modal-open {
 }
 
 .products-section input {
-    width:100%; padding:10px 15px; border:1px solid #ccc; border-radius:6px; margin-bottom:10px;
+    width:100%; padding:10px 15px; border:1px solid var(--border-strong); border-radius:6px; margin-bottom:10px;
 }
 
 .product-grid {
@@ -242,7 +245,7 @@ body.modal-open {
 }
 .product-item {
     text-align:center;
-    border:1px solid #eee;
+    border:1px solid var(--border);
     border-radius:8px;
     padding:10px;
     cursor:pointer;
@@ -271,12 +274,12 @@ body.modal-open {
     margin-top:10px;
 }
 .order-section th, .order-section td {
-    border-bottom:1px solid #eee;
+    border-bottom:1px solid var(--border);
     padding:8px;
     font-size:12px;
     text-align:center;
 }
-.order-section th { background:#f8f9fa; }
+.order-section th { background:var(--surface-muted); }
 
 button.qty-btn {
     padding: 2px 6px;
@@ -289,7 +292,7 @@ button.qty-btn {
     margin: 0 2px;
 }
 button.qty-btn:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 /* --- Date Picker Styles --- */
@@ -325,7 +328,7 @@ button.qty-btn:hover {
 
 .date-picker-button {
     border: none;
-    background: #007bff;
+    background: var(--accent);
     color: #fff;
     padding: 5px 10px;
     border-radius: 6px;
@@ -339,7 +342,7 @@ button.qty-btn:hover {
 }
 
 .date-picker-button:hover {
-    background: #0056b3;
+    background: var(--accent-hover);
     transform: translateY(-1px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
@@ -404,7 +407,7 @@ button.qty-btn:hover {
         background: white;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         z-index: 999999;
     }
 }
@@ -443,7 +446,7 @@ button.qty-btn:hover {
     flex: 1;
     min-width: 150px;
     padding: 6px 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     font-size: 12px;
     background-color: white;
@@ -451,13 +454,13 @@ button.qty-btn:hover {
 }
 
 .customer-select-container select:focus {
-    border-color: #007bff;
+    border-color: var(--accent);
     outline: none;
 }
 
 .customer-select-container select.customer-select-error {
-    border-color: #dc3545 !important;
-    background-color: #fff8f8 !important;
+    border-color: var(--danger) !important;
+    background-color: var(--danger-soft) !important;
 }
 
 .customer-select-container button {
@@ -472,17 +475,17 @@ button.qty-btn:hover {
 }
 
 .btn-add-customer {
-    background: #28a745;
+    background: var(--success);
     color: white;
 }
 
 .btn-add-customer:hover {
-    background: #218838;
+    background: var(--success-hover);
 }
 
 /* Customer Error Message - Below the dropdown */
 .customer-error-message {
-    color: #dc3545;
+    color: var(--danger);
     font-size: 11px;
     margin-top: -3px;
     margin-bottom: 5px;
@@ -490,13 +493,13 @@ button.qty-btn:hover {
     align-items: flex-start;
     gap: 5px;
     padding: 3px 8px;
-    background-color: #fef2f2;
+    background-color: var(--danger-soft);
     border-radius: 4px;
-    border-left: 3px solid #dc3545;
+    border-left: 3px solid var(--danger);
 }
 
 .customer-error-message i {
-    color: #dc3545;
+    color: var(--danger);
     font-size: 10px;
     margin-top: 1px;
 }
@@ -511,7 +514,7 @@ button.qty-btn:hover {
 
 .addon-button {
     border: none;
-    background: #17a2b8;
+    background: var(--info);
     color: #fff;
     padding: 3px 8px;
     border-radius: 4px;
@@ -525,7 +528,7 @@ button.qty-btn:hover {
 }
 
 .addon-button:hover {
-    background: #138496;
+    background: var(--info-hover);
     transform: translateY(-1px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
@@ -540,7 +543,7 @@ button.qty-btn:hover {
     justify-content: space-between;
     align-items: center;
     padding: 12px 15px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border);
     border-radius: 8px;
     margin-bottom: 8px;
     background: #fff;
@@ -549,8 +552,8 @@ button.qty-btn:hover {
 }
 
 .addon-item:hover {
-    background: #f8f9fa;
-    border-color: #007bff;
+    background: var(--surface-muted);
+    border-color: var(--accent);
 }
 
 .addon-info {
@@ -559,21 +562,21 @@ button.qty-btn:hover {
 
 .addon-name {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
     font-size: 14px;
     margin-bottom: 3px;
 }
 
 .addon-price {
     font-size: 12px;
-    color: #28a745;
+    color: var(--success);
     font-weight: 600;
 }
 
 .addon-checkbox {
     width: 20px;
     height: 20px;
-    border: 2px solid #ddd;
+    border: 2px solid var(--border);
     border-radius: 4px;
     cursor: pointer;
     display: flex;
@@ -583,8 +586,8 @@ button.qty-btn:hover {
 }
 
 .addon-checkbox.checked {
-    background: #007bff;
-    border-color: #007bff;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .addon-checkbox.checked i {
@@ -598,23 +601,23 @@ button.qty-btn:hover {
     justify-content: space-between;
     align-items: center;
     padding: 6px 10px;
-    background: #f8f9fa;
+    background: var(--surface-muted);
     border-radius: 4px;
     margin-bottom: 4px;
     font-size: 11px;
 }
 
 .selected-addon-name {
-    color: #2c3e50;
+    color: var(--text);
 }
 
 .selected-addon-price {
-    color: #28a745;
+    color: var(--success);
     font-weight: 600;
 }
 
 .remove-addon-btn {
-    background: #dc3545;
+    background: var(--danger);
     color: white;
     border: none;
     border-radius: 4px;
@@ -628,7 +631,7 @@ button.qty-btn:hover {
 }
 
 .remove-addon-btn:hover {
-    background: #c82333;
+    background: var(--danger-hover);
 }
 
 /* --- Payment Buttons --- */
@@ -649,9 +652,9 @@ button.qty-btn:hover {
     cursor:pointer;
     transition: all 0.3s ease;
 }
-.btn-payment { background:#6f42c1; }
-.btn-save { background:#28a745; }
-.btn-cancel { background:#dc3545; }
+.btn-payment { background:var(--accent); }
+.btn-save { background:var(--success); }
+.btn-cancel { background:var(--danger); }
 .payment-buttons button:hover { opacity:0.9; transform:translateY(-1px); }
 
 /* Add to your existing CSS */
@@ -661,7 +664,7 @@ button.qty-btn:hover {
 
 /* --- Payment Modal Specific Styles --- */
 .payment-amount-display {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     padding: 15px;
     border-radius: 8px;
     margin: 15px 0;
@@ -670,87 +673,87 @@ button.qty-btn:hover {
 
 .amount-label {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-bottom: 5px;
 }
 
 .amount-value {
     font-size: 24px;
     font-weight: 600;
-    color: #28a745;
+    color: var(--success);
 }
 
 /* Payment Real-time Display Styles */
 .payment-change-display {
     margin-top: 10px;
     padding: 10px;
-    background: #d4edda;
+    background: var(--success-soft);
     border-radius: 6px;
-    border: 1px solid #c3e6cb;
+    border: 1px solid var(--success-soft);
 }
 
 .change-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #155724;
+    color: var(--success-text);
     font-size: 14px;
 }
 
 .change-info i {
-    color: #28a745;
+    color: var(--success);
 }
 
 .payment-shortfall-display {
     margin-top: 10px;
     padding: 10px;
-    background: #f8d7da;
+    background: var(--danger-soft);
     border-radius: 6px;
-    border: 1px solid #f5c6cb;
+    border: 1px solid var(--danger-soft);
 }
 
 .shortfall-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #721c24;
+    color: var(--danger-text);
     font-size: 14px;
 }
 
 .shortfall-info i {
-    color: #dc3545;
+    color: var(--danger);
 }
 
 /* Highlight input based on amount */
 .payment-valid {
-    border-color: #28a745 !important;
-    background-color: #f8fff9;
+    border-color: var(--success) !important;
+    background-color: var(--success-soft);
 }
 
 .payment-invalid {
-    border-color: #dc3545 !important;
-    background-color: #fff8f8;
+    border-color: var(--danger) !important;
+    background-color: var(--danger-soft);
 }
 
 /* Overpayment warning style */
 .payment-overpayment-display {
     margin-top: 10px;
     padding: 10px;
-    background: #fff3cd;
+    background: var(--warning-soft);
     border-radius: 6px;
-    border: 1px solid #ffeaa7;
+    border: 1px solid var(--warning-soft);
 }
 
 .overpayment-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #856404;
+    color: var(--warning-text);
     font-size: 14px;
 }
 
 .overpayment-info i {
-    color: #856404;
+    color: var(--warning-text);
 }
 
 /* --- Responsive --- */
@@ -773,7 +776,7 @@ button.qty-btn:hover {
         background: white;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         z-index: 999999;
     }
 }
@@ -794,14 +797,14 @@ button.qty-btn:hover {
 
 /* --- Fixes: layout & mobile --- */
 .topbar-back { display:inline-flex; align-items:center; gap:6px; background: var(--blue); color:#fff; padding:8px 12px; border-radius:6px; font-size:14px; text-decoration:none; }
-.topbar-back:hover { background:#0056b3; }
+.topbar-back:hover { background:var(--accent-hover); }
 .product-item { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .product-item:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
 .product-item p {
     font-size:12px; line-height:1.3; margin-top:2px; word-break:break-word;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
-.product-price { font-size:11px; color:#28a745; font-weight:600; }
+.product-price { font-size:11px; color:var(--success); font-weight:600; }
 textarea, input, select, button { font-family: inherit; }
 .order-section { min-width:0; overflow-x:auto; }
 .order-section table { min-width:320px; }
@@ -822,43 +825,277 @@ button.qty-btn { min-width:28px; min-height:28px; }
     input, select, textarea { font-size:16px !important; } /* stop iOS zoom */
     .modal-content { max-height:90vh; overflow-y:auto; }
 }
+
+/* ---- Soap Opera POS ---- */
+[hidden] { display: none !important; }
+body {
+    background-color: var(--bg);
+    background-image:
+        radial-gradient(680px 420px at 100% -6%, rgba(90, 170, 255, 0.16), transparent 70%),
+        radial-gradient(520px 420px at 0% 108%, rgba(120, 210, 255, 0.14), transparent 70%);
+    background-attachment: fixed;
+    color: var(--text);
+}
+
+/* Top bar */
+.topbar { height: 68px; padding: 0 24px; background: rgba(255,255,255,0.85); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.topbar-heading { display: flex; flex-direction: column; line-height: 1.2; }
+.topbar h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.topbar-sub { font-size: 12.5px; color: var(--text-muted); }
+.topbar-back {
+    display: grid !important; place-items: center; width: 42px; height: 42px; padding: 0 !important;
+    background: var(--surface) !important; color: var(--text) !important;
+    border: 1px solid var(--border); border-radius: 50% !important; box-shadow: var(--shadow-sm);
+}
+.topbar-back:hover { background: var(--accent-soft) !important; color: var(--accent) !important; }
+.topbar-business { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45vw; }
+.topbar-business img { width: 26px; height: 26px; flex-shrink: 0; }
+
+/* Two panels */
+.pos-container { gap: 20px; align-items: flex-start; }
+.products-section, .order-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+.products-section { padding: 18px 18px 6px; display: flex; flex-direction: column; min-width: 0; }
+
+/* Catalog header: search + category chips */
+.catalog-head { display: flex; flex-direction: column; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.catalog-search { position: relative; }
+.catalog-search i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-faint); pointer-events: none; }
+.products-section .catalog-search input {
+    width: 100%; height: 44px; margin: 0; padding: 0 16px 0 42px;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+    background: var(--surface-muted); font-size: 14px; color: var(--text);
+}
+.products-section .catalog-search input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 4px var(--accent-ring); }
+.category-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
+.category-chips::-webkit-scrollbar { display: none; }
+.chip {
+    display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
+    height: 36px; padding: 0 8px 0 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-pill);
+    background: var(--surface); color: var(--text-secondary);
+    font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: background-color .15s, color .15s, border-color .15s, box-shadow .15s;
+}
+.chip i { font-size: 12px; color: var(--accent-light); }
+.chip:hover { background: var(--accent-soft); border-color: #c4dcfb; color: var(--accent); }
+.chip-count { min-width: 22px; height: 22px; padding: 0 7px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--text-muted); font-size: 11.5px; font-weight: 700; }
+.chip.active { background: var(--grad-button); border-color: transparent; color: #fff; box-shadow: var(--gloss), var(--glow); }
+.chip.active i { color: #fff; }
+.chip.active .chip-count { background: rgba(255,255,255,0.25); color: #fff; }
+
+/* Sections */
+.product-catalog { overflow-y: auto; padding: 4px 4px 12px; margin: 0 -4px; scroll-behavior: smooth; }
+.service-section { padding-top: 16px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.section-head h3 { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.section-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-faint); }
+.bubble-tile.section-tile { width: 32px; height: 32px; border-radius: 11px; font-size: 13px; }
+.catalog-empty { padding: 36px 12px; text-align: center; color: var(--text-muted); font-size: 14px; }
+
+/* Service cards */
+.products-section .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 12px; max-height: none; overflow: visible; }
+.product-item {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;
+    min-height: 150px; padding: 16px 10px 14px;
+    border: 1px solid var(--border); border-radius: 20px;
+    background: linear-gradient(180deg, #fff 0%, var(--surface-muted) 100%);
+    color: var(--text); font: inherit; text-align: center; cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.product-item:hover { transform: translateY(-3px); border-color: #b9d6fb; box-shadow: 0 14px 26px -16px rgba(16,64,140,0.45); }
+.product-item:active { transform: translateY(-1px) scale(0.98); }
+.product-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.product-item.in-order { border-color: var(--accent); background: linear-gradient(180deg, #fff 0%, var(--accent-soft) 100%); }
+.product-item img { width: 52px; height: 52px; border-radius: 16px; object-fit: cover; box-shadow: 0 8px 16px -10px rgba(16,64,140,0.6); }
+.bubble-tile.item-tile { width: 52px; height: 52px; border-radius: 17px; font-size: 21px; }
+.item-name { font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.product-item .product-price { margin-top: auto; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 800; }
+.item-qty {
+    position: absolute; top: 8px; right: 8px;
+    min-width: 24px; height: 24px; padding: 0 7px;
+    display: grid; place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--grad-button); color: #fff; box-shadow: var(--gloss), var(--glow);
+    font-size: 12px; font-weight: 800;
+}
+
+/* Order panel */
+.order-section { padding: 20px; }
+.order-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.order-head h3 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.order-head h3 i { color: var(--accent-light); }
+.order-count { padding: 4px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+.order-meta { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; }
+.order-meta p { font-size: 13px; }
+.customer-select-container { display: flex; align-items: center; gap: 8px; }
+.customer-select-container select { height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); font-size: 13.5px; color: var(--text); min-width: 180px; }
+.customer-select-container select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
+.icon-btn {
+    display: grid; place-items: center; flex-shrink: 0;
+    width: 40px; height: 40px; border: 0; border-radius: 50%;
+    background: var(--grad-button); color: #fff; font-size: 14px; cursor: pointer;
+    box-shadow: var(--gloss), var(--glow); transition: transform .15s;
+}
+.icon-btn:hover { transform: translateY(-1px); background: var(--grad-button-hover); }
+.icon-btn.icon-btn-sm { width: 28px; height: 28px; font-size: 11px; }
+.date-picker-button { border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); padding: 5px 12px; font-weight: 700; }
+.date-picker-button:hover { background: #d8e9ff; box-shadow: none; }
+
+.order-section table { margin-top: 14px; border-collapse: separate; border-spacing: 0; }
+.order-section th { background: var(--surface-muted); color: var(--text-muted); font-size: 12px; font-weight: 700; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.order-section th:first-child { border-top-left-radius: 12px; text-align: left; padding-left: 12px; }
+.order-section th:last-child { border-top-right-radius: 12px; }
+.order-section td { font-size: 13px; padding: 10px 8px; }
+.order-section td:first-child { text-align: left; padding-left: 12px; font-weight: 600; }
+button.qty-btn {
+    width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 0; margin: 0 4px;
+    border: 1px solid var(--border); border-radius: 50%;
+    background: var(--surface); color: var(--accent); font-weight: 800; font-size: 14px; line-height: 1;
+}
+button.qty-btn:hover { background: var(--accent-soft); border-color: #c4dcfb; }
+.order-section td:nth-child(3) { white-space: nowrap; }
+
+.order-summary { margin-top: 14px; padding: 14px; border-radius: 16px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; }
+.order-summary > div { margin-bottom: 8px !important; }
+#discountInput { height: 34px; border-radius: 10px !important; text-align: right; }
+.gross-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 !important; padding-top: 12px; border-top: 1px dashed var(--border-strong); font-size: 15px; }
+.gross-row #grossTotal { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+.order-section label[for="notes"] { display: block; margin: 14px 0 6px; font-size: 13px !important; font-weight: 700; color: var(--text-secondary); }
+#notes { height: 64px !important; border-radius: 14px !important; padding: 10px 12px !important; font-size: 13px !important; background: var(--surface-muted); resize: vertical; }
+#notes:focus { outline: none; border-color: var(--accent) !important; background: var(--surface); box-shadow: 0 0 0 4px var(--accent-ring); }
+.selected-addon-item { border-radius: 12px !important; }
+
+.payment-buttons { margin-top: 16px; gap: 10px; }
+.payment-buttons button { min-height: 48px; border-radius: var(--radius-pill); font-size: 14.5px; font-weight: 700; transform: none; transition: background .15s, transform .15s; }
+.payment-buttons .btn-payment { flex: 1.4 1 120px; border: 0; background: var(--grad-button); color: #fff; box-shadow: var(--gloss), var(--glow); }
+.payment-buttons .btn-payment:hover { background: var(--grad-button-hover); transform: translateY(-1px); opacity: 1; }
+.payment-buttons .btn-save { border: 1px solid #b9d6fb; background: var(--accent-soft); color: var(--accent); }
+.payment-buttons .btn-save:hover { background: #d8e9ff; opacity: 1; }
+.payment-buttons .btn-cancel { border: 1px solid transparent; background: transparent; color: var(--text-muted); font-weight: 600; }
+.payment-buttons .btn-cancel:hover { background: var(--danger-soft); color: var(--danger); opacity: 1; }
+
+/* Desktop: catalog scrolls on its own, order panel stays beside it */
+@media (min-width: 769px) {
+    .pos-container { padding: 88px 24px 24px; }
+    .products-section { flex: 1.5 1 480px; position: sticky; top: 88px; height: calc(100vh - 112px); }
+    .product-catalog { flex: 1; min-height: 0; }
+    .order-section { flex: 1 1 380px; max-width: 520px; }
+}
+@media (max-width: 768px) {
+    .topbar { padding: 0 12px; }
+    .topbar-business { display: none; }
+    .pos-container { padding: 80px 10px 14px; }
+    .products-section { padding: 14px 14px 4px; }
+    .product-catalog { max-height: 56vh; }
+    .products-section .product-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+    .product-item { min-height: 138px; padding: 14px 8px 12px; }
+    .product-item:hover { transform: none; }
+    .order-section { padding: 16px; }
+    .customer-select-container select { min-width: 0; }
+    button.qty-btn { margin: 0 2px; }
+    .order-section th, .order-section td { padding-left: 4px; padding-right: 4px; }
+}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-    <h2>{{ isset($order) ? 'Edit Order' : 'POS' }}</h2>
-    <a href="{{ isset($order) ? route('orders.details', $order) : route('orders.index') }}" class="topbar-back"><i class="fas fa-arrow-left"></i> Back</a>
+    <div class="topbar-left">
+        <a href="{{ isset($order) ? route('orders.details', $order) : route('orders.index') }}" class="topbar-back" title="Back" aria-label="Back"><i class="fas fa-arrow-left"></i></a>
+        <div class="topbar-heading">
+            <h2>{{ isset($order) ? 'Edit Order' : 'New Order' }}</h2>
+            <span class="topbar-sub">Point of sale</span>
+        </div>
+    </div>
+    <span class="topbar-business"><img src="{{ asset('images/brand/mark.svg') }}" alt="" width="26" height="26"> {{ $system->business_name ?? 'Soap Opera' }}</span>
 </div>
 
 <div class="pos-container">
 
-    <!-- Products Section -->
+    <!-- Service catalog, one section per service type -->
+    @php
+        // Icon + color for a category, picked from its name so it stays the same between visits
+        $categoryLook = function (string $name, int $index): array {
+            $icons = [
+                'wash' => 'fa-soap', 'fold' => 'fa-soap', 'laundry' => 'fa-soap',
+                'dry' => 'fa-wind', 'iron' => 'fa-shirt', 'press' => 'fa-shirt',
+                'special' => 'fa-hand-sparkles', 'care' => 'fa-hand-sparkles', 'delicate' => 'fa-hand-sparkles',
+                'blanket' => 'fa-bed', 'comforter' => 'fa-bed', 'bed' => 'fa-bed', 'shoe' => 'fa-shoe-prints',
+            ];
+            $icon = 'fa-basket-shopping';
+            foreach ($icons as $word => $candidate) {
+                if (stripos($name, $word) !== false) { $icon = $candidate; break; }
+            }
+            $tones = ['tone-blue', 'tone-sky', 'tone-indigo', 'tone-aqua', 'tone-violet'];
+            return [$icon, $tones[$index % count($tones)]];
+        };
+        $categories = $serviceGroups->keys()->values();
+    @endphp
     <div class="products-section">
-        <input type="text" id="searchInput" placeholder="Search products...">
-        <div class="product-grid">
-            @foreach($services as $service)
-            <div class="product-item" data-name="{{ strtolower($service->name) }}" onclick="addToOrder({{ $service->id }})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();addToOrder({{ $service->id }});}">
-                @if($service->icon_url)
-                    <img src="{{ $service->icon_url }}" alt="{{ $service->name }}" loading="lazy" width="60" height="60" onerror="this.onerror=null;this.src='{{ asset('images/services/placeholder.jpg') }}'">
-                @else
-                    <i class="fas fa-box" style="font-size:40px; color:#333;"></i>
-                @endif
-                <p title="{{ $service->name }}">{{ $service->name }}</p>
-                <small class="product-price">₱{{ number_format($service->price, 2) }}</small>
+        <div class="catalog-head">
+            <div class="catalog-search">
+                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="search" id="searchInput" placeholder="Search services..." aria-label="Search services" autocomplete="off">
             </div>
-            @endforeach
+            <div class="category-chips" role="group" aria-label="Filter by category">
+                <button type="button" class="chip active" data-cat="all" aria-pressed="true">All <span class="chip-count">{{ $services->count() }}</span></button>
+                @foreach($categories as $i => $category)
+                    @php [$icon] = $categoryLook($category, $i); @endphp
+                    <button type="button" class="chip" data-cat="cat-{{ $i }}" aria-pressed="false"><i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $category }} <span class="chip-count">{{ $serviceGroups[$category]->count() }}</span></button>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="product-catalog">
+            @forelse($categories as $i => $category)
+                @php [$icon, $tone] = $categoryLook($category, $i); @endphp
+                <section class="service-section" data-cat="cat-{{ $i }}" aria-labelledby="cat-title-{{ $i }}">
+                    <header class="section-head">
+                        <span class="bubble-tile {{ $tone }} section-tile" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
+                        <h3 id="cat-title-{{ $i }}">{{ $category }}</h3>
+                        <span class="section-count">{{ $serviceGroups[$category]->count() }} {{ Str::plural('service', $serviceGroups[$category]->count()) }}</span>
+                    </header>
+                    <div class="product-grid">
+                        @foreach($serviceGroups[$category] as $service)
+                        <button type="button" class="product-item" data-name="{{ strtolower($service->name) }}" data-service-id="{{ $service->id }}" onclick="addToOrder({{ $service->id }})">
+                            <span class="item-qty" aria-label="in order" hidden></span>
+                            @if(!empty($service->icon))
+                                <img src="{{ $service->icon_url }}" alt="" loading="lazy" width="52" height="52" onerror="this.onerror=null;this.src='{{ asset('images/services/placeholder.jpg') }}'">
+                            @else
+                                <span class="bubble-tile {{ $tone }} item-tile" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
+                            @endif
+                            <span class="item-name" title="{{ $service->name }}">{{ $service->name }}</span>
+                            <span class="product-price">₱{{ number_format($service->price, 2) }}</span>
+                        </button>
+                        @endforeach
+                    </div>
+                </section>
+            @empty
+                <p class="catalog-empty">No active services yet. Add some under Services &rsaquo; Service List.</p>
+            @endforelse
+            <p class="catalog-empty" id="catalogNoMatch" hidden>No services match your search.</p>
         </div>
     </div>
 
     <!-- Order Section -->
     <div class="order-section">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; font-size:12px;">
+        <div class="order-head">
+            <h3><i class="fas fa-receipt"></i> Current order</h3>
+            <span class="order-count" id="orderCount">0 items</span>
+        </div>
+        <div class="order-meta">
             <div>
                 <!-- Order Number Display -->
                 <p>Order: <strong id="orderNumber">@if(isset($order)){{ $order->order_number }}@else New Order @endif</strong></p>
                 <div class="date-picker-wrapper">
-                <span class="date-picker-label"><p style="color:#2c3e50;">Date: </p></span>
+                <span class="date-picker-label"><p style="color:var(--text);">Date: </p></span>
 
                 <div class="date-picker-container">
                     <span class="date-picker-text" id="orderDateText"></span>
@@ -877,20 +1114,7 @@ button.qty-btn { min-width:28px; min-height:28px; }
                         @php $selectedCustomer = isset($order) ? $order->customer_id : null; @endphp
                         @foreach($customers as $customer)<option value="{{ $customer->id }}"@selected($selectedCustomer == $customer->id)>{{ $customer->name }}</option>@endforeach
                     </select>
-                    <button type="button"
-                    onclick="openAddCustomerModal()"
-                    style="
-                        border:none;
-                        background:#007bff;
-                        color:#fff;
-                        padding:8px 8px;
-                        border-radius:5px;
-                        font-size:11px;
-                        cursor:pointer;
-                        display:flex;
-                        align-items:center;
-                        gap:4px;
-                    ">
+                    <button type="button" class="icon-btn" onclick="openAddCustomerModal()" title="Add customer" aria-label="Add customer">
                     <i class="fas fa-user-plus"></i>
                 </button>
                 </div>
@@ -927,31 +1151,18 @@ button.qty-btn { min-width:28px; min-height:28px; }
                     @endforeach
                 @else
                 <tr>
-                    <td colspan="4" style="text-align:center; padding:20px; color:#999;">No items added yet.</td>
+                    <td colspan="4" style="text-align:center; padding:20px; color:var(--text-faint);">No items added yet.</td>
                 </tr>
                 @endif
             </tbody>
         </table>
-        <div style="margin-top:10px; font-size:12px;">
+        <div class="order-summary">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <div style="display:flex; align-items:center; gap:5px;">
                     <span>Add-ons:</span>
-                    <button type="button"
-    onclick="openAddonModal()"
-    style="
-        border:none;
-        background:#007bff;
-        color:#fff;
-        padding:4px 8px;
-        border-radius:5px;
-        font-size:11px;
-        cursor:pointer;
-        display:flex;
-        align-items:center;
-        gap:4px;
-    ">
-    <i class="fas fa-plus"></i>
-</button>
+                    <button type="button" class="icon-btn icon-btn-sm" onclick="openAddonModal()" title="Add add-on" aria-label="Add add-on">
+                        <i class="fas fa-plus"></i>
+                    </button>
 
                 </div>
                 <strong id="addonTotal">@if(isset($order)){{ number_format($order->addons->sum('pivot.price'), 2) }}@else 0.00 @endif PHP</strong>
@@ -959,7 +1170,7 @@ button.qty-btn { min-width:28px; min-height:28px; }
 
             <!-- Selected Addons List -->
             <div id="selectedAddonsList" style="margin-top:5px; margin-bottom:10px; @if(!isset($order) || $order->addons->count() == 0) display:none; @endif">
-                <div style="font-size:11px; color:#666; margin-bottom:3px;">Selected Add-ons:</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:3px;">Selected Add-ons:</div>
                 <div id="selectedAddonsContainer">
                     @if(isset($order))
                         @foreach($order->addons as $addon)
@@ -983,23 +1194,23 @@ button.qty-btn { min-width:28px; min-height:28px; }
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <span>Discount:</span>
-                <input type="number" id="discountInput" value="{{ isset($order) ? (float) $order->discount : 0 }}" min="0" step="0.01" style="width:80px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+                <input type="number" id="discountInput" value="{{ isset($order) ? (float) $order->discount : 0 }}" min="0" step="0.01" style="width:80px; padding:4px 6px; border:1px solid var(--border-strong); border-radius:4px; font-size:12px;">
             </div>
-            <div style="display:flex; justify-content:space-between; margin-top:5px;">
+            <div class="gross-row">
                 <span><strong>Gross Total:</strong></span>
                 <strong id="grossTotal">0.00 PHP</strong>
             </div>
 
             <!-- Payment Info (for edit mode) -->
             @if(isset($order) && $order->payments->count() > 0)
-            <div style="margin-top:10px; padding:8px; background:#f8f9fa; border-radius:6px; border:1px solid #e9ecef;">
+            <div style="margin-top:10px; padding:8px; background:var(--surface-muted); border-radius:6px; border:1px solid var(--surface-sunken);">
                 <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-                    <span style="color:#6c757d; font-size:11px;">Paid Amount:</span>
-                    <strong style="color:#28a745; font-size:11px;">{{ number_format($order->paid_amount, 2) }} PHP</strong>
+                    <span style="color:var(--text-muted); font-size:11px;">Paid Amount:</span>
+                    <strong style="color:var(--success); font-size:11px;">{{ number_format($order->paid_amount, 2) }} PHP</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#6c757d; font-size:11px;">Balance:</span>
-                    <strong style="color:{{ $order->balance > 0 ? '#dc3545' : '#28a745' }}; font-size:11px;">
+                    <span style="color:var(--text-muted); font-size:11px;">Balance:</span>
+                    <strong style="color:{{ $order->balance > 0 ? 'var(--danger)' : 'var(--success)' }}; font-size:11px;">
                         {{ number_format($order->balance, 2) }} PHP
                     </strong>
                 </div>
@@ -1009,7 +1220,7 @@ button.qty-btn { min-width:28px; min-height:28px; }
 
         <div style="margin-top:10px;">
             <label for="notes" style="font-size:12px;">Notes:</label>
-            <textarea id="notes" placeholder="Enter notes here..." style="width:100%; height:50px; border-radius:6px; border:1px solid #ccc; padding:5px; font-size:12px;">{{ isset($order) ? $order->notes : '' }}</textarea>
+            <textarea id="notes" placeholder="Enter notes here..." style="width:100%; height:50px; border-radius:6px; border:1px solid var(--border-strong); padding:5px; font-size:12px;">{{ isset($order) ? $order->notes : '' }}</textarea>
         </div>
 
         <div class="payment-buttons">
@@ -1036,13 +1247,13 @@ button.qty-btn { min-width:28px; min-height:28px; }
         <div class="modal-body">
             <div class="form-group">
                 <label>Name:</label>
-                <p id="modal_service_name" style="padding:8px 10px; background:#f8f9fa; border-radius:6px; margin-top:5px;"></p>
+                <p id="modal_service_name" style="padding:8px 10px; background:var(--surface-muted); border-radius:6px; margin-top:5px;"></p>
                 <input type="hidden" id="modal_service_id">
             </div>
 
             <div class="form-group">
                 <label>Qty: <span class="required-star">*</span></label>
-                <input type="number" id="modal_service_qty" value="1" min="1" style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; margin-top:5px;">
+                <input type="number" id="modal_service_qty" value="1" min="1" style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; margin-top:5px;">
             </div>
         </div>
 
@@ -1112,7 +1323,7 @@ button.qty-btn { min-width:28px; min-height:28px; }
                 <div class="amount-label">Total Amount Due</div>
                 <div class="amount-value" id="paymentTotalAmount">0.00 PHP</div>
                 @if(isset($order) && $order->payments->count() > 0)
-                <div style="font-size:12px; color:#6c757d; margin-top:5px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">
                     Previously paid: <strong>{{ number_format($order->paid_amount, 2) }} PHP</strong>
                 </div>
                 @endif
@@ -1177,7 +1388,7 @@ button.qty-btn { min-width:28px; min-height:28px; }
         <div class="modal-body">
             <div style="margin-bottom:10px;">
                 <input type="text" id="addonSearchInput" placeholder="Search add-ons..."
-                       style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:12px;">
+                       style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px;">
             </div>
 
             <div class="addons-list-container" style="max-height:300px; overflow-y:auto;">
@@ -1185,7 +1396,7 @@ button.qty-btn { min-width:28px; min-height:28px; }
                     <!-- Addons will be loaded here -->
                 </div>
 
-                <div id="noAddonsMessage" style="text-align:center; padding:20px; color:#999; display:none;">
+                <div id="noAddonsMessage" style="text-align:center; padding:20px; color:var(--text-faint); display:none;">
                     <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px;"></i>
                     <p>No addons available</p>
                 </div>
@@ -1591,12 +1802,12 @@ function openPaymentModal() {
         document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
         document.getElementById('paymentAmount').value = remainingBalance.toFixed(2);
     } else if (remainingBalance === 0) {
-        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#6c757d; font-size:12px;">(Order already fully paid)</small>';
+        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--text-muted); font-size:12px;">(Order already fully paid)</small>';
         document.getElementById('paymentAmount').value = '0.00';
     } else {
         // Overpaid case
         const overpayment = Math.abs(remainingBalance);
-        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#856404; font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
+        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--warning-text); font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
         document.getElementById('paymentAmount').value = '0.00';
     }
 
@@ -1815,7 +2026,7 @@ function updateOrderTable() {
     tbody.innerHTML = "";
 
     if (orderItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No items added yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-faint);">No items added yet.</td></tr>';
     } else {
         orderItems.forEach(item => {
             const itemId = item.item_id || item.id;
@@ -1845,7 +2056,23 @@ function calculateTotal() {
     return grossTotal < 0 ? 0 : grossTotal;
 }
 
+// Show how many of each service are already in the order, on its catalog card
+function refreshItemBadges() {
+    const qtyById = {};
+    orderItems.forEach(item => { qtyById[item.id] = (qtyById[item.id] || 0) + item.qty; });
+    document.querySelectorAll(".product-item").forEach(card => {
+        const qty = qtyById[card.dataset.serviceId] || 0;
+        const badge = card.querySelector(".item-qty");
+        card.classList.toggle("in-order", qty > 0);
+        if (badge) { badge.hidden = qty === 0; badge.textContent = qty; }
+    });
+    const lines = orderItems.length;
+    const counter = document.getElementById("orderCount");
+    if (counter) counter.textContent = lines === 1 ? "1 item" : lines + " items";
+}
+
 function updateTotals() {
+    refreshItemBadges();
     const total = calculateTotal();
     orderData.totalAmount = total;
 
@@ -1863,10 +2090,10 @@ function updateTotals() {
         if (remainingBalance > 0) {
             document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
         } else if (remainingBalance === 0) {
-            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#6c757d; font-size:12px;">(Order already fully paid)</small>';
+            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--text-muted); font-size:12px;">(Order already fully paid)</small>';
         } else {
             const overpayment = Math.abs(remainingBalance);
-            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:#856404; font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
+            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--warning-text); font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
         }
 
         calculatePaymentStatus();
@@ -2069,13 +2296,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Product search
-    document.getElementById("searchInput").addEventListener("input", function() {
-        const query = this.value.toLowerCase();
-        document.querySelectorAll(".product-item").forEach(item => {
-            const itemName = item.dataset.name || '';
-            item.style.display = itemName.includes(query) ? "block" : "none";
+    // Catalog: search box + category chips work together
+    let activeCategory = 'all';
+    const catalogSearch = document.getElementById("searchInput");
+    const filterCatalog = () => {
+        const query = catalogSearch.value.trim().toLowerCase();
+        let anyVisible = false;
+        document.querySelectorAll(".service-section").forEach(section => {
+            const inCategory = activeCategory === 'all' || section.dataset.cat === activeCategory;
+            let shown = 0;
+            section.querySelectorAll(".product-item").forEach(item => {
+                const visible = inCategory && (item.dataset.name || '').includes(query);
+                item.hidden = !visible;
+                if (visible) shown++;
+            });
+            section.hidden = shown === 0;
+            if (shown) anyVisible = true;
+        });
+        const noMatch = document.getElementById("catalogNoMatch");
+        if (noMatch) noMatch.hidden = anyVisible || !document.querySelector(".service-section");
+    };
+    catalogSearch.addEventListener("input", filterCatalog);
+    document.querySelectorAll(".category-chips .chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+            activeCategory = chip.dataset.cat;
+            document.querySelectorAll(".category-chips .chip").forEach(c => {
+                c.classList.toggle("active", c === chip);
+                c.setAttribute("aria-pressed", c === chip ? "true" : "false");
+            });
+            filterCatalog();
+            document.querySelector(".product-catalog")?.scrollTo({ top: 0, behavior: "smooth" });
         });
     });
+    refreshItemBadges();
 
     // Addon search
     const addonSearchInput = document.getElementById('addonSearchInput');

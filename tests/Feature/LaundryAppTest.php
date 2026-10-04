@@ -157,6 +157,21 @@ class LaundryAppTest extends TestCase
         $this->assertEquals(100, $order->total);
     }
 
+    public function test_pos_groups_active_services_by_type(): void
+    {
+        $iron = ServiceType::create(['name' => 'Ironing', 'is_active' => true]);
+        Service::create(['name' => 'Press', 'service_type_id' => $iron->id, 'price' => 20, 'is_active' => true]);
+        Service::create(['name' => 'Retired', 'service_type_id' => $iron->id, 'price' => 5, 'is_active' => false]);
+
+        $response = $this->actingAsStaff($this->admin)->get('/pos')->assertOk();
+
+        $groups = $response->viewData('serviceGroups');
+        $this->assertSame(['Ironing', 'Laundry'], $groups->keys()->all());
+        $this->assertSame(['Press'], $groups['Ironing']->pluck('name')->all());
+        $this->assertSame(['Dry', 'Wash'], $groups['Laundry']->pluck('name')->all());
+        $response->assertSeeInOrder(['Ironing', 'Press', 'Laundry', 'Dry', 'Wash'])->assertDontSee('Retired');
+    }
+
     public function test_pos_merges_duplicate_service_lines(): void
     {
         $order = $this->createOrder([

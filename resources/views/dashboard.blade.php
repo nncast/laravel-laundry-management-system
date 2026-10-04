@@ -9,22 +9,19 @@
 <style>
 /* Dashboard CSS - Modern & Responsive */
 :root {
-    --primary-color: #007bff;
-    --primary-dark: #0056b3;
-    --secondary-color: #6c757d;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --info-color: #17a2b8;
-    --light-color: #f8f9fa;
-    --dark-color: #343a40;
+    --primary-color: var(--accent);
+    --primary-dark: var(--accent-hover);
+    --secondary-color: var(--text-muted);
+    --success-color: var(--success);
+    --danger-color: var(--danger);
+    --warning-color: var(--warning);
+    --info-color: var(--info);
+    --light-color: var(--surface-muted);
+    --dark-color: var(--text);
     --white: #ffffff;
-    --gray-light: #e9ecef;
-    --border-color: #dee2e6;
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --gray-light: var(--surface-sunken);
+    --border-color: var(--border);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
-    --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --transition: all 0.3s ease;
@@ -119,7 +116,7 @@
     top: 25px;
     right: 25px;
     font-size: 40px;
-    color: rgba(0, 123, 255, 0.1);
+    color: rgba(37, 99, 235, 0.1);
 }
 
 /* Main Content Grid */
@@ -278,17 +275,17 @@
 }
 
 .status-processing {
-    background: rgba(0, 123, 255, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-color);
 }
 
 .status-completed {
-    background: rgba(40, 167, 69, 0.1);
+    background: rgba(22, 163, 74, 0.1);
     color: var(--success-color);
 }
 
 .status-cancelled {
-    background: rgba(220, 53, 69, 0.1);
+    background: rgba(220, 38, 38, 0.1);
     color: var(--danger-color);
 }
 
@@ -551,14 +548,133 @@ hr {
         transform: none;
     }
 }
+
+/* ---- Soap Opera dashboard ---- */
+.welcome-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding: 28px 32px;
+    min-height: 220px;
+    border-radius: var(--radius-lg);
+    background: var(--grad-brand);
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 18px 40px -20px rgba(12, 92, 224, 0.75);
+}
+.welcome-banner::before, .welcome-banner::after {
+    content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), rgba(255,255,255,0.06) 60%, rgba(255,255,255,0) 70%);
+}
+.welcome-banner::before { width: 340px; height: 340px; right: -60px; top: -150px; }
+.welcome-banner::after { width: 220px; height: 220px; left: 38%; bottom: -150px; }
+.welcome-copy { position: relative; z-index: 1; max-width: 560px; }
+.welcome-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: var(--radius-pill);
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+}
+.welcome-banner h1 { margin: 12px 0 4px; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+.welcome-banner p { font-size: 14.5px; opacity: 0.9; }
+.welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.welcome-chip {
+    padding: 6px 12px; border-radius: var(--radius-pill);
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.28);
+    font-size: 13px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.welcome-chip b { font-weight: 800; margin-right: 2px; }
+.welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.welcome-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 42px; padding: 0 20px; border-radius: var(--radius-pill);
+    font-size: 14px; font-weight: 700; text-decoration: none; transition: var(--transition);
+}
+.welcome-btn-light { background: #fff; color: var(--accent); box-shadow: 0 2px 8px -3px rgba(0,30,90,0.35); }
+.welcome-btn-light:hover { transform: translateY(-1px); background: #f4f9ff; }
+.welcome-btn-glass { color: #fff; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35); }
+.welcome-btn-glass:hover { background: rgba(255,255,255,0.24); }
+.welcome-art {
+    position: relative; z-index: 1; flex-shrink: 0;
+    width: 300px; height: auto; margin: -24px -8px -36px 0;
+    animation: bubble-float 6s ease-in-out infinite;
+}
+@keyframes bubble-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@media (prefers-reduced-motion: reduce) { .welcome-art { animation: none; } }
+
+.stats-grid { gap: 16px; margin-bottom: 20px; }
+.stat-card {
+    border: 1px solid var(--border); border-left: 1px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow); padding: 22px 24px;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 16px 30px -18px rgba(16,64,140,0.35); }
+.stat-card::before { display: none; }
+.stat-card h2 { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-muted); margin-bottom: 6px; }
+.stat-value { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text) !important; }
+.stat-trend { font-size: 12.5px; gap: 6px; }
+.stat-icon.bubble-tile { position: absolute; top: 20px; right: 20px; width: 46px; height: 46px; border-radius: 15px; font-size: 18px; color: #fff; }
+
+.main-content-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
+.chart-section, .recent-orders, .services-section, .income-card {
+    border: 1px solid var(--border); border-radius: var(--radius-lg) !important; box-shadow: var(--shadow); padding: 24px;
+}
+.chart-section h2, .recent-orders h2, .services-section h2 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.chart-section h2 i, .recent-orders h2 i, .services-section h2 i { color: var(--accent-light); }
+
+.chart-actions { gap: 4px; padding: 4px; border: 0; border-radius: var(--radius-pill); background: var(--surface-sunken); width: fit-content; margin-left: auto; margin-right: auto; }
+.chart-btn { border: 0 !important; border-radius: var(--radius-pill) !important; background: transparent !important; color: var(--text-muted) !important; padding: 7px 16px !important; font-size: 13px; font-weight: 600; }
+.chart-btn.active { background: var(--surface) !important; color: var(--accent) !important; box-shadow: 0 1px 2px rgba(16,64,140,0.12), 0 4px 10px -6px rgba(16,64,140,0.3); }
+
+.recent-orders .dashboard-table th, .recent-orders .dashboard-table td { padding: 10px 8px; }
+.recent-orders .dashboard-table td { font-size: 13px; }
+.recent-orders .dashboard-table .order-no { font-size: 12.5px; }
+.recent-orders .status-badge { font-size: 11px; padding: 2px 8px; }
+
+@media (max-width: 900px) {
+    .welcome-art { width: 200px; margin: -10px -10px -20px 0; }
+}
+@media (max-width: 640px) {
+    .welcome-banner { padding: 22px 20px; min-height: 0; }
+    .welcome-banner h1 { font-size: 23px; }
+    .welcome-art { position: absolute; right: -36px; top: -22px; width: 150px; opacity: 0.55; margin: 0; }
+    .welcome-copy { max-width: none; }
+}
 </style>
 
 <div class="dashboard-container">
+    @php
+        $hour = now()->hour;
+        $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+        $firstName = strtok(session('staff.name') ?? 'there', ' ');
+    @endphp
+    <section class="welcome-banner">
+        <div class="welcome-copy">
+            <span class="welcome-eyebrow"><i class="fas fa-soap"></i> Soap Opera</span>
+            <h1>{{ $greeting }}, {{ $firstName }}!</h1>
+            <p>Fresh loads, zero drama. Here's what's bubbling today.</p>
+            <div class="welcome-chips">
+                <span class="welcome-chip"><b>{{ $todayPending }}</b> pending</span>
+                <span class="welcome-chip"><b>{{ $todayProcessing }}</b> in progress</span>
+                <span class="welcome-chip"><b>{{ $todayCompleted }}</b> completed</span>
+            </div>
+            @if(in_array(session('staff.role'), ['cashier', 'manager', 'admin']))
+            <div class="welcome-actions">
+                <a href="{{ route('pos.index') }}" class="welcome-btn welcome-btn-light"><i class="fas fa-plus"></i> New order</a>
+                <a href="{{ route('orders.index') }}" class="welcome-btn welcome-btn-glass">View orders <i class="fas fa-arrow-right"></i></a>
+            </div>
+            @endif
+        </div>
+        <img class="welcome-art" src="{{ asset('images/brand/bubbles.svg') }}" alt="" width="300" height="257">
+    </section>
     <!-- Stats Grid -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-shopping-cart"></i>
+            <div class="stat-icon bubble-tile tone-blue">
+                <i class="fas fa-basket-shopping"></i>
             </div>
             <h2>Total Orders</h2>
             <div class="stat-value">{{ number_format($totalOrders) }}</div>
@@ -569,8 +685,8 @@ hr {
         </div>
 
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-clock"></i>
+            <div class="stat-icon bubble-tile tone-amber">
+                <i class="fas fa-hourglass-half"></i>
             </div>
             <h2>Pending Orders</h2>
             <div class="stat-value">{{ number_format($pendingOrders) }}</div>
@@ -581,8 +697,8 @@ hr {
         </div>
 
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-money-bill-wave"></i>
+            <div class="stat-icon bubble-tile tone-aqua">
+                <i class="fas fa-peso-sign"></i>
             </div>
             <h2>Total Revenue</h2>
             <div class="stat-value">₱{{ number_format($totalRevenue, 2) }}</div>
@@ -603,11 +719,11 @@ hr {
             </div>
             <div class="chart-legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #007bff;"></div>
+                    <div class="legend-color" style="background: var(--accent);"></div>
                     <span>Total Sales (₱)</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #28a745;"></div>
+                    <div class="legend-color" style="background: var(--info);"></div>
                     <span>Orders Count</span>
                 </div>
             </div>
@@ -640,7 +756,7 @@ hr {
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" style="text-align: center; padding: 20px; color: #999;">No recent orders</td>
+                        <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-faint);">No recent orders</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -672,7 +788,7 @@ hr {
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" style="text-align: center; padding: 20px; color: #999;">No service data available</td>
+                        <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-faint);">No service data available</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -710,7 +826,7 @@ hr {
 window.addEventListener('DOMContentLoaded', function() {
     if (typeof Chart === 'undefined') {
         document.querySelector('.chart-container').innerHTML =
-            '<p style="color:#999;text-align:center;padding:40px 0;">Chart could not be loaded (offline?).</p>';
+            '<p style="color:var(--text-faint);text-align:center;padding:40px 0;">Chart could not be loaded (offline?).</p>';
         return;
     }
 
@@ -768,8 +884,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Total Sales (₱)',
                     data: chartData.week.sales,
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderColor: '#1f74f0',
+                    backgroundColor: 'rgba(31, 116, 240, 0.10)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4,
@@ -778,8 +894,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Orders Count',
                     data: chartData.week.orders,
-                    borderColor: '#28a745',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderColor: '#12a6d8',
+                    backgroundColor: 'rgba(18, 166, 216, 0.08)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4,
@@ -800,7 +916,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         display: false
                     },
                     ticks: {
-                        color: '#6c757d'
+                        color: '#5f7391'
                     }
                 },
                 y: {
@@ -810,14 +926,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     title: {
                         display: true,
                         text: 'Sales (₱)',
-                        color: '#007bff'
+                        color: '#1f74f0'
                     },
                     beginAtZero: true,
                     grid: {
                         drawBorder: false
                     },
                     ticks: {
-                        color: '#007bff',
+                        color: '#1f74f0',
                         callback: function(value) {
                             return formatCurrency(value);
                         }
@@ -830,14 +946,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     title: {
                         display: true,
                         text: 'Orders',
-                        color: '#28a745'
+                        color: '#12a6d8'
                     },
                     grid: {
                         drawOnChartArea: false,
                     },
                     beginAtZero: true,
                     ticks: {
-                        color: '#28a745',
+                        color: '#12a6d8',
                         precision: 0
                     }
                 }
@@ -847,10 +963,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.92)',
                     titleColor: '#fff',
                     bodyColor: '#fff',
-                    borderColor: '#007bff',
+                    borderColor: '#2563eb',
                     borderWidth: 1,
                     callbacks: {
                         label: function(context) {

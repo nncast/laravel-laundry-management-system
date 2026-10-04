@@ -1,0 +1,111 @@
+/* ==========================================================================
+   Soap Opera design tokens, shared by every page (layout pages, POS and login).
+   Soft sky blues, white surfaces, rounded "bubble" shapes and glossy accents.
+   Change colors here, not in the pages.
+   ========================================================================== */
+:root {
+    --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Neutrals (blue-tinted so white surfaces feel airy) */
+    --bg: #f1f6fd;
+    --surface: #ffffff;
+    --surface-muted: #f6f9fe;
+    --surface-sunken: #ecf3fc;
+    --border: #e1eaf5;
+    --border-strong: #cbd9ea;
+    --text: #0b1b34;
+    --text-secondary: #2b3d5a;
+    --text-muted: #5f7391;
+    --text-faint: #98a9c1;
+
+    /* Brand */
+    --accent: #1f74f0;
+    --accent-hover: #155fd2;
+    --accent-soft: #e8f2ff;
+    --accent-ring: rgba(31, 116, 240, 0.2);
+    --accent-light: #5fb3ff;
+    --grad-brand: linear-gradient(150deg, #0c5ce0 0%, #2a87ff 52%, #86ccff 100%);
+    /* Buttons and other controls: nearly flat, with a faint top highlight */
+    --grad-button: linear-gradient(180deg, #2c7cf2 0%, #1f74f0 100%);
+    --grad-button-hover: linear-gradient(180deg, #1d6be6 0%, #155fd2 100%);
+    --gloss: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    --glow: 0 2px 6px -2px rgba(31, 116, 240, 0.35);
+
+    /* Status */
+    --success: #12a150;
+    --success-hover: #0e8a44;
+    --success-soft: #e6f8ee;
+    --success-text: #0f6b3a;
+    --danger: #e5484d;
+    --danger-hover: #c93439;
+    --danger-soft: #fdeeee;
+    --danger-text: #a3262b;
+    --warning: #f5a524;
+    --warning-hover: #d98a0b;
+    --warning-soft: #fff6e5;
+    --warning-text: #8a5300;
+    --info: #12a6d8;
+    --info-hover: #0b8cb8;
+    --info-soft: #e5f7fd;
+    --info-text: #0b6584;
+
+    /* Shape */
+    --radius-lg: 24px;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 1px 2px rgba(16, 64, 140, 0.05);
+    --shadow: 0 1px 2px rgba(16, 64, 140, 0.04), 0 10px 28px -14px rgba(16, 64, 140, 0.16);
+    --shadow-lg: 0 24px 48px -16px rgba(16, 64, 140, 0.28);
+
+    /* Older names still used by some pages */
+    --blue: var(--accent);
+    --blue-dark: var(--accent-hover);
+    --text-dark: var(--text);
+    --text-light: var(--text-muted);
+}
+
+body {
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: #cfe4ff; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Glossy "bubble" tile used for icons across the app (3D look without images) */
+.bubble-tile {
+    --tile: var(--accent);
+    --tile-light: var(--accent-light);
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    color: #fff;
+    background:
+        radial-gradient(120% 90% at 30% 15%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 45%),
+        linear-gradient(160deg, var(--tile-light) 0%, var(--tile) 75%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 30, 90, 0.18), 0 8px 16px -8px var(--tile);
+}
+.bubble-tile::after {
+    content: "";
+    position: absolute;
+    top: 5px; left: 7px;
+    width: 38%; height: 22%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.55);
+    transform: rotate(-24deg);
+    filter: blur(0.5px);
+}
+.bubble-tile i { position: relative; z-index: 1; filter: drop-shadow(0 1px 1px rgba(0, 40, 110, 0.25)); }
+.tone-blue   { --tile: #1f74f0; --tile-light: #6fbcff; }
+.tone-sky    { --tile: #0ea2e6; --tile-light: #7fdcff; }
+.tone-indigo { --tile: #4d63f0; --tile-light: #9aa9ff; }
+.tone-aqua   { --tile: #0fb3a3; --tile-light: #7eeadf; }
+.tone-violet { --tile: #7b61f0; --tile-light: #bfaaff; }
+.tone-amber  { --tile: #f29a11; --tile-light: #ffd27a; }
+.tone-green  { --tile: #12a150; --tile-light: #7fe0a6; }

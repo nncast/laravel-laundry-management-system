@@ -31,8 +31,8 @@
 .search-box input {
     padding: 10px 15px;
     border-radius: 6px;
-    border: 1px solid #ccc;
-    font-family: 'Poppins', sans-serif;
+    border: 1px solid var(--border-strong);
+    font-family: var(--font);
     width: 250px;
     min-width: 200px;
 }
@@ -56,7 +56,7 @@
 
 .add-btn:hover {
     opacity: 0.85;
-    background: #0056b3;
+    background: var(--accent-hover);
 }
 
 /* Table */
@@ -73,24 +73,24 @@ th, td {
 }
 
 th {
-    background: #f8f9fa;
+    background: var(--surface-muted);
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--text);
 }
 
 td {
-    border-bottom: 1px solid #f1f1f1;
-    color: #2c3e50;
+    border-bottom: 1px solid var(--surface-sunken);
+    color: var(--text);
 }
 
 tbody tr:hover {
-    background: #f9fbfd;
+    background: var(--surface-muted);
 }
 
 /* Status badge */
 .status-active {
-    background: #d4edda;
-    color: #155724;
+    background: var(--success-soft);
+    color: var(--success-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -98,8 +98,8 @@ tbody tr:hover {
 }
 
 .status-inactive {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--danger-soft);
+    color: var(--danger-text);
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
@@ -120,7 +120,7 @@ tbody tr:hover {
 }
 
 .edit {
-    background: rgba(0, 123, 255, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--blue);
 }
 
@@ -136,14 +136,14 @@ tbody tr:hover {
 /* Money formatting */
 .price-cell {
     font-weight: 500;
-    color: #2c3e50;
+    color: var(--text);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .table-container {
         padding: 15px;
-        margin: 0 -15px;
+        margin: 0;
         border-radius: 0;
     }
 
@@ -205,7 +205,7 @@ tbody tr:hover {
             <td>{{ $product->category->name ?? '-' }}</td>
             <td>{{ $product->unit->name ?? '-' }}</td>
             <td class="price-cell">₱{{ number_format($product->purchase_price, 2) }}</td>
-            <td>{{ $product->available_stock }}</td>
+            <td data-value="{{ $product->available_stock }}">{{ $product->available_stock }}@if($product->available_stock <= $product->minimum_stock_level) <span class="stock-low" title="At or below the minimum stock level">Low stock</span>@endif</td>
             <td>{{ $product->minimum_stock_level }}</td>
             <td>
                 <span class="status-{{ $product->status === 'active' ? 'active' : 'inactive' }}">
@@ -221,7 +221,7 @@ tbody tr:hover {
         </tr>
     @empty
         <tr>
-            <td colspan="10" style="text-align:center; color:#888; padding:20px;">
+            <td colspan="10" style="text-align:center; color:var(--text-faint); padding:20px;">
                 <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px; display:block;"></i>
                 No products found.
             </td>
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const priceValue = priceText.replace(/[^\d.-]/g, '');
             document.getElementById('edit_purchase_price').value = priceValue; // CHANGED
 
-            document.getElementById('edit_available_stock').value = row.cells[5].textContent.trim();
+            document.getElementById('edit_available_stock').value = row.cells[5].dataset.value ?? row.cells[5].textContent.trim();
             document.getElementById('edit_minimum_stock_level').value = row.cells[6].textContent.trim();
 
             const statusText = row.cells[7].textContent.trim().toLowerCase();
@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (remainingRows.length === 0 && !noResultsRow) {
                         const tbody = document.getElementById('productTable');
-                        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#888;">No products found.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-faint);">No products found.</td></tr>';
                     }
                 } else {
                     alert("Delete failed: " + (data.message || "Unknown error"));
