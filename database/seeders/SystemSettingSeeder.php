@@ -15,7 +15,7 @@ class SystemSettingSeeder extends Seeder
                 'business_name' => 'LAUNDRY',
                 'address'       => '123 Laundry Street, Clean City, CC 12345',
                 'contact'       => '09123456789',
-                'favicon'       => 'favicons.ico', // place a default favicon in storage/app/public/favicons
+                'favicon'       => null, // upload an .ico under Settings > Master Setting
             ]);
         }
     }

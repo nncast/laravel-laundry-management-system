@@ -1,59 +1,210 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://img.shields.io/badge/version-1.0.0-4169E1?style=flat-square" alt="version">
+  <img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
+  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
+  <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
+  <img src="https://img.shields.io/badge/MySQL-XAMPP-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL">
+  <img src="https://img.shields.io/badge/SQLite-supported-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite">
 </p>
 
-## About Laravel
+<p align="center">
+  <b>Download 1.0.0:</b>
+  <a href="https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/1.0.0.zip">Source (.zip)</a> |
+  <a href="https://github.com/nncast/laravel-laundry-management-system/releases">All releases</a>
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+# Laundry Management System
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Laundry Management System** is a web-based **Laravel** application for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
+It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+> **Current version: 1.0.0** — first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
 
-## Learning Laravel
+## Features
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+**Point of Sale & Orders**
+- POS screen to pick services, quantities and add-ons, apply a discount and take payment
+- Change is calculated for cash payments; only the amount owed is recorded
+- Partial payments, with the remaining balance tracked per order
+- Order status flow: **Pending → Processing → Completed** (or Cancelled)
+- Order details page with payments, notes, editing and a printable view
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Records**
+- Customers with contact number and address
+- Services (with price, type and icon), service types and add-ons
+- Inventory: products, categories and units with stock levels
+- Staff accounts with Admin, Manager and Cashier roles
 
-## Laravel Sponsors
+**Reports**
+- Dashboard with today's income, pending orders, top services and a weekly / monthly / yearly sales chart
+- Daily, Sales and Order reports with date and status filters
+- CSV export (opens in Excel) and print
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**Settings & Backup**
+- Business name, address, contact number and logo (favicon)
+- One-click database backup (`.sql` file with all data)
+- Restore from a backup, with an automatic safety backup taken first
 
-### Premium Partners
+## Roles
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Page | Cashier | Manager | Admin |
+| --- | :---: | :---: | :---: |
+| Dashboard, POS, Orders, Customers | ✓ | ✓ | ✓ |
+| Delete orders and customers | | ✓ | ✓ |
+| Inventory and Services | | ✓ | ✓ |
+| Reports | | | ✓ |
+| Staff, Master Settings, Backup & Restore | | | ✓ |
 
-## Contributing
+## Development environment
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Category | Details |
+| --- | --- |
+| Language | PHP 8.2+ |
+| Framework | Laravel 12 |
+| Front end | Blade templates, plain CSS and JavaScript, Font Awesome, Chart.js |
+| Database | MySQL / MariaDB (XAMPP or Laragon) or SQLite |
+| Tests | PHPUnit (`php artisan test`) |
 
-## Code of Conduct
+## Requirements
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Tool | Download |
+| --- | --- |
+| PHP 8.2 or later (XAMPP 8.2+ or Laragon) | [XAMPP](https://www.apachefriends.org/download.html) · [Laragon](https://laragon.org/download/) |
+| Composer | [getcomposer.org](https://getcomposer.org/download/) |
+| MySQL / MariaDB (included in XAMPP and Laragon) | — |
+| Git (optional, for cloning) | [git-scm.com](https://git-scm.com/downloads) |
 
-## Security Vulnerabilities
+> **Note:** Laravel 12 needs **PHP 8.2 or later**. Older XAMPP versions ship PHP 8.0 — check with `php -v`. Node.js / npm are **not** needed.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Setup and run instructions
 
-## License
+### 1. Start MySQL
+- **XAMPP:** open the XAMPP Control Panel and start **MySQL**
+- **Laragon:** click **Start All**
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 2. Clone the project
+```bash
+git clone https://github.com/nncast/laravel-laundry-management-system.git
+cd laravel-laundry-management-system
+```
+Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/1.0.0.zip) and extract it.
+
+### 3. Install dependencies
+```bash
+composer install
+```
+
+### 4. Setup environment
+```bash
+# Windows (CMD)
+copy .env.example .env
+
+# Linux / macOS
+cp .env.example .env
+```
+
+Generate app key:
+
+```bash
+php artisan key:generate
+```
+
+### 5. Configure database
+
+Edit the `.env` file:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laundry_system
+DB_USERNAME=root
+DB_PASSWORD=
+
+APP_TIMEZONE=Asia/Manila
+SESSION_DRIVER=file
+CACHE_STORE=file
+```
+
+> Use `127.0.0.1`, not `localhost`. On Windows, `localhost` can add about a second to every page load.
+
+<details>
+<summary>Using SQLite instead of MySQL</summary>
+
+Keep `DB_CONNECTION=sqlite` in `.env` and create an empty database file:
+
+```bash
+# Windows (CMD)
+type nul > database\database.sqlite
+
+# Linux / macOS
+touch database/database.sqlite
+```
+</details>
+
+### 6. Run migrations and seed
+
+```bash
+php artisan migrate --seed
+```
+
+If prompted with:
+
+```bash
+WARN  The database 'laundry_system' does not exist on the 'mysql' connection.
+
+Would you like to create it? (yes/no) [yes]
+```
+
+Type:
+
+```bash
+yes
+```
+
+Then press `Enter`.
+
+### 7. Start the app
+```bash
+php artisan serve
+```
+
+Open `http://localhost:8000` in your browser.
+
+---
+
+## Default Account
+
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin` | `admin123` |
+
+**Important:** change the default password after first login (**Settings → Staff**), and set your business name and logo under **Settings → Master Setting**.
+
+## Backup & Restore
+
+Go to **Settings → Master Setting → Data Backup**.
+
+- **Download Backup File** saves a `.sql` file with every table and record. Keep it somewhere safe (USB drive or cloud storage).
+- **Restore Backup** replaces all current data with a backup made by this system. A safety backup of the current data is saved to `storage/app/backups` first, and you are logged out afterwards.
+
+## Upgrading from 0.9.0
+
+1. Download a backup from **Settings → Master Setting** first.
+2. Pull or download version 1.0.0, then run:
+   ```bash
+   composer install
+   php artisan migrate
+   ```
+3. Add `APP_TIMEZONE=Asia/Manila` to your `.env`, and change `DB_HOST=localhost` to `DB_HOST=127.0.0.1` if you use MySQL.
+
+The migration adds the payment method column and report indexes, and recalculates the totals and paid amounts of existing orders that earlier versions saved incorrectly.
+
+## Running tests
+
+```bash
+php artisan test
+```
+
+---
+
+*Laundry Management System · 2025 · Laravel 12 · PHP 8.2 · MySQL / SQLite*
