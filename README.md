@@ -2,7 +2,7 @@
 <h1 align="center">Soap Opera</h1>
 <div align="center">
 <img src="https://img.shields.io/badge/version-1.1.0-1F74F0?style=flat-square" alt="version">
-<img src="https://img.shields.io/badge/status-stable-2772BD?style=flat-square" alt="status">
+<img src="https://img.shields.io/badge/status-complete-2772BD?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
 <img src="https://img.shields.io/badge/MySQL-XAMPP-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL">
