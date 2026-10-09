@@ -4,10 +4,7 @@
 
 **Please do not open a public GitHub issue for security vulnerabilities.** Publicly disclosing a vulnerability before it's fixed gives attackers a head start against any shop running this system.
 
-Instead, report it privately using one of these:
-
-1. **GitHub Private Vulnerability Reporting (preferred)** — go to this repository's **Security** tab → **Report a vulnerability**. This opens a private conversation visible only to the maintainer, and lets you track the fix without exposing details publicly. ([GitHub's guide to reporting a vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability))
-2. **Email** — `[email removed]`, if you'd rather not use GitHub.
+Instead, report it privately through **GitHub Private Vulnerability Reporting**: go to this repository's **Security** tab → **Report a vulnerability** ([direct link](https://github.com/nncast/laravel-laundry-management-system/security/advisories/new)). This opens a private conversation visible only to the maintainer, and lets you track the fix without exposing details publicly. ([GitHub's guide to reporting a vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability))
 
 When reporting, please include:
 - A description of the vulnerability and its potential impact
