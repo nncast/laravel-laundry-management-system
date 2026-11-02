@@ -54,7 +54,6 @@
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
     box-shadow: var(--shadow-md);
 }
 
@@ -73,7 +72,7 @@
     left: 0;
     width: 100%;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), transparent);
+    background: var(--primary-color);
     opacity: 0.3;
 }
 
@@ -326,7 +325,7 @@
     padding: 30px;
     box-shadow: var(--shadow-sm);
     text-align: center;
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    background: var(--primary-color);
     color: var(--white);
 }
 
@@ -563,11 +562,11 @@ hr {
     background: var(--grad-brand);
     color: #fff;
     overflow: hidden;
-    box-shadow: 0 18px 40px -20px rgba(12, 92, 224, 0.75);
+    box-shadow: none;
 }
 .welcome-banner::before, .welcome-banner::after {
     content: ""; position: absolute; border-radius: 50%; pointer-events: none;
-    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.35), rgba(255,255,255,0.06) 60%, rgba(255,255,255,0) 70%);
+    background: rgba(255,255,255,0.08);
 }
 .welcome-banner::before { width: 340px; height: 340px; right: -60px; top: -150px; }
 .welcome-banner::after { width: 220px; height: 220px; left: 38%; bottom: -150px; }
@@ -584,7 +583,7 @@ hr {
 .welcome-chip {
     padding: 6px 12px; border-radius: var(--radius-pill);
     background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.28);
-    font-size: 13px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    font-size: 13px;
 }
 .welcome-chip b { font-weight: 800; margin-right: 2px; }
 .welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
@@ -593,8 +592,8 @@ hr {
     height: 42px; padding: 0 20px; border-radius: var(--radius-pill);
     font-size: 14px; font-weight: 700; text-decoration: none; transition: var(--transition);
 }
-.welcome-btn-light { background: #fff; color: var(--accent); box-shadow: 0 2px 8px -3px rgba(0,30,90,0.35); }
-.welcome-btn-light:hover { transform: translateY(-1px); background: #f4f9ff; }
+.welcome-btn-light { background: #fff; color: var(--accent); box-shadow: none; }
+.welcome-btn-light:hover { background: #f4f9ff; }
 .welcome-btn-glass { color: #fff; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35); }
 .welcome-btn-glass:hover { background: rgba(255,255,255,0.24); }
 .welcome-art {
@@ -611,12 +610,12 @@ hr {
     border-radius: var(--radius-lg) !important;
     box-shadow: var(--shadow); padding: 22px 24px;
 }
-.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 16px 30px -18px rgba(16,64,140,0.35); }
+.stat-card:hover { box-shadow: none; border-color: var(--accent); }
 .stat-card::before { display: none; }
 .stat-card h2 { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-muted); margin-bottom: 6px; }
 .stat-value { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text) !important; }
 .stat-trend { font-size: 12.5px; gap: 6px; }
-.stat-icon.bubble-tile { position: absolute; top: 20px; right: 20px; width: 46px; height: 46px; border-radius: 15px; font-size: 18px; color: #fff; }
+.stat-icon.bubble-tile { position: absolute; top: 20px; right: 20px; width: 46px; height: 46px; border-radius: 12px; font-size: 18px; color: var(--tile); }
 
 .main-content-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
 .chart-section, .recent-orders, .services-section, .income-card {
@@ -627,7 +626,7 @@ hr {
 
 .chart-actions { gap: 4px; padding: 4px; border: 0; border-radius: var(--radius-pill); background: var(--surface-sunken); width: fit-content; margin-left: auto; margin-right: auto; }
 .chart-btn { border: 0 !important; border-radius: var(--radius-pill) !important; background: transparent !important; color: var(--text-muted) !important; padding: 7px 16px !important; font-size: 13px; font-weight: 600; }
-.chart-btn.active { background: var(--surface) !important; color: var(--accent) !important; box-shadow: 0 1px 2px rgba(16,64,140,0.12), 0 4px 10px -6px rgba(16,64,140,0.3); }
+.chart-btn.active { background: var(--surface) !important; color: var(--accent) !important; box-shadow: none; }
 
 .recent-orders .dashboard-table th, .recent-orders .dashboard-table td { padding: 10px 8px; }
 .recent-orders .dashboard-table td { font-size: 13px; }

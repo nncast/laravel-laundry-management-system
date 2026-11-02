@@ -39,8 +39,9 @@
     background: #fff;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     padding: 25px 20px; /* Reduced right padding */
+    border: 1px solid var(--border);
 }
 
 /* Tool Cards Grid - Center aligned with better spacing */
@@ -70,8 +71,7 @@
 }
 
 .tool-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     border-color: var(--blue);
 }
 
@@ -83,7 +83,7 @@
     margin-bottom: 16px;
 }
 .tool-card { border-radius: var(--radius-lg); }
-.tool-card:hover { border-color: #b9d6fb; box-shadow: 0 16px 30px -18px rgba(16, 64, 140, 0.45); }
+.tool-card:hover { border-color: #b9d6fb; box-shadow: none; }
 
 .tool-card h4 {
     font-size: 16px;

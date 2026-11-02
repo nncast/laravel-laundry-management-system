@@ -1,13 +1,14 @@
 /* ==========================================================================
    Soap Opera design tokens, shared by every page (layout pages, POS and login).
-   Soft sky blues, white surfaces, rounded "bubble" shapes and glossy accents.
+   Flat style: solid sky blues, white surfaces with 1px borders, no gloss or
+   drop shadows. The bubble mascot is the only 3D element.
    Change colors here, not in the pages.
    ========================================================================== */
 :root {
     --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
     /* Neutrals (blue-tinted so white surfaces feel airy) */
-    --bg: #f1f6fd;
+    --bg: #f2f6fc;
     --surface: #ffffff;
     --surface-muted: #f6f9fe;
     --surface-sunken: #ecf3fc;
@@ -24,12 +25,12 @@
     --accent-soft: #e8f2ff;
     --accent-ring: rgba(31, 116, 240, 0.2);
     --accent-light: #5fb3ff;
-    --grad-brand: linear-gradient(150deg, #0c5ce0 0%, #2a87ff 52%, #86ccff 100%);
-    /* Buttons and other controls: nearly flat, with a faint top highlight */
-    --grad-button: linear-gradient(180deg, #2c7cf2 0%, #1f74f0 100%);
-    --grad-button-hover: linear-gradient(180deg, #1d6be6 0%, #155fd2 100%);
-    --gloss: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-    --glow: 0 2px 6px -2px rgba(31, 116, 240, 0.35);
+    /* Flat: the old gradient/gloss names now hold solid colors and empty shadows */
+    --grad-brand: var(--accent);
+    --grad-button: var(--accent);
+    --grad-button-hover: var(--accent-hover);
+    --gloss: 0 0 #0000;
+    --glow: 0 0 #0000;
 
     /* Status */
     --success: #12a150;
@@ -50,13 +51,15 @@
     --info-text: #0b6584;
 
     /* Shape */
-    --radius-lg: 24px;
-    --radius: 18px;
-    --radius-sm: 12px;
+    --radius-lg: 18px;
+    --radius: 14px;
+    --radius-sm: 10px;
     --radius-pill: 999px;
-    --shadow-sm: 0 1px 2px rgba(16, 64, 140, 0.05);
-    --shadow: 0 1px 2px rgba(16, 64, 140, 0.04), 0 10px 28px -14px rgba(16, 64, 140, 0.16);
-    --shadow-lg: 0 24px 48px -16px rgba(16, 64, 140, 0.28);
+    /* Surfaces are separated by borders; only floating layers (modals, toasts, menus) cast a shadow */
+    --shadow-sm: 0 0 #0000;
+    --shadow: 0 0 #0000;
+    --shadow-md: 0 0 #0000;
+    --shadow-lg: 0 12px 32px -12px rgba(11, 27, 52, 0.22);
 
     /* Older names still used by some pages */
     --blue: var(--accent);
@@ -74,34 +77,19 @@ body {
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Glossy "bubble" tile used for icons across the app (3D look without images) */
+/* Flat icon tile: a soft tint of the tone color with the icon in that color */
 .bubble-tile {
     --tile: var(--accent);
     --tile-light: var(--accent-light);
-    position: relative;
     display: grid;
     place-items: center;
     flex-shrink: 0;
     width: 44px;
     height: 44px;
-    border-radius: 14px;
-    color: #fff;
-    background:
-        radial-gradient(120% 90% at 30% 15%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 45%),
-        linear-gradient(160deg, var(--tile-light) 0%, var(--tile) 75%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 30, 90, 0.18), 0 8px 16px -8px var(--tile);
+    border-radius: 12px;
+    color: var(--tile);
+    background: color-mix(in srgb, var(--tile) 13%, #fff);
 }
-.bubble-tile::after {
-    content: "";
-    position: absolute;
-    top: 5px; left: 7px;
-    width: 38%; height: 22%;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.55);
-    transform: rotate(-24deg);
-    filter: blur(0.5px);
-}
-.bubble-tile i { position: relative; z-index: 1; filter: drop-shadow(0 1px 1px rgba(0, 40, 110, 0.25)); }
 .tone-blue   { --tile: #1f74f0; --tile-light: #6fbcff; }
 .tone-sky    { --tile: #0ea2e6; --tile-light: #7fdcff; }
 .tone-indigo { --tile: #4d63f0; --tile-light: #9aa9ff; }

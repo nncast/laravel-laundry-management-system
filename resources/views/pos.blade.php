@@ -57,7 +57,7 @@ body { font-family: var(--font); background:var(--bg); color:var(--text-dark); }
 .modal-content {
     background: white;
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-lg);
     max-width: 500px;
     width: 100%;
     max-height: 90vh;
@@ -229,7 +229,8 @@ body.modal-open {
     background:#fff;
     border-radius:10px;
     padding:15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: none;
+    border: 1px solid var(--border);
 }
 
 .products-section input {
@@ -266,7 +267,8 @@ body.modal-open {
     background:#fff;
     border-radius:10px;
     padding:15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: none;
+    border: 1px solid var(--border);
 }
 .order-section table {
     width:100%;
@@ -343,9 +345,7 @@ button.qty-btn:hover {
 
 .date-picker-button:hover {
     background: var(--accent-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+    box-shadow: none; border-color: var(--accent); }
 
 .date-picker-button i {
     font-size: 12px;
@@ -406,7 +406,7 @@ button.qty-btn:hover {
         height: 400px;
         background: white;
         border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        box-shadow: var(--shadow-lg);
         border: 1px solid var(--border);
         z-index: 999999;
     }
@@ -529,9 +529,7 @@ button.qty-btn:hover {
 
 .addon-button:hover {
     background: var(--info-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+    box-shadow: none; border-color: var(--accent); }
 
 .addon-button i {
     font-size: 10px;
@@ -655,7 +653,7 @@ button.qty-btn:hover {
 .btn-payment { background:var(--accent); }
 .btn-save { background:var(--success); }
 .btn-cancel { background:var(--danger); }
-.payment-buttons button:hover { opacity:0.9; transform:translateY(-1px); }
+.payment-buttons button:hover { opacity:0.9; }
 
 /* Add to your existing CSS */
 .btn-payment[data-edit-mode="true"] {
@@ -775,7 +773,7 @@ button.qty-btn:hover {
         height: 400px;
         background: white;
         border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        box-shadow: var(--shadow-lg);
         border: 1px solid var(--border);
         z-index: 999999;
     }
@@ -830,15 +828,11 @@ button.qty-btn { min-width:28px; min-height:28px; }
 [hidden] { display: none !important; }
 body {
     background-color: var(--bg);
-    background-image:
-        radial-gradient(680px 420px at 100% -6%, rgba(90, 170, 255, 0.16), transparent 70%),
-        radial-gradient(520px 420px at 0% 108%, rgba(120, 210, 255, 0.14), transparent 70%);
-    background-attachment: fixed;
     color: var(--text);
 }
 
 /* Top bar */
-.topbar { height: 68px; padding: 0 24px; background: rgba(255,255,255,0.85); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.topbar { height: 68px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
 .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .topbar-heading { display: flex; flex-direction: column; line-height: 1.2; }
 .topbar h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
@@ -904,16 +898,16 @@ body {
     position: relative;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;
     min-height: 150px; padding: 16px 10px 14px;
-    border: 1px solid var(--border); border-radius: 20px;
-    background: linear-gradient(180deg, #fff 0%, var(--surface-muted) 100%);
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface);
     color: var(--text); font: inherit; text-align: center; cursor: pointer;
     transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
-.product-item:hover { transform: translateY(-3px); border-color: #b9d6fb; box-shadow: 0 14px 26px -16px rgba(16,64,140,0.45); }
-.product-item:active { transform: translateY(-1px) scale(0.98); }
+.product-item:hover { border-color: #b9d6fb; box-shadow: none; }
+.product-item:active { transform: scale(0.98); }
 .product-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.product-item.in-order { border-color: var(--accent); background: linear-gradient(180deg, #fff 0%, var(--accent-soft) 100%); }
-.product-item img { width: 52px; height: 52px; border-radius: 16px; object-fit: cover; box-shadow: 0 8px 16px -10px rgba(16,64,140,0.6); }
+.product-item.in-order { border-color: var(--accent); background: var(--accent-soft); }
+.product-item img { width: 52px; height: 52px; border-radius: 16px; object-fit: cover; box-shadow: none; }
 .bubble-tile.item-tile { width: 52px; height: 52px; border-radius: 17px; font-size: 21px; }
 .item-name { font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
 .product-item .product-price { margin-top: auto; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 800; }
@@ -943,7 +937,7 @@ body {
     background: var(--grad-button); color: #fff; font-size: 14px; cursor: pointer;
     box-shadow: var(--gloss), var(--glow); transition: transform .15s;
 }
-.icon-btn:hover { transform: translateY(-1px); background: var(--grad-button-hover); }
+.icon-btn:hover { background: var(--grad-button-hover); }
 .icon-btn.icon-btn-sm { width: 28px; height: 28px; font-size: 11px; }
 .date-picker-button { border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); padding: 5px 12px; font-weight: 700; }
 .date-picker-button:hover { background: #d8e9ff; box-shadow: none; }
@@ -975,7 +969,7 @@ button.qty-btn:hover { background: var(--accent-soft); border-color: #c4dcfb; }
 .payment-buttons { margin-top: 16px; gap: 10px; }
 .payment-buttons button { min-height: 48px; border-radius: var(--radius-pill); font-size: 14.5px; font-weight: 700; transform: none; transition: background .15s, transform .15s; }
 .payment-buttons .btn-payment { flex: 1.4 1 120px; border: 0; background: var(--grad-button); color: #fff; box-shadow: var(--gloss), var(--glow); }
-.payment-buttons .btn-payment:hover { background: var(--grad-button-hover); transform: translateY(-1px); opacity: 1; }
+.payment-buttons .btn-payment:hover { background: var(--grad-button-hover); opacity: 1; }
 .payment-buttons .btn-save { border: 1px solid #b9d6fb; background: var(--accent-soft); color: var(--accent); }
 .payment-buttons .btn-save:hover { background: #d8e9ff; opacity: 1; }
 .payment-buttons .btn-cancel { border: 1px solid transparent; background: transparent; color: var(--text-muted); font-weight: 600; }

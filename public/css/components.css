@@ -30,9 +30,7 @@ body .main-content :is(.add-btn, .btn-primary, .add-order-btn, .add-customer-btn
     .submit-btn, .btn-save, .btn-payment, .add-payment-btn, .btn-complete, .btn-mark-complete, .backup-btn):hover {
     background: var(--grad-button-hover);
     color: #fff;
-    transform: translateY(-1px);
-    box-shadow: var(--gloss), 0 3px 8px -3px rgba(31, 116, 240, 0.45);
-}
+    box-shadow: none; border-color: var(--accent); }
 
 body .main-content :is(.btn-cancel, .cancel-btn, .btn-secondary, .btn-download, .btn-print, .restore-btn, .btn-action.btn-edit) {
     display: inline-flex;
@@ -214,7 +212,7 @@ body .main-content :is(.content-card, .card, .report-card, .filter-section, .fil
 
 /* ---------- Modals (bubble-soft) ---------- */
 body :is(.modal-content, .modal-box, .modal-dialog > div) { border-radius: var(--radius-lg); }
-body :is(.modal, .modal-overlay) { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+body :is(.modal, .modal-overlay) { }
 
 /* ---------- Inventory ---------- */
 body .main-content .stock-low {
@@ -240,9 +238,8 @@ body .main-content :is(.btn-download, .btn-print, .btn-action) { white-space: no
 /* Finishing an order reads as "done", not as another primary action */
 body .main-content :is(.btn-complete, .btn-mark-complete) {
     background: var(--success);
-    box-shadow: var(--gloss), 0 2px 6px -2px rgba(18, 161, 80, 0.35);
+    box-shadow: none;
 }
 body .main-content :is(.btn-complete, .btn-mark-complete):hover {
     background: var(--success-hover);
-    box-shadow: var(--gloss), 0 2px 6px -2px rgba(18, 161, 80, 0.4);
-}
+    box-shadow: none; border-color: var(--accent); }

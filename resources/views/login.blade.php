@@ -27,9 +27,6 @@ body {
     padding: 24px;
     color: var(--text);
     background-color: var(--bg);
-    background-image:
-        radial-gradient(640px 460px at 0% 0%, rgba(90, 170, 255, 0.22), transparent 70%),
-        radial-gradient(560px 460px at 100% 100%, rgba(120, 210, 255, 0.22), transparent 70%);
 }
 
 .login-shell {
@@ -38,12 +35,9 @@ body {
     width: min(1040px, 100%);
     min-height: 600px;
     padding: 12px;
-    border-radius: 32px;
-    background: rgba(255, 255, 255, 0.85);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
+    border-radius: 24px;
+    background: var(--surface);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
 }
 
 /* Left: brand hero */
@@ -53,7 +47,7 @@ body {
     flex-direction: column;
     justify-content: space-between;
     padding: 32px;
-    border-radius: 24px;
+    border-radius: 18px;
     background: var(--grad-brand);
     color: #fff;
     overflow: hidden;
@@ -63,12 +57,12 @@ body {
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
-    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.32), rgba(255,255,255,0.05) 60%, transparent 70%);
+    background: rgba(255,255,255,0.08);
 }
 .hero::before { width: 380px; height: 380px; right: -140px; top: -140px; }
 .hero::after { width: 300px; height: 300px; left: -120px; bottom: -150px; }
 .hero-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
-.hero-brand img { width: 40px; height: 40px; padding: 4px; border-radius: 50%; background: rgba(255,255,255,0.92); box-shadow: 0 8px 18px -8px rgba(0,30,90,0.6); }
+.hero-brand img { width: 40px; height: 40px; padding: 4px; border-radius: 50%; background: rgba(255,255,255,0.92); box-shadow: none; }
 .hero-art { position: relative; z-index: 1; width: min(380px, 100%); margin: 8px auto; animation: bubble-float 6s ease-in-out infinite; }
 .hero-copy { position: relative; z-index: 1; }
 .hero-copy h1 { font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; }
@@ -134,7 +128,7 @@ body {
     box-shadow: var(--gloss), var(--glow);
     transition: transform .15s, background .15s;
 }
-.login-btn:hover { background: var(--grad-button-hover); transform: translateY(-1px); }
+.login-btn:hover { background: var(--grad-button-hover); }
 .login-btn:disabled { opacity: 0.7; cursor: progress; transform: none; }
 .login-foot { margin-top: 26px; text-align: center; font-size: 12.5px; color: var(--text-faint); }
 
