@@ -1,7 +1,7 @@
 <div align="center"><img src="docs/logo.png" width="100" alt="Soap Opera logo"></div>
 <h1 align="center">Soap Opera</h1>
 <div align="center">
-<img src="https://img.shields.io/badge/version-1.1.1-1F74F0?style=flat-square" alt="version">
+<img src="https://img.shields.io/badge/version-1.2.0-1F74F0?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-complete-1F74F0?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
@@ -13,7 +13,7 @@
 **Soap Opera** is a web-based **Laravel** laundry management system for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone. The interface uses a soft blue-and-white bubble theme with rounded cards and glossy, 3D-style icons.
 
-> **Current version: v1.1.1** — documentation update: the development team, a GitHub-only security policy and matching badges. Built on v1.1.0: the app is now **Soap Opera**, with a new blue-and-white bubble look on every page, a redesigned login page and dashboard, and a POS that groups services into sections by service type. Built on v1.0.0, the first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
+> **Current version: v1.2.0** — a flatter look around the bubble mascot (now with arms, legs and facial expressions), a **Needs attention** panel on the dashboard and a daily automatic backup. Built on v1.1.0: the app is now **Soap Opera**, with a new blue-and-white bubble look on every page, a redesigned login page and dashboard, and a POS that groups services into sections by service type. Built on v1.0.0, the first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
 
 <p align="center">
   <img width="400" alt="Login" src="docs/screenshots/login.png" />
@@ -103,7 +103,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 git clone https://github.com/nncast/laravel-laundry-management-system.git
 cd laravel-laundry-management-system
 ```
-Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v1.1.1.zip) and extract it.
+Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v1.2.0.zip) and extract it.
 
 ### 3. Install dependencies
 ```bash
@@ -210,12 +210,12 @@ Go to **Settings → Master Setting → Data Backup**.
 
 ## Upgrading
 
-**From v1.0.0, v1.0.1 or v1.1.0:** pull or download v1.1.1 and replace the files. There are no database changes, so no migration is needed. Your business name, address and logo are kept.
+**From v1.0.0, v1.0.1, v1.1.0 or v1.1.1:** pull or download v1.2.0 and replace the files. There are no database changes, so no migration is needed. Your business name, address and logo are kept.
 
 **From 0.9.0:**
 
 1. Download a backup from **Settings → Master Setting** first.
-2. Pull or download the latest version (v1.1.1), then run:
+2. Pull or download the latest version (v1.2.0), then run:
    ```bash
    composer install
    php artisan migrate
