@@ -156,7 +156,7 @@ body {
 <main class="login-shell">
     <section class="hero" aria-hidden="true">
         <div class="hero-brand"><img src="{{ asset('images/brand/mark.svg') }}" alt=""> Soap Opera</div>
-        <img class="hero-art" src="{{ asset('images/brand/bubbles.svg') }}" alt="" width="380" height="326">
+        <x-mascot mood="wave" class="hero-art" />
         <div class="hero-copy">
             <h1>Fresh loads.<br>Zero drama.</h1>
             <p>Orders, customers, inventory and sales for your laundry shop, all in one tidy place.</p>

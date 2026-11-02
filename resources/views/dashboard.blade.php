@@ -598,7 +598,7 @@ hr {
 .welcome-btn-glass:hover { background: rgba(255,255,255,0.24); }
 .welcome-art {
     position: relative; z-index: 1; flex-shrink: 0;
-    width: 300px; height: auto; margin: -24px -8px -36px 0;
+    width: 260px; height: auto; margin: -16px 8px -20px 0;
     animation: bubble-float 6s ease-in-out infinite;
 }
 @keyframes bubble-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -667,7 +667,7 @@ hr {
             </div>
             @endif
         </div>
-        <img class="welcome-art" src="{{ asset('images/brand/bubbles.svg') }}" alt="" width="300" height="257">
+        <x-mascot mood="happy" class="welcome-art" />
     </section>
     <!-- Stats Grid -->
     <div class="stats-grid">
