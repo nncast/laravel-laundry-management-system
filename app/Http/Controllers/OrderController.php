@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Staff;
 use App\Models\SystemSetting;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+
     /**
      * Display a listing of the orders.
      */
@@ -27,13 +30,7 @@ class OrderController extends Controller
 
         // Everything except the status tab, so each tab can show how many orders it holds
         $filtered = Order::query()
-            ->when($search !== '', function ($q) use ($search) {
-                $q->where(function ($q) use ($search) {
-                    $q->where('order_number', 'like', "%{$search}%")
-                      ->orWhereHas('customer', fn ($c) => $c->where(fn ($c) => $c->where('name', 'like', "%{$search}%")->orWhere('contact', 'like', "%{$search}%")))
-                      ->orWhereHas('staff', fn ($s) => $s->where('name', 'like', "%{$search}%"));
-                });
-            })
+            ->when($search !== '', fn ($q) => $this->search($q, $search))
             ->when($payment === 'unpaid', fn ($q) => $q->unpaid())
             ->when($payment === 'partial', fn ($q) => $q->unpaid()->where('paid_amount', '>', 0))
             ->when($payment === 'paid', fn ($q) => $q->where('total', '>', 0)->whereColumn('paid_amount', '>=', 'total'))
@@ -56,6 +53,71 @@ class OrderController extends Controller
             ->withQueryString();
 
         return view('orders', compact('orders', 'search', 'status', 'payment', 'from', 'to', 'counts'));
+    }
+
+    /**
+     * Orders matching a search: the order number, or the customer's name or phone,
+     * or the staff member who took it. Customers and staff are looked up once
+     * (not per order), and an order-number-looking term matches from the start so
+     * the unique index on order_number is used.
+     */
+    private function search($query, string $term)
+    {
+        // An order number (ORD-1A2B…) matches from the start, using the unique index
+        if (preg_match('/^[A-Za-z]{2,5}-[0-9A-Za-z]+$/', $term)) {
+            return $query->where('order_number', 'like', "{$term}%");
+        }
+
+        $digits = preg_replace('/\D/', '', $term);
+        $customers = Customer::select('id')->where(fn ($c) => $c->where('name', 'like', "%{$term}%")
+            ->when(strlen($digits) >= 3, fn ($c) => $c->orWhere('contact', 'like', "{$digits}%")));
+        $staffIds = Staff::where('name', 'like', "%{$term}%")->pluck('id');
+
+        // Kept as simple as the term allows: the customer subquery on its own is joined
+        // efficiently; every extra OR makes the database check orders one by one
+        return $query->where(function ($q) use ($term, $digits, $customers, $staffIds) {
+            $q->whereIn('customer_id', $customers);
+            if ($staffIds->isNotEmpty()) {
+                $q->orWhereIn('staff_id', $staffIds);
+            }
+            // Order numbers always contain digits, so a plain name never scans them
+            if ($digits !== '') {
+                $q->orWhere('order_number', 'like', "%{$term}%");
+            }
+        });
+    }
+
+    /**
+     * Type-ahead for the order search in the top bar (and barcode scanners):
+     * an exact order number comes back as "exact" so the page can open it at once.
+     */
+    public function lookup(Request $request)
+    {
+        $term = trim((string) $request->input('q'));
+        if (mb_strlen($term) < 2) {
+            return response()->json(['exact' => null, 'orders' => []]);
+        }
+
+        $exact = Order::where('order_number', $term)->value('id');
+        $orders = $this->search(Order::query(), $term)
+            ->with('customer:id,name')
+            ->latest('id')
+            ->limit(6)
+            ->get()
+            ->map(fn (Order $order) => [
+                'id' => $order->id,
+                'number' => $order->order_number,
+                'customer' => $order->customer->name ?? 'Walk-in customer',
+                'status' => $order->status,
+                'status_label' => $order->status_label,
+                'total' => money($order->total, $order->currency),
+                'url' => route('orders.details', $order),
+            ]);
+
+        return response()->json([
+            'exact' => $exact ? route('orders.details', $exact) : null,
+            'orders' => $orders,
+        ]);
     }
 
     /**

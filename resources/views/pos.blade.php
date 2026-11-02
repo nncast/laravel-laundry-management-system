@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
-<link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
+<link rel="stylesheet" href="{{ asset_v('css/theme.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/app.css') }}">
 <style>
 /* ===== Point of sale: catalog | order | customer + payment. Touch first: 48px+ targets ===== */
 :root { --pos-top: 64px; --pos-bar: 76px; }
@@ -92,6 +92,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
 .customer-results .avatar, .customer-card .avatar { width: 36px; height: 36px; font-size: 14px; }
 .customer-results .muted { font-size: var(--fs-sm); }
 .customer-results .no-hit { padding: var(--s-3); color: var(--text-muted); }
+.customer-results .skeleton-row { display: flex; align-items: center; gap: var(--s-3); min-height: 52px; padding: 0 var(--s-3); }
 .recent { margin-top: var(--s-3); }
 .recent .chip { min-height: 40px; padding: 0 var(--s-3); }
 .customer-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border: 1px solid var(--accent-soft-strong); border-radius: var(--radius); background: var(--accent-soft); }
@@ -215,13 +216,14 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     // For the script below (@json takes a plain variable: it splits its argument on commas)
     $posServices = $services->map(fn ($s) => [$s->id, ['id' => $s->id, 'name' => $s->name, 'price' => (float) $s->price]])->values();
     $posAddons = $addonChoices->map(fn ($a) => [$a['id'], $a])->values();
-    $posCustomers = $customers->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'contact' => $c->contact])->values();
+    $customerJson = fn ($c) => $c ? ['id' => $c->id, 'name' => $c->name, 'contact' => $c->contact] : null;
+    $posRecent = $recentCustomers->map($customerJson)->values();
 
     $initial = [
         'orderId' => $editing ? $order->id : null,
         'items' => $editing ? $order->items->map(fn ($item) => ['id' => $item->service_id, 'name' => $item->service->name ?? 'Deleted service', 'price' => (float) $item->price, 'qty' => $item->qty])->values() : [],
         'addons' => $editing ? $order->addons->pluck('id')->values() : [],
-        'customerId' => $editing ? $order->customer_id : ($preselectedCustomerId ?? null),
+        'customer' => $customerJson($editing ? $order->customer : ($preselectedCustomer ?? null)),
         'date' => $editing ? $order->order_date?->toDateString() : null,
         'discountType' => $editing && $order->discount_percent !== null ? 'percent' : 'amount',
         'discountValue' => $editing ? (float) ($order->discount_percent ?? $order->discount) : 0,
@@ -488,15 +490,14 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
 
 <div id="toastRegion" class="toast-region" aria-live="polite"></div>
 
-<script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}"></script>
+<script src="{{ asset_v('js/app.js') }}"></script>
 <script>
 (function () {
     'use strict';
     const $ = id => document.getElementById(id);
     const services = new Map(@json($posServices));
     const addonChoices = new Map(@json($posAddons));
-    const customers = @json($posCustomers);
-    const recentIds = @json($recentCustomerIds);
+    const recent = @json($posRecent);
     const initial = @json($initial);
     const editing = initial.orderId !== null;
     const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
@@ -682,17 +683,45 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     const results = $('customerResults');
     let highlighted = -1;
 
-    function matches(term) {
-        const q = term.trim().toLowerCase();
-        if (!q) return [];
-        const digits = q.replace(/\D/g, '');
-        return customers.filter(c => c.name.toLowerCase().includes(q) || (digits.length >= 3 && (c.contact || '').includes(digits))).slice(0, 8);
+    // Type-ahead against the server: a short pause after typing, the older request
+    // cancelled, and answers kept for the session so going back is instant
+    const found = new Map();
+    let pending = null;
+    let timer = null;
+    async function lookup(term) {
+        if (found.has(term)) return found.get(term);
+        pending?.abort();
+        pending = new AbortController();
+        const response = await fetch(appUrl('customers/search?q=' + encodeURIComponent(term)), { headers: { 'Accept': 'application/json' }, signal: pending.signal });
+        if (!response.ok) throw new Error(await responseErrorMessage(response));
+        const list = (await response.json()).customers;
+        found.set(term, list);
+        return list;
     }
-    function showResults() {
-        const found = matches(search.value);
+    function showLoading() {
+        results.replaceChildren(...[0, 1, 2].map(() => {
+            const li = document.createElement('li');
+            li.className = 'skeleton-row';
+            li.innerHTML = '<span class="skeleton" style="width:36px;height:36px;border-radius:50%"></span><span class="skeleton" style="flex:1;height:14px"></span>';
+            return li;
+        }));
+        results.hidden = false;
+    }
+    function onType() {
+        clearTimeout(timer);
+        const term = search.value.trim();
+        if (!term) { results.hidden = true; search.setAttribute('aria-expanded', 'false'); return; }
+        if (!found.has(term)) showLoading();
+        timer = setTimeout(async () => {
+            try { showResults(await lookup(term)); }
+            catch (e) { if (e.name !== 'AbortError') showToast(e.message, 'error'); }
+        }, found.has(term) ? 0 : 160);
+    }
+    function showResults(list) {
+        if (search.value.trim() === '') return;
+        const found = list;
         highlighted = found.length ? 0 : -1;
         results.replaceChildren();
-        if (!search.value.trim()) { results.hidden = true; search.setAttribute('aria-expanded', 'false'); return; }
         if (!found.length) {
             const none = document.createElement('li');
             none.className = 'no-hit';
@@ -715,7 +744,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         search.setAttribute('aria-expanded', 'true');
         search.setAttribute('aria-activedescendant', found.length ? 'cust-' + found[0].id : '');
     }
-    search.addEventListener('input', showResults);
+    search.addEventListener('input', onType);
     search.addEventListener('keydown', e => {
         const options = [...results.querySelectorAll('[role="option"]')];
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -737,7 +766,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     function renderRecent() {
         const box = $('recentCustomers');
         box.replaceChildren();
-        recentIds.map(id => customers.find(c => c.id === id)).filter(Boolean).forEach(c => {
+        recent.forEach(c => {
             const chip = document.createElement('button');
             chip.type = 'button';
             chip.className = 'chip';
@@ -757,7 +786,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         $('customerInitial').textContent = customer.name.charAt(0).toUpperCase();
         $('customerName').textContent = customer.name;
         $('customerContact').textContent = customer.contact || 'No phone';
-        $('customerStats').textContent = '';
+        $('customerStats').innerHTML = '<span class="skeleton" style="display:inline-block;width:120px;height:12px"></span>';
         $('repeatLast').hidden = true;
         results.hidden = true;
         search.value = '';
@@ -813,7 +842,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         try {
             const data = await sendJson(appUrl('customers'), { name: form.name.value.trim(), contact: form.contact.value.trim(), address: form.address.value.trim() });
             const customer = { id: data.customer.id, name: data.customer.name, contact: data.customer.contact };
-            customers.push(customer);
+            found.clear();
             closeDialog('newCustomerDialog');
             form.reset();
             pickCustomer(customer);
@@ -984,7 +1013,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         if (editing) return;
         try {
             if (!state.items.length && !state.addons.size) { localStorage.removeItem(DRAFT); return; }
-            localStorage.setItem(DRAFT, JSON.stringify({ items: state.items, addons: [...state.addons], customerId: state.customer?.id ?? null, notes: $('notes').value, at: Date.now() }));
+            localStorage.setItem(DRAFT, JSON.stringify({ items: state.items, addons: [...state.addons], customer: state.customer, notes: $('notes').value, at: Date.now() }));
         } catch (e) { /* storage blocked */ }
     }
     function clearDraft() { try { localStorage.removeItem(DRAFT); } catch (e) { /* storage blocked */ } }
@@ -993,22 +1022,21 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     // ---------------- Start ----------------
     $('orderDate').value = initial.date || today;
     renderRecent();
-    let customerId = initial.customerId;
-    if (!editing && !customerId) {
+    let preset = initial.customer;
+    if (!editing && !preset) {
         try {
             const draft = JSON.parse(localStorage.getItem(DRAFT) || 'null');
             if (draft && Date.now() - draft.at < 12 * 3600 * 1000) {
                 state.items = draft.items.filter(i => services.has(i.id)).map(i => ({ ...services.get(i.id), qty: i.qty }));
                 draft.addons.filter(id => addonChoices.has(id)).forEach(id => state.addons.add(id));
                 $('notes').value = draft.notes || '';
-                customerId = draft.customerId;
+                preset = draft.customer || null;
                 if (state.items.length) {
                     showToast('Picked up your unsaved order.', 'info', 8000, { label: 'Start over', onClick: () => { state.items = []; state.addons.clear(); $('notes').value = ''; $('changeCustomer').click(); render(); } });
                 }
             }
         } catch (e) { /* storage blocked */ }
     }
-    const preset = customers.find(c => c.id === customerId);
     if (preset) pickCustomer(preset);
     render();
 })();

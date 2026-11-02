@@ -31,11 +31,7 @@ class OrderReportController extends Controller
     {
         $filters = $this->filters($request);
 
-        $orders = $this->query($filters)
-            ->with(['customer:id,name', 'items.service:id,name'])
-            ->orderByDesc('order_date')
-            ->orderByDesc('id')
-            ->get();
+        $orders = $this->orderExportRows($this->query($filters));
 
         $summary = $this->summary($filters);
 
@@ -47,15 +43,14 @@ class OrderReportController extends Controller
             foreach ($orders as $order) {
                 yield [
                     $order->order_number,
-                    $order->order_date?->format('Y-m-d'),
-                    $order->customer->name ?? 'Walk-in Customer',
-                    $order->items->map(fn ($item) => ($item->service->name ?? 'Deleted service')
-                        . ($item->qty > 1 ? " (x{$item->qty})" : ''))->implode(', '),
+                    substr((string) $order->order_date, 0, 10),
+                    $order->customer_name ?? 'Walk-in Customer',
+                    $order->items->map(fn ($item) => $item->name . ($item->qty > 1 ? " (x{$item->qty})" : ''))->implode(', '),
                     $order->currency,
                     number_format((float) $order->total, 2, '.', ''),
                     number_format((float) $order->paid_amount, 2, '.', ''),
-                    number_format($order->balance, 2, '.', ''),
-                    $order->status_label,
+                    number_format((float) $order->total - (float) $order->paid_amount, 2, '.', ''),
+                    Order::labelFor($order->status),
                 ];
             }
 

@@ -82,12 +82,54 @@
     window.flashToast = (message, type = 'success') => {
         try { sessionStorage.setItem('flashToast', JSON.stringify({ message, type })); } catch (e) { /* storage blocked */ }
     };
+    // Messages the server sent with a page (#flashMessages in the layout)
+    function showFlash(doc = document) {
+        const el = doc.getElementById('flashMessages');
+        if (!el) return;
+        let flash = {};
+        try { flash = JSON.parse(el.textContent || '{}'); } catch (e) { return; }
+        if (flash.success) window.showToast(flash.success, 'success');
+        if (flash.warning) window.showToast(flash.warning, 'warning');
+        if (flash.error) window.showToast(flash.error, 'error', 8000);
+        if (flash.errors) window.showToast(flash.errors, 'error', 9000);
+    }
     document.addEventListener('DOMContentLoaded', () => {
+        showFlash();
         try {
             const flash = JSON.parse(sessionStorage.getItem('flashToast') || 'null');
             sessionStorage.removeItem('flashToast');
             if (flash) window.showToast(flash.message, flash.type);
         } catch (e) { /* storage blocked */ }
+    });
+
+    // Swap the parts of the page marked data-refresh (matched by id) for fresh copies
+    // from the server instead of reloading it: scroll position, typed search text and
+    // anything else on the page stay as they were. Pages re-bind on "regions:refreshed".
+    window.refreshRegions = async function () {
+        const response = await fetch(window.location.href, { headers: { 'Accept': 'text/html' } });
+        if (!response.ok) throw new Error('Could not refresh the page.');
+        const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+        document.querySelectorAll('[data-refresh][id]').forEach(el => {
+            const fresh = doc.getElementById(el.id);
+            if (fresh) el.replaceWith(document.importNode(fresh, true));
+        });
+        showFlash(doc);
+        document.dispatchEvent(new CustomEvent('regions:refreshed'));
+    };
+
+    // <div data-lazy="url"> (skeletons inside) is swapped for the HTML at url once the
+    // page is up, so slow parts such as a year's report totals never hold the page back
+    document.querySelectorAll('[data-lazy]').forEach(async el => {
+        try {
+            const response = await fetch(el.dataset.lazy, { headers: { 'Accept': 'text/html' } });
+            if (!response.ok) throw new Error(String(response.status));
+            const template = document.createElement('template');
+            template.innerHTML = await response.text();
+            el.replaceWith(template.content);
+        } catch (e) {
+            el.removeAttribute('aria-busy');
+            el.innerHTML = '<p class="alert alert-danger">This part could not be loaded. Refresh the page to try again.</p>';
+        }
     });
 
     // ---------------- Requests ----------------
@@ -250,13 +292,29 @@
             return;
         }
 
-        if (response.type === 'opaqueredirect') { window.location.reload(); return; }
+        // Done: close the dialog and refresh just the list (or reload a page without data-refresh parts).
+        // A redirect means the server put its own message in the session; it arrives with the refresh.
+        const finish = async message => {
+            const dialog = form.closest('dialog');
+            if (dialog) window.closeDialog(dialog);
+            if (document.querySelector('[data-refresh]')) {
+                try {
+                    await window.refreshRegions();
+                    if (message) window.showToast(message, 'success');
+                    done();
+                    return;
+                } catch (err) { /* fall back to a full reload */ }
+            }
+            if (message) window.flashToast(message);
+            window.location.reload();
+        };
+
+        if (response.type === 'opaqueredirect') { await finish(null); return; }
         let data = null;
         try { data = await response.clone().json(); } catch (err) { /* not JSON */ }
 
         if (response.ok && data?.success !== false) {
-            window.flashToast(data?.message || form.dataset.success || 'Saved.');
-            window.location.reload();
+            await finish(data?.message || form.dataset.success || 'Saved.');
             return;
         }
         done();
@@ -347,4 +405,94 @@
         const search = document.querySelector('[data-search-shortcut]');
         if (search) { e.preventDefault(); search.focus(); search.select?.(); }
     });
+
+    // ---------------- Order search in the top bar ----------------
+    // Suggestions while typing; Enter on an exact order number (typed, or a ticket's
+    // barcode read by a scanner, which types it and presses Enter) opens the order.
+    const lookupInput = document.querySelector('.global-search input[role="combobox"]');
+    const suggest = document.getElementById('searchSuggest');
+    if (lookupInput && suggest) {
+        const cache = new Map();
+        const inflight = new Map();
+        let timer = null;
+        let active = -1;
+        const options = () => Array.from(suggest.querySelectorAll('[role="option"]'));
+        const close = () => { suggest.hidden = true; lookupInput.setAttribute('aria-expanded', 'false'); active = -1; };
+        // One request per term, shared by the suggestions and Enter (answers to old terms are ignored)
+        const lookup = q => {
+            if (cache.has(q)) return Promise.resolve(cache.get(q));
+            if (!inflight.has(q)) {
+                inflight.set(q, fetch(window.appUrl('orders/lookup?q=' + encodeURIComponent(q)), { headers: { 'Accept': 'application/json' } })
+                    .then(response => response.json())
+                    .then(data => { cache.set(q, data); return data; })
+                    .finally(() => inflight.delete(q)));
+            }
+            return inflight.get(q);
+        };
+        const render = (data, q) => {
+            suggest.replaceChildren();
+            data.orders.forEach(order => {
+                const a = document.createElement('a');
+                a.href = order.url;
+                a.className = 'suggest-item';
+                a.setAttribute('role', 'option');
+                a.id = 'suggest-' + order.id;
+                a.innerHTML = '<span class="suggest-main"><strong></strong><span class="muted"></span></span><span class="badge"></span><span class="money"></span>';
+                a.querySelector('strong').textContent = order.number;
+                a.querySelector('.muted').textContent = order.customer;
+                a.querySelector('.badge').textContent = order.status_label;
+                a.querySelector('.badge').classList.add('badge-' + order.status);
+                a.querySelector('.money').textContent = order.total;
+                suggest.append(a);
+            });
+            const all = document.createElement('a');
+            all.href = window.appUrl('orders?search=' + encodeURIComponent(q));
+            all.className = 'suggest-item suggest-all';
+            all.setAttribute('role', 'option');
+            all.id = 'suggest-all';
+            all.textContent = data.orders.length ? 'See all results' : 'No orders found. Search all orders';
+            suggest.append(all);
+            suggest.hidden = false;
+            lookupInput.setAttribute('aria-expanded', 'true');
+        };
+        lookupInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            const q = lookupInput.value.trim();
+            if (q.length < 2) { close(); return; }
+            if (!cache.has(q)) {
+                suggest.innerHTML = '<div class="suggest-loading"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>';
+                suggest.hidden = false;
+            }
+            timer = setTimeout(async () => {
+                try { const data = await lookup(q); if (lookupInput.value.trim() === q) render(data, q); }
+                catch (err) { close(); }
+            }, cache.has(q) ? 0 : 150);
+        });
+        lookupInput.addEventListener('keydown', e => {
+            const list = options();
+            if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && list.length) {
+                e.preventDefault();
+                active = (active + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length;
+                list.forEach((o, i) => o.setAttribute('aria-selected', String(i === active)));
+                lookupInput.setAttribute('aria-activedescendant', list[active].id);
+            } else if (e.key === 'Enter' && active >= 0 && list[active]) {
+                e.preventDefault();
+                window.location.href = list[active].href;
+            } else if (e.key === 'Escape') {
+                close();
+            }
+        });
+        lookupInput.form.addEventListener('submit', async e => {
+            const q = lookupInput.value.trim();
+            if (!q) return;
+            e.preventDefault();
+            clearTimeout(timer);
+            try {
+                const data = await lookup(q);
+                if (data.exact) { window.location.href = data.exact; return; }
+            } catch (err) { /* fall back to the full search */ }
+            HTMLFormElement.prototype.submit.call(lookupInput.form);
+        });
+        document.addEventListener('click', e => { if (!lookupInput.form.contains(e.target)) close(); });
+    }
 })();

@@ -18,9 +18,9 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-{{-- Version = file time, so browsers re-download only after a change --}}
-<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
-<link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
+{{-- asset_v(): the minified copy when it is up to date, versioned by file time (cached for a year) --}}
+<link rel="stylesheet" href="{{ asset_v('css/theme.css') }}">
+<link rel="stylesheet" href="{{ asset_v('css/app.css') }}">
 @stack('styles')
 
 <script>
@@ -69,6 +69,14 @@
         'reports/*' => ['Reports', [['Daily summary', 'reports.daily', 'reports/daily*'], ['Sales', 'reports.sales', 'reports/sales*'], ['Orders', 'reports.orders', 'reports/order*']]],
     ];
     $section = collect($sections)->first(fn ($s, $pattern) => request()->is($pattern));
+
+    // Messages from the last action (see #flashMessages)
+    $flash = [
+        'success' => session('success'),
+        'error' => session('error'),
+        'warning' => session('warning'),
+        'errors' => $errors->any() && !old('_dialog') ? implode("\n", $errors->all()) : null,
+    ];
 @endphp
 
 <aside class="sidebar" id="sidebar" aria-label="Main menu">
@@ -117,10 +125,12 @@
         <a href="{{ route('dashboard') }}" class="topbar-brand" aria-label="Dashboard"><img src="{{ asset('images/brand/mark.svg') }}" alt="" width="32" height="32"></a>
         <form class="global-search search" action="{{ route('orders.index') }}" method="GET" role="search">
             <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-            <input class="input" type="search" name="search" placeholder="Search orders"
+            <input class="input" type="search" name="search" placeholder="Search orders or scan a ticket"
                    aria-label="Search orders by number or customer" autocomplete="off" data-search-shortcut
+                   role="combobox" aria-expanded="false" aria-controls="searchSuggest" aria-autocomplete="list"
                    value="{{ request()->routeIs('orders.index') ? request('search') : '' }}">
             <kbd aria-hidden="true">/</kbd>
+            <div class="search-suggest" id="searchSuggest" role="listbox" aria-label="Matching orders" hidden></div>
         </form>
         <div class="topbar-actions">
             <a href="{{ route('pos.index') }}" class="btn btn-primary topbar-new-order"><i class="fas fa-plus" aria-hidden="true"></i> New order</a>
@@ -131,7 +141,7 @@
         @hasSection('page-header')
             @yield('page-header')
         @else
-        <header class="page-header">
+        <header class="page-header" id="pageHeader" data-refresh>
             <div class="page-heading">
                 <h1 class="page-title">@yield('page-title', 'Dashboard')</h1>
                 @hasSection('page-subtitle')<p class="page-subtitle">@yield('page-subtitle')</p>@endif
@@ -177,23 +187,19 @@
     </form>
 </dialog>
 
-<script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    @if(session('success'))
-        showToast(@json(session('success')), 'success');
-    @endif
-    @if(session('error'))
-        showToast(@json(session('error')), 'error', 8000);
-    @endif
-    @if(session('warning'))
-        showToast(@json(session('warning')), 'warning');
-    @endif
-    @if($errors->any() && !old('_dialog'))
-        showToast(@json(implode("\n", $errors->all())), 'error', 9000);
-    @endif
-});
-</script>
+{{-- Messages from the last action, shown as toasts by app.js (also when only part of the page is refreshed) --}}
+<script type="application/json" id="flashMessages">@json($flash)</script>
+<script src="{{ asset_v('js/app.js') }}"></script>
 @stack('scripts')
+{{-- Chromium browsers render a page in the background as soon as a link is hovered or touched,
+     so opening it feels instant. Downloads and print views are left out. --}}
+<script type="speculationrules">
+{"prerender": [{"where": {"and": [
+    {"href_matches": "/*"},
+    {"not": {"href_matches": "/*\\?*print=*"}},
+    {"not": {"href_matches": "*/download*"}},
+    {"not": {"selector_matches": "[data-no-prerender], [target=_blank]"}}
+]}, "eagerness": "moderate"}]}
+</script>
 </body>
 </html>

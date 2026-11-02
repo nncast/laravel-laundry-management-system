@@ -24,17 +24,17 @@
         ['Unpaid balance', 'fa-file-invoice', 'tone-amber', $whole($unpaidBalance), $unpaidCount . ' ' . \Illuminate\Support\Str::plural('order', $unpaidCount) . ' still owe', route('orders.index', ['payment' => 'unpaid']), false],
     ];
 
-    // Action center: [key, tab label, icon, items, "view all" link]
+    // Action center: [key, tab label, icon, first rows, "view all" link, how many in all]
     $groups = [
-        ['overdue', 'Overdue', 'fa-hourglass-half', $stuckOrders, route('orders.index', ['status' => 'overdue'])],
-        ['ready', 'Ready for pickup', 'fa-bell', $readyOrders, route('orders.index', ['status' => 'ready'])],
-        ['unpaid', 'Picked up, unpaid', 'fa-file-invoice', $unpaidOrders, route('orders.index', ['status' => 'completed', 'payment' => 'unpaid'])],
+        ['overdue', 'Overdue', 'fa-hourglass-half', $stuckOrders, route('orders.index', ['status' => 'overdue']), $stuckCount],
+        ['ready', 'Ready for pickup', 'fa-bell', $readyOrders, route('orders.index', ['status' => 'ready']), $readyListCount],
+        ['unpaid', 'Picked up, unpaid', 'fa-file-invoice', $unpaidOrders, route('orders.index', ['status' => 'completed', 'payment' => 'unpaid']), $unpaidPickupCount],
     ];
     if ($isManager) {
-        $groups[] = ['stock', 'Low stock', 'fa-box-open', $lowStock, route('products.index')];
+        $groups[] = ['stock', 'Low stock', 'fa-box-open', $lowStock, route('products.index'), $lowStock->count()];
     }
-    $attentionCount = collect($groups)->sum(fn ($g) => $g[3]->count());
-    $firstGroup = collect($groups)->first(fn ($g) => $g[3]->isNotEmpty())[0] ?? null;
+    $attentionCount = collect($groups)->sum(fn ($g) => $g[5]);
+    $firstGroup = collect($groups)->first(fn ($g) => $g[5] > 0)[0] ?? null;
 @endphp
 
 @section('page-header')
@@ -189,16 +189,16 @@
 
                 @if($attentionCount)
                 <div class="attention-tabs" role="tablist" aria-label="What needs attention">
-                    @foreach($groups as [$key, $label, $icon, $items])
+                    @foreach($groups as [$key, $label, $icon, $items, $allLink, $count])
                         <button type="button" class="chip" role="tab" id="tab-{{ $key }}" aria-controls="panel-{{ $key }}"
                                 aria-selected="{{ $key === $firstGroup ? 'true' : 'false' }}" tabindex="{{ $key === $firstGroup ? 0 : -1 }}"
-                                @disabled($items->isEmpty())>
-                            <i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }} <span class="chip-count" data-count>{{ $items->count() }}</span>
+                                @disabled($count === 0)>
+                            <i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }} <span class="chip-count" data-count>{{ $count }}</span>
                         </button>
                     @endforeach
                 </div>
 
-                @foreach($groups as [$key, $label, $icon, $items, $allLink])
+                @foreach($groups as [$key, $label, $icon, $items, $allLink, $count])
                 <div role="tabpanel" id="panel-{{ $key }}" aria-labelledby="tab-{{ $key }}" @if($key !== $firstGroup) hidden @endif>
                     <ul class="list">
                         @foreach($items->take(6) as $item)
@@ -233,8 +233,8 @@
                         </li>
                         @endforeach
                     </ul>
-                    @if($items->count() > 6)
-                        <a class="card-more" href="{{ $allLink }}">View all {{ $items->count() }} <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+                    @if($count > 6)
+                        <a class="card-more" href="{{ $allLink }}">View all {{ number_format($count) }} <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
                     @endif
                 </div>
                 @endforeach

@@ -20,7 +20,7 @@
     @if($search)<a href="{{ route('customers.index') }}" class="btn btn-ghost">Clear</a>@endif
 </form>
 
-<div class="card card-flush">
+<div class="card card-flush" id="listCard" data-refresh>
     @if($customers->isEmpty())
         <div class="empty">
             @if($search)
@@ -84,7 +84,7 @@
                                     data-action="{{ route('customers.update', $customer) }}" data-method="PUT"
                                     data-values="{{ json_encode($customer->only('name', 'contact', 'address')) }}"><i class="fas fa-pen" aria-hidden="true"></i></button>
                             @if($isManager)
-                            <form method="POST" action="{{ route('customers.destroy', $customer) }}" data-confirm="{{ $customer->name }} will be removed. Their past orders stay, marked as a walk-in customer." data-confirm-title="Delete this customer?">
+                            <form method="POST" action="{{ route('customers.destroy', $customer) }}" data-ajax data-confirm="{{ $customer->name }} will be removed. Their past orders stay, marked as a walk-in customer." data-confirm-title="Delete this customer?">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="icon-btn danger" aria-label="Delete {{ $customer->name }}" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>

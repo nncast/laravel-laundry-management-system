@@ -46,18 +46,27 @@ class CustomerController extends Controller
     }
 
     /**
-     * Lightweight lookup used by the POS (JSON).
+     * Type-ahead for the POS (JSON): names containing the term, phone numbers
+     * starting with its digits (indexed), alphabetical, a handful at a time.
      */
     public function search(Request $request)
     {
         $term = trim((string) $request->input('q', $request->input('search', '')));
+        $digits = preg_replace('/\D/', '', $term);
 
-        $customers = Customer::query()
-            ->when($term !== '', fn ($q) => $q->where('name', 'like', "%{$term}%")
-                ->orWhere('contact', 'like', "%{$term}%"))
-            ->orderBy('name')
-            ->limit(20)
-            ->get(['id', 'name', 'contact']);
+        // Names that start with the term first (alphabetical, from the name index), then
+        // names containing it and phone numbers starting with its digits (newest first)
+        $columns = ['id', 'name', 'contact'];
+        $customers = Customer::where('name', 'like', "{$term}%")->orderBy('name')->limit(8)->get($columns);
+        if ($term !== '' && $customers->count() < 8) {
+            $customers = $customers->concat(Customer::query()
+                ->where(fn ($q) => $q->where('name', 'like', "%{$term}%")
+                    ->when(strlen($digits) >= 3, fn ($q) => $q->orWhere('contact', 'like', "{$digits}%")))
+                ->whereNotIn('id', $customers->pluck('id'))
+                ->orderByDesc('id')
+                ->limit(8 - $customers->count())
+                ->get($columns));
+        }
 
         return response()->json(['success' => true, 'customers' => $customers]);
     }

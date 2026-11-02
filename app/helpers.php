@@ -67,3 +67,24 @@ if (!function_exists('fmt_datetime')) {
         return app(Format::class)->dateTime($date);
     }
 }
+
+if (!function_exists('asset_v')) {
+    /**
+     * URL of a file in public/ with its modification time as the version, so browsers
+     * can keep it for a year (see public/.htaccess). Serves the minified copy
+     * (app.min.css next to app.css, from `npm run minify`) while it was made from the
+     * current source: its first line carries the source's SHA-1.
+     */
+    function asset_v(string $path): string
+    {
+        $min = preg_replace('/\.(css|js)$/', '.min.$1', $path);
+        if ($min !== $path && is_file(public_path($min))) {
+            $header = (string) fgets(fopen(public_path($min), 'r'));
+            if (str_contains($header, 'sha1:' . sha1(str_replace("\r\n", "\n", file_get_contents(public_path($path)))))) {
+                $path = $min;
+            }
+        }
+
+        return asset($path) . '?v=' . @filemtime(public_path($path));
+    }
+}

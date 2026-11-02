@@ -23,7 +23,7 @@
     @if(request('search'))<a href="{{ route('staff.index') }}" class="btn btn-ghost">Clear</a>@endif
 </form>
 
-<div class="card card-flush">
+<div class="card card-flush" id="listCard" data-refresh>
     @if($users->isEmpty())
         <div class="empty">
             <span class="empty-icon" aria-hidden="true"><i class="fas fa-user-slash"></i></span>

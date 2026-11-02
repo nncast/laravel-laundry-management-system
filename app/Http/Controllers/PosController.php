@@ -25,7 +25,7 @@ class PosController extends Controller
         return view('pos', $this->formData() + [
             'last_order_number' => (Order::max('id') ?? 0) + 1,
             // "New order" on the customers page opens the POS with that customer picked
-            'preselectedCustomerId' => Customer::whereKey($request->integer('customer'))->value('id'),
+            'preselectedCustomer' => Customer::find($request->integer('customer'), ['id', 'name', 'contact']),
         ]);
     }
 
@@ -195,15 +195,18 @@ class PosController extends Controller
             $serviceGroups = $serviceGroups->except('Other')->put('Other', $serviceGroups->get('Other'));
         }
 
-        // Customers of the latest orders, newest first: one tap for regulars
-        $recentCustomerIds = Order::whereNotNull('customer_id')->latest('id')->take(40)
+        // Customers of the latest orders, newest first: one tap for regulars.
+        // Everyone else is found with the type-ahead (/customers/search), so the
+        // page stays small however many customers the shop has.
+        $recentIds = Order::whereNotNull('customer_id')->latest('id')->take(40)
             ->pluck('customer_id')->unique()->take(6)->values();
+        $recentCustomers = Customer::whereIn('id', $recentIds)->get(['id', 'name', 'contact'])
+            ->sortBy(fn ($c) => $recentIds->search($c->id))->values();
 
         return [
             'services' => $services,
             'serviceGroups' => $serviceGroups,
-            'customers' => Customer::orderBy('name')->get(['id', 'name', 'contact']),
-            'recentCustomerIds' => $recentCustomerIds,
+            'recentCustomers' => $recentCustomers,
             'addons' => Addon::where('is_active', 1)->orderBy('name')->get(['id', 'name', 'price']),
         ];
     }
