@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -83,6 +84,17 @@ class BackupController extends Controller
 
             return back()->with('error', 'Restore failed: ' . $e->getMessage()
                 . ' A safety backup was saved as ' . basename($safety) . '.');
+        }
+
+        // A backup made by an older version brings back older tables (and its own
+        // migrations list), so bring them up to the current schema right away.
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+        } catch (\Throwable $e) {
+            Log::error('Migrating a restored backup failed: ' . $e->getMessage(), ['exception' => $e]);
+
+            return back()->with('error', 'The backup was restored, but updating its tables failed: ' . $e->getMessage()
+                . ' Run "php artisan migrate" before using the app.');
         }
 
         Log::warning('Database restored from backup', ['staff_id' => Session::get('staff.id')]);
