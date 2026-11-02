@@ -24,6 +24,9 @@ class BackupController extends Controller
     /** How many server-side copies to keep in storage/app/backups. */
     private const KEEP_BACKUPS = 10;
 
+    /** An automatic backup is made when the newest one is at least this old. */
+    private const AUTO_BACKUP_HOURS = 24;
+
     private const HEADER = '-- Laundry Management System Database Backup';
 
     public function download()
@@ -93,6 +96,32 @@ class BackupController extends Controller
 
         return redirect()->route('login')
             ->with('error', 'Database restored successfully. Please log in again.');
+    }
+
+    /**
+     * Automatic daily backup that needs no cron job: the dashboard calls this after
+     * its response is sent, and the scheduler calls it hourly where one runs
+     * (routes/console.php). Makes a normal backup only when the newest copy on the
+     * server is a day old, so it also shows as "Last backup" and rotates with the rest.
+     */
+    public static function backupIfDue(): ?string
+    {
+        $last = self::lastBackupTime();
+        if ($last !== null && $last > time() - self::AUTO_BACKUP_HOURS * 3600) {
+            return null;
+        }
+
+        try {
+            $path = (new self())->createBackupFile();
+        } catch (\Throwable $e) {
+            Log::error('Automatic backup failed: ' . $e->getMessage(), ['exception' => $e]);
+
+            return null;
+        }
+
+        Log::info('Automatic backup created: ' . basename($path));
+
+        return $path;
     }
 
     /**

@@ -52,6 +52,10 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 - Daily, Sales and Order reports with date and status filters
 - CSV export (opens in Excel) and print
 
+**Automations**
+- **Needs attention** on the dashboard, checked on every visit: orders stuck in Pending (1+ day) or Processing (3+ days), completed orders that are not fully paid, and products at or below their minimum stock, each with links
+- **Daily automatic backup** without setting up cron: the first dashboard visit after a backup turns a day old makes a new one (kept with the last 10 in `storage/app/backups`); with a scheduler running (`php artisan schedule:work`) it also happens without anyone opening the app
+
 **Settings & Backup**
 - Business name, address, contact number and logo (favicon)
 - One-click database backup (`.sql` file with all data)
@@ -201,6 +205,7 @@ Go to **Settings → Master Setting → Data Backup**.
 </p>
 
 - **Download Backup File** saves a `.sql` file with every table and record. Keep it somewhere safe (USB drive or cloud storage).
+- **Automatic backups**: a copy is also saved to `storage/app/backups` once a day on its own (see Automations above), so the **Last backup** time stays recent even if nobody clicks the button. Copy them off the computer from time to time.
 - **Restore Backup** replaces all current data with a backup made by this system. A safety backup of the current data is saved to `storage/app/backups` first, and you are logged out afterwards.
 
 ## Upgrading

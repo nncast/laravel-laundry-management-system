@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    /** An order counts as stuck when it has been pending/processing this many days. */
+    private const STUCK_PENDING_DAYS = 1;
+    private const STUCK_PROCESSING_DAYS = 3;
+
     /**
      * Display the dashboard.
      */
@@ -67,7 +72,10 @@ class DashboardController extends Controller
             'year' => $this->chartData('year'),
         ];
 
-        return view('dashboard', array_merge($stats, compact(
+        // Automatic daily backup, made after this page has been sent so nobody waits for it
+        app()->terminating(fn () => BackupController::backupIfDue());
+
+        return view('dashboard', array_merge($stats, $this->attention(), compact(
             'recentOrders',
             'topServices',
             'chartData',
@@ -75,6 +83,42 @@ class DashboardController extends Controller
             'ordersTrend',
             'pendingTrend'
         )));
+    }
+
+    /**
+     * Things staff should act on, found automatically on every dashboard load:
+     * products at or below their minimum stock, orders stuck in pending or
+     * processing, and completed orders that still have a balance.
+     */
+    private function attention(): array
+    {
+        $today = Carbon::today();
+
+        $lowStock = Product::where('status', 'active')
+            ->whereColumn('available_stock', '<=', 'minimum_stock_level')
+            ->orderBy('available_stock')
+            ->get(['id', 'name', 'available_stock', 'minimum_stock_level']);
+
+        // order_date is stored as Y-m-d text, so string comparison works on SQLite and MySQL
+        $stuckOrders = Order::with('customer:id,name')
+            ->where(function ($q) use ($today) {
+                $q->where(fn ($q) => $q->where('status', 'pending')
+                        ->where('order_date', '<=', $today->copy()->subDays(self::STUCK_PENDING_DAYS)->toDateString()))
+                  ->orWhere(fn ($q) => $q->where('status', 'processing')
+                        ->where('order_date', '<=', $today->copy()->subDays(self::STUCK_PROCESSING_DAYS)->toDateString()));
+            })
+            ->orderBy('order_date')
+            ->get();
+
+        $unpaidOrders = Order::with('customer:id,name')
+            ->where('status', 'completed')
+            ->whereColumn('paid_amount', '<', 'total')
+            ->orderBy('order_date')
+            ->get();
+
+        $stuckRule = 'Pending ' . self::STUCK_PENDING_DAYS . '+ day or processing ' . self::STUCK_PROCESSING_DAYS . '+ days';
+
+        return compact('lowStock', 'stuckOrders', 'unpaidOrders', 'stuckRule');
     }
 
     /**
