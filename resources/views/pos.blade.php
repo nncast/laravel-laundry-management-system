@@ -959,6 +959,9 @@ button.qty-btn:hover { background: var(--accent-soft); border-color: #c4dcfb; }
 .order-summary { margin-top: 14px; padding: 14px; border-radius: 16px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; }
 .order-summary > div { margin-bottom: 8px !important; }
 #discountInput { height: 34px; border-radius: 10px !important; text-align: right; }
+.discount-field { display: inline-flex; align-items: center; gap: 6px; }
+#discountType { height: 34px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.order-summary > .discount-hint { margin: -4px 0 8px !important; text-align: right; font-size: 12px; color: var(--text-muted); }
 .gross-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 !important; padding-top: 12px; border-top: 1px dashed var(--border-strong); font-size: 15px; }
 .gross-row #grossTotal { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
 .order-section label[for="notes"] { display: block; margin: 14px 0 6px; font-size: 13px !important; font-weight: 700; color: var(--text-secondary); }
@@ -1188,8 +1191,16 @@ button.qty-btn:hover { background: var(--accent-soft); border-color: #c4dcfb; }
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <span>Discount:</span>
-                <input type="number" id="discountInput" value="{{ isset($order) ? (float) $order->discount : 0 }}" min="0" step="0.01" style="width:80px; padding:4px 6px; border:1px solid var(--border-strong); border-radius:4px; font-size:12px;">
+                <span class="discount-field">
+                    <input type="number" id="discountInput" value="{{ isset($order) ? (float) ($order->discount_percent ?? $order->discount) : 0 }}" min="0" step="0.01" aria-label="Discount" style="width:80px; padding:4px 6px; border:1px solid var(--border-strong); border-radius:4px; font-size:12px;">
+                    {{-- ₱ = a fixed amount, % = a percentage of the services and add-ons --}}
+                    <select id="discountType" aria-label="Discount type">
+                        <option value="amount">₱</option>
+                        <option value="percent" @selected(isset($order) && $order->discount_percent !== null)>%</option>
+                    </select>
+                </span>
             </div>
+            <div id="discountHint" class="discount-hint" hidden></div>
             <div class="gross-row">
                 <span><strong>Gross Total:</strong></span>
                 <strong id="grossTotal">0.00 PHP</strong>
@@ -2042,12 +2053,29 @@ function updateOrderTable() {
     updateTotals();
 }
 
+// Pesos off: the fixed amount, or the percentage of services + add-ons rounded to
+// centavos, never more than the order (the server works it out the same way).
+function discountAmount(gross) {
+    const value = Math.max(0, parseFloat(document.getElementById("discountInput").value) || 0);
+    const isPercent = document.getElementById("discountType").value === "percent";
+    const amount = isPercent ? Math.round(gross * Math.min(value, 100)) / 100 : value;
+    return Math.min(amount, gross);
+}
+
 function calculateTotal() {
     let subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
     let addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-    let discount = parseFloat(document.getElementById("discountInput").value) || 0;
-    let grossTotal = subtotal + addonTotal - discount;
-    return grossTotal < 0 ? 0 : grossTotal;
+    let gross = subtotal + addonTotal;
+    return gross - discountAmount(gross);
+}
+
+// A percentage can't go over 100, so the box never shows more than will be applied
+function onDiscountChange() {
+    const input = document.getElementById("discountInput");
+    if (document.getElementById("discountType").value === "percent" && parseFloat(input.value) > 100) {
+        input.value = 100;
+    }
+    updateTotals();
 }
 
 // Show how many of each service are already in the order, on its catalog card
@@ -2072,7 +2100,11 @@ function updateTotals() {
 
     const subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-    const discount = parseFloat(document.getElementById("discountInput").value) || 0;
+
+    // With %, show what it comes to in pesos
+    const discountHint = document.getElementById("discountHint");
+    discountHint.hidden = document.getElementById("discountType").value !== "percent";
+    discountHint.textContent = discountAmount(subtotal + addonTotal).toFixed(2) + " PHP off";
 
     document.getElementById("subTotal").textContent = subtotal.toFixed(2) + " PHP";
     document.getElementById("grossTotal").textContent = total.toFixed(2) + " PHP";
@@ -2120,6 +2152,8 @@ function cancelOrder() {
             updateOrderTable();
             document.getElementById('notes').value = '';
             document.getElementById('discountInput').value = 0;
+            document.getElementById('discountType').value = 'amount';
+            updateTotals();
             document.getElementById('selectCustomer').value = '';
             clearCustomerError();
         }
@@ -2161,6 +2195,7 @@ async function saveOrder() {
         order_date: document.getElementById('orderDateInput').value,
         notes: document.getElementById('notes').value,
         discount: discount,
+        discount_type: document.getElementById('discountType').value,
         items: orderItems.map(item => ({
             service_id: item.id,
             qty: item.qty
@@ -2230,6 +2265,8 @@ async function saveOrder() {
                 updateOrderTable();
                 document.getElementById('notes').value = '';
                 document.getElementById('discountInput').value = 0;
+                document.getElementById('discountType').value = 'amount';
+                updateTotals();
                 document.getElementById('selectCustomer').value = '';
                 clearCustomerError();
 
@@ -2336,8 +2373,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Discount input
-    document.getElementById("discountInput").addEventListener("input", updateTotals);
+    // Discount amount and type (₱ or %)
+    document.getElementById("discountInput").addEventListener("input", onDiscountChange);
+    document.getElementById("discountType").addEventListener("change", onDiscountChange);
 
     // Initialize if in edit mode - calculate initial totals
     if (orderData.isEditMode) {

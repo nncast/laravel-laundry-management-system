@@ -155,6 +155,57 @@ class LaundryAppTest extends TestCase
         $this->assertEquals(0, $order->total);
     }
 
+    public function test_percent_discount_is_worked_out_on_the_server(): void
+    {
+        // 2 x 100 + 20 addon = 220; 10% off = 22
+        $order = $this->createOrder(['discount' => 10, 'discount_type' => 'percent']);
+
+        $this->assertEquals(10, $order->discount_percent);
+        $this->assertEquals(22, $order->discount);
+        $this->assertEquals(198, $order->total);
+
+        $this->actingAsStaff($this->admin)->get("/orders/{$order->id}/details")
+            ->assertOk()->assertSee('Discount (10%):');
+    }
+
+    public function test_percent_discount_over_100_is_rejected(): void
+    {
+        $this->actingAsStaff($this->admin)->postJson('/pos/orders', [
+            'customer_id' => $this->customer->id,
+            'order_date' => now()->toDateString(),
+            'discount' => 150,
+            'discount_type' => 'percent',
+            'items' => [['service_id' => $this->wash->id, 'qty' => 1]],
+        ])->assertStatus(422)->assertJsonValidationErrors('discount');
+    }
+
+    public function test_editing_an_order_keeps_its_percent_discount(): void
+    {
+        $order = $this->createOrder(['discount' => 10, 'discount_type' => 'percent']);
+        $edit = fn (array $changes) => $this->actingAsStaff($this->admin)->putJson("/pos/{$order->id}", array_merge([
+            'customer_id' => $this->customer->id,
+            'order_date' => now()->toDateString(),
+            'items' => [['service_id' => $this->wash->id, 'qty' => 3]],
+            'addons' => [['addon_id' => $this->softener->id]],
+            'payment_amount' => 0,
+        ], $changes))->assertOk();
+
+        // 3 x 100 + 20 = 320, still 10% off
+        $edit(['discount' => 10, 'discount_type' => 'percent']);
+        $order->refresh();
+        $this->assertEquals(32, $order->discount);
+        $this->assertEquals(288, $order->total);
+        $this->actingAsStaff($this->admin)->get("/pos/{$order->id}/edit")
+            ->assertOk()->assertSee('<option value="percent" selected', false);
+
+        // Switching back to a peso amount drops the percentage
+        $edit(['discount' => 15, 'discount_type' => 'amount']);
+        $order->refresh();
+        $this->assertNull($order->discount_percent);
+        $this->assertEquals(15, $order->discount);
+        $this->assertEquals(305, $order->total);
+    }
+
     public function test_pos_ignores_prices_sent_by_the_browser(): void
     {
         $order = $this->createOrder([

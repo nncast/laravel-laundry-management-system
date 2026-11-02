@@ -35,6 +35,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 
 **Point of Sale & Orders**
 - POS screen to pick services, quantities and add-ons, apply a discount and take payment
+- Discounts as a peso amount or a percentage (the order keeps its percentage when edited)
 - Services grouped into sections by service type, with category filters, search and a count badge on items already in the order
 - Change is calculated for cash payments; only the amount owed is recorded
 - Partial payments, with the remaining balance tracked per order
@@ -210,19 +211,21 @@ Go to **Settings → Master Setting → Data Backup**.
 
 ## Upgrading
 
-**From v1.0.0, v1.0.1, v1.1.0 or v1.1.1:** pull or download v1.2.0 and replace the files. There are no database changes, so no migration is needed. Your business name, address and logo are kept.
+**From v1.0.0 to v1.2.0:** pull or download the latest version, replace the files, then run `php artisan migrate`. It adds one column so a discount can be a percentage; existing orders keep their peso discounts. Your business name, address and logo are kept.
+
+Restoring a backup made by an older version brings it up to the current database automatically.
 
 **From 0.9.0:**
 
 1. Download a backup from **Settings → Master Setting** first.
-2. Pull or download the latest version (v1.2.0), then run:
+2. Pull or download the latest version, then run:
    ```bash
    composer install
    php artisan migrate
    ```
 3. Add `APP_TIMEZONE=Asia/Manila` to your `.env`, and change `DB_HOST=localhost` to `DB_HOST=127.0.0.1` if you use MySQL.
 
-The migration adds the payment method column and report indexes, and recalculates the totals and paid amounts of existing orders that earlier versions saved incorrectly.
+The migration adds the payment method column, report indexes and the percentage-discount column, and recalculates the totals and paid amounts of existing orders that earlier versions saved incorrectly.
 
 ## Running tests
 

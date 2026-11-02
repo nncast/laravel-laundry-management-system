@@ -27,6 +27,7 @@ class Order extends Model
         'order_date',
         'subtotal',
         'discount',
+        'discount_percent',
         'total',
         'paid_amount',
         'status',
@@ -42,6 +43,7 @@ class Order extends Model
         'order_date' => 'date',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
+        'discount_percent' => 'decimal:2',
         'total' => 'decimal:2',
         'paid_amount' => 'decimal:2',
     ];
@@ -139,7 +141,8 @@ class Order extends Model
      * Recalculate subtotal/total from the items and add-ons stored in the database.
      *
      * subtotal = sum of item totals (services only)
-     * discount = at most subtotal + add-ons, so reports never count more discount than was given
+     * discount = discount_percent of subtotal + add-ons when a percentage is set, otherwise
+     *            the fixed amount; never more than subtotal + add-ons (reports sum it)
      * total    = subtotal + add-ons - discount
      */
     public function calculateTotals(): void
@@ -153,6 +156,9 @@ class Order extends Model
         $gross = round($itemsTotal + $addonsTotal, 2);
 
         $this->subtotal = round($itemsTotal, 2);
+        if ($this->discount_percent !== null) {
+            $this->discount = round($gross * (float) $this->discount_percent / 100, 2);
+        }
         $this->discount = min(max(0, round((float) $this->discount, 2)), $gross);
         $this->total = round($gross - (float) $this->discount, 2);
     }
@@ -220,6 +226,7 @@ class Order extends Model
      */
     public function applyDiscount(float $discount): void
     {
+        $this->discount_percent = null;   // a fixed amount replaces any percentage
         $this->discount = max(0, $discount);
         $this->updateTotals();
     }

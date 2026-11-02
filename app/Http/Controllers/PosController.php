@@ -14,6 +14,7 @@ use App\Models\{
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PosController extends Controller
@@ -175,7 +176,8 @@ class PosController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'order_date' => 'required|date',
             'notes' => 'nullable|string|max:500',
-            'discount' => 'nullable|numeric|min:0',
+            'discount' => ['nullable', 'numeric', 'min:0', Rule::when($request->input('discount_type') === 'percent', 'max:100')],
+            'discount_type' => 'nullable|in:amount,percent',
             'items' => 'required|array|min:1',
             'items.*.service_id' => 'required|integer|exists:services,id',
             'items.*.qty' => 'required|integer|min:1|max:10000',
@@ -187,6 +189,7 @@ class PosController extends Controller
             'customer_id.required' => 'Please select a customer.',
             'items.required' => 'Please add at least one service.',
             'items.min' => 'Please add at least one service.',
+            'discount.max' => 'A percentage discount can be at most 100%.',
         ]);
     }
 
@@ -201,11 +204,15 @@ class PosController extends Controller
         $isNew = !$order->exists;
 
         // ---- Header ----
+        // A percentage is kept as entered; calculateTotals() turns it into pesos below.
+        $discount = round((float) ($data['discount'] ?? 0), 2);
+        $percent = ($data['discount_type'] ?? 'amount') === 'percent' && $discount > 0;
         $order->fill([
             'customer_id' => $data['customer_id'],
             'order_date' => $data['order_date'],
             'notes' => $data['notes'] ?? null,
-            'discount' => round((float) ($data['discount'] ?? 0), 2),
+            'discount' => $percent ? 0 : $discount,
+            'discount_percent' => $percent ? $discount : null,
         ]);
         $order->save();
 
