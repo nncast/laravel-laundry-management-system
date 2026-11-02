@@ -1,713 +1,85 @@
 @extends('layouts.app')
 
-@section('title', 'Services - Service Type')
-@section('page-title', 'Service Type')
-@section('active-services-type', 'active')
+@section('title', 'Services')
+@section('page-title', 'Services')
+@section('page-subtitle', 'What customers can order at the point of sale')
+
+@section('page-actions')
+    <button type="button" class="btn btn-primary" data-form-dialog="serviceDialog" data-title="Add service" data-submit="Save service"
+            data-action="{{ route('services.store') }}" data-method="POST" @disabled($serviceTypes->isEmpty())><i class="fas fa-plus" aria-hidden="true"></i> Add service</button>
+@endsection
 
 @section('content')
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
-@endpush
+@if($serviceTypes->isEmpty())
+    <div class="alert alert-info" style="margin-bottom: var(--s-4)"><i class="fas fa-circle-info" aria-hidden="true"></i><span>Add a <a href="{{ route('services.type') }}">service type</a> first (e.g. Wash &amp; Fold); services are grouped by type at the point of sale.</span></div>
+@endif
 
-<style>
-/* --- Service Type Page Styles --- */
-.table-container {
-    background:#fff;
-    border-radius:10px;
-    box-shadow: none;
-    padding:25px;
-    overflow-x: auto;
-    border: 1px solid var(--border);
-}
-
-.header-actions {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:20px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.search-box input {
-    padding:10px 15px;
-    border-radius:6px;
-    border:1px solid var(--border-strong);
-    width: 250px;
-    min-width: 200px;
-    font-family: var(--font);
-}
-
-.add-btn {
-    background:var(--blue);
-    color:white;
-    border:none;
-    border-radius:6px;
-    padding:10px 18px;
-    font-size:14px;
-    cursor:pointer;
-    transition:.2s;
-    white-space: nowrap;
-}
-
-.add-btn i { margin-right:6px; }
-.add-btn:hover { opacity:.85; background:var(--accent-hover); }
-
-table { width:100%; border-collapse:collapse; }
-th, td { text-align:left; padding:12px 15px; font-size:14px; }
-th { background:var(--surface-muted); font-weight:600; color:var(--text); }
-td { border-bottom:1px solid var(--surface-sunken); color:var(--text); }
-
-tbody tr:hover {
-    background: var(--surface-muted);
-}
-
-.service-icon {
-    vertical-align: middle;
-    margin-right: 10px;
-    border-radius: 4px;
-    object-fit: cover;
-}
-
-.type-tag {
-    display:inline-block;
-    background:rgba(37, 99, 235,0.1);
-    color:var(--blue);
-    font-size:12px;
-    padding:2px 8px;
-    border-radius:12px;
-    margin-right:4px;
-    margin-bottom:2px;
-}
-
-.status-active {
-    background:var(--success-soft);
-    color:var(--success-text);
-    padding:5px 12px;
-    border-radius:20px;
-    font-size:13px;
-    font-weight:500;
-}
-
-.status-inactive {
-    background:var(--danger-soft);
-    color:var(--danger-text);
-    padding:5px 12px;
-    border-radius:20px;
-    font-size:13px;
-    font-weight:500;
-}
-
-.action-btns { display:flex; gap:10px; }
-.action-btns i {
-    font-size:14px;
-    padding:8px;
-    border-radius:50%;
-    cursor:pointer;
-}
-
-.edit { background: rgba(37, 99, 235,0.1); color:var(--blue); }
-.delete { background: rgba(255,0,0,0.1); color:red; }
-.edit:hover, .delete:hover { opacity:.8; }
-
-/* File upload preview */
-.file-upload-preview {
-    margin-top: 10px;
-    text-align: center;
-}
-
-.file-upload-preview img {
-    max-width: 100px;
-    max-height: 100px;
-    border-radius: 6px;
-    margin-bottom: 10px;
-}
-
-.file-upload-label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-/* Price formatting */
-.price-cell {
-    font-weight: 500;
-    color: var(--text);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .table-container {
-        padding: 15px;
-        margin: 0;
-        border-radius: 0;
-    }
-
-    .header-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .search-box input {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    .add-btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    table {
-        font-size: 13px;
-        min-width: 600px;
-    }
-
-    th, td {
-        padding: 10px;
-    }
-}
-</style>
-
-<div class="table-container">
-    <div class="header-actions">
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search Here">
-        </div>
-        <button class="add-btn" id="addServiceBtn"><i class="fas fa-plus"></i> Add New Service</button>
+<div class="toolbar">
+    <div class="search">
+        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+        <input class="input" type="search" placeholder="Search services" aria-label="Search services" data-table-filter="servicesTable" autocomplete="off">
     </div>
+</div>
 
-    <table id="servicesTable">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Service Name</th>
-                <th>Service Type</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($services as $index => $service)
-                <tr data-service-id="{{ $service->id }}">
-                    <td>{{ $index + 1 }}</td>
-                    <td>
-                        @if($service->icon_url)
-                            <img src="{{ $service->icon_url }}" width="32" height="32" class="service-icon">
-                        @endif
-                        {{ $service->name }}
+<div class="card card-flush">
+    @if($services->isEmpty())
+        <div class="empty">
+            <span class="empty-icon" aria-hidden="true"><i class="fas fa-tags"></i></span>
+            <p class="empty-title">No services yet</p>
+            <p>Add the services you offer, like Wash &amp; Dry or Press, with their prices.</p>
+        </div>
+    @else
+    <div class="table-wrap">
+        <table class="table table-stack" id="servicesTable">
+            <thead>
+                <tr><th>Service</th><th>Type</th><th class="num">Price</th><th>Status</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
+            </thead>
+            <tbody>
+                @foreach($services as $service)
+                <tr>
+                    <td class="cell-primary">
+                        <div class="cluster" style="flex-wrap:nowrap">
+                            @if($service->icon && !str_contains($service->icon, 'placeholder'))
+                                <img src="{{ $service->icon_url }}" alt="" width="40" height="40" loading="lazy" style="border-radius:10px; object-fit:cover; flex-shrink:0">
+                            @else
+                                <span class="bubble-tile tone-blue" style="width:40px;height:40px" aria-hidden="true"><i class="fas fa-shirt"></i></span>
+                            @endif
+                            <span class="cell-title">{{ $service->name }}</span>
+                        </div>
                     </td>
-                    <td><span class="type-tag">{{ $service->serviceType->name }}</span></td>
-                    <td class="price-cell">₱{{ number_format($service->price, 2) }}</td>
-                    <td>
-                        @if($service->is_active)
-                            <span class="status-active">Active</span>
-                        @else
-                            <span class="status-inactive">Inactive</span>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="action-btns">
-                            <i class="fas fa-pen edit" onclick="openEditModal({{ $service->id }})"></i>
-                            <i class="fas fa-trash delete" onclick="deleteService({{ $service->id }})"></i>
+                    <td data-label="Type"><span class="badge badge-info">{{ $service->serviceType->name ?? 'No type' }}</span></td>
+                    <td data-label="Price" class="num"><strong>₱{{ number_format($service->price, 2) }}</strong></td>
+                    <td data-label="Status"><span class="badge {{ $service->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $service->is_active ? 'Active' : 'Hidden from POS' }}</span></td>
+                    <td class="actions">
+                        <div class="cell-actions">
+                            <button type="button" class="icon-btn" aria-label="Edit {{ $service->name }}" title="Edit"
+                                    data-form-dialog="serviceDialog" data-title="Edit service" data-submit="Save changes"
+                                    data-action="{{ route('services.update', $service->id) }}" data-method="PUT"
+                                    data-values="{{ json_encode(['name' => $service->name, 'service_type_id' => $service->service_type_id, 'price' => $service->price, 'is_active' => $service->is_active ? 1 : 0]) }}"><i class="fas fa-pen" aria-hidden="true"></i></button>
+                            <form method="POST" action="{{ route('services.destroy', $service->id) }}" data-ajax data-success="Service deleted."
+                                  data-confirm="{{ $service->name }} will be removed from the catalog." data-confirm-title="Delete this service?">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="icon-btn danger" aria-label="Delete {{ $service->name }}" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                            </form>
                         </div>
                     </td>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="6" style="text-align:center;color:var(--text-faint);padding:20px;">
-                        <i class="fas fa-box-open" style="font-size:24px;margin-bottom:10px;display:block;"></i>
-                        No services found.
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
-
-    </table>
-</div>
-
-<!-- Add Modal -->
-<div id="addServiceModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add New Service</h3>
-            <button type="button" class="close-btn" id="closeAddModal">&times;</button>
-        </div>
-
-        <form id="addServiceForm" enctype="multipart/form-data">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="name">
-                        Service Name <span class="required-star">*</span>
-                    </label>
-                    <input type="text" name="name" id="name" placeholder="Enter service name" required>
-                    <div class="error-message" id="name_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="icon_file" class="file-upload-label">
-                        Service Icon
-                    </label>
-                    <input type="file" name="icon_file" id="icon_file" accept="image/*">
-                    <div class="helper-text">Optional. JPG, PNG or GIF. Max 2MB.</div>
-                    <div class="error-message" id="icon_file_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="service_type_id">
-                        Service Type <span class="required-star">*</span>
-                    </label>
-                    <select name="service_type_id" id="service_type_id" required>
-                        <option value="">-- Select Service Type --</option>
-                        @foreach($serviceTypes as $type)
-                            <option value="{{ $type->id }}">{{ $type->name }}</option>
-                        @endforeach
-                    </select>
-                    <div class="error-message" id="service_type_id_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="price">
-                        Price <span class="required-star">*</span>
-                    </label>
-                    <input type="number" name="price" id="price" placeholder="0.00" step="0.01" min="0" required>
-                    <div class="error-message" id="price_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="is_active">
-                        Status <span class="required-star">*</span>
-                    </label>
-                    <select name="is_active" id="is_active" required>
-                        <option value="">-- Select Status --</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                    <div class="error-message" id="is_active_error"></div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
-                <button type="submit" class="btn-primary">Save Service</button>
-            </div>
-        </form>
+                @endforeach
+                <tr class="no-match" hidden><td colspan="5" class="muted">No services match your search.</td></tr>
+            </tbody>
+        </table>
     </div>
+    @endif
 </div>
 
-<!-- Edit Modal -->
-<div id="editServiceModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Service</h3>
-            <button type="button" class="close-btn" id="closeEditModal">&times;</button>
-        </div>
-
-        <form id="editServiceForm" enctype="multipart/form-data">
-            @csrf
-            @method('PUT')
-            <input type="hidden" name="id" id="editServiceId">
-
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit_name">
-                        Service Name <span class="required-star">*</span>
-                    </label>
-                    <input type="text" name="name" id="edit_name" placeholder="Enter service name" required>
-                    <div class="error-message" id="edit_name_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_icon_file" class="file-upload-label">
-                        Service Icon
-                    </label>
-                    <input type="file" name="icon_file" id="edit_icon_file" accept="image/*">
-                    <div class="helper-text">Leave empty to keep current icon. JPG, PNG or GIF. Max 2MB.</div>
-                    <div id="currentIconPreview" class="file-upload-preview"></div>
-                    <div class="error-message" id="edit_icon_file_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_service_type_id">
-                        Service Type <span class="required-star">*</span>
-                    </label>
-                    <select name="service_type_id" id="edit_service_type_id" required>
-                        @foreach($serviceTypes as $type)
-                            <option value="{{ $type->id }}">{{ $type->name }}</option>
-                        @endforeach
-                    </select>
-                    <div class="error-message" id="edit_service_type_id_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_price">
-                        Price <span class="required-star">*</span>
-                    </label>
-                    <input type="number" name="price" id="edit_price" placeholder="0.00" step="0.01" min="0" required>
-                    <div class="error-message" id="edit_price_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_is_active">
-                        Status <span class="required-star">*</span>
-                    </label>
-                    <select name="is_active" id="edit_is_active" required>
-                        <option value="">-- Select Status --</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                    <div class="error-message" id="edit_is_active_error"></div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
-                <button type="submit" class="btn-primary">Update Service</button>
-            </div>
-        </form>
+<x-form-dialog id="serviceDialog" title="Add service" :action="route('services.store')" submit="Save service" success="Service saved." files>
+    <x-field name="name" label="Name" required maxlength="255" placeholder="e.g. Wash & Dry (8 kg)" />
+    <div class="form-row">
+        <x-field name="service_type_id" label="Type" required :options="['' => 'Choose a type'] + $serviceTypes->pluck('name', 'id')->all()" />
+        <x-field name="price" label="Price" type="number" prefix="₱" required min="0" step="0.01" inputmode="decimal" />
     </div>
-</div>
-
-<script>
-// Modal Utility Functions
-function openModal(modal) {
-    modal.classList.add('active');
-    document.body.classList.add('modal-open');
-}
-
-function closeModal(modal) {
-    modal.classList.remove('active');
-    document.body.classList.remove('modal-open');
-    clearAllErrors();
-}
-
-function clearAllErrors() {
-    document.querySelectorAll('.error-message').forEach(error => {
-        error.style.display = 'none';
-        error.textContent = '';
-    });
-    document.querySelectorAll('input, select').forEach(field => {
-        field.style.borderColor = '#ddd';
-    });
-}
-
-function showError(fieldId, message) {
-    const errorElement = document.getElementById(fieldId);
-    const inputElement = document.querySelector(`[name="${fieldId.replace('_error', '')}"]`);
-    if (errorElement && inputElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        inputElement.style.borderColor = '#dc3545';
-    }
-}
-
-// Services data from PHP
-const servicesData = @json($services->keyBy('id'));
-
-// DOM Elements
-const addModal = document.getElementById('addServiceModal');
-const editModal = document.getElementById('editServiceModal');
-const addBtn = document.getElementById('addServiceBtn');
-const cancelAddBtn = document.getElementById('cancelAdd');
-const cancelEditBtn = document.getElementById('cancelEdit');
-const closeAddModal = document.getElementById('closeAddModal');
-const closeEditModal = document.getElementById('closeEditModal');
-const searchInput = document.getElementById('searchInput');
-
-// Initialize event listeners when DOM loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Open Add Modal
-    addBtn.addEventListener('click', function() {
-        openModal(addModal);
-        document.getElementById('addServiceForm').reset();
-        document.getElementById('is_active').value = '1'; // Set default to Active
-
-        // Auto-focus on name field
-        setTimeout(() => {
-            document.getElementById('name')?.focus();
-        }, 300);
-    });
-
-    // Close Add Modal
-    cancelAddBtn.addEventListener('click', () => closeModal(addModal));
-    closeAddModal.addEventListener('click', () => closeModal(addModal));
-
-    // Close Edit Modal
-    cancelEditBtn.addEventListener('click', () => closeModal(editModal));
-    closeEditModal.addEventListener('click', () => closeModal(editModal));
-
-    // Close modals on outside click
-    window.addEventListener('click', e => {
-        if (e.target === addModal) closeModal(addModal);
-        if (e.target === editModal) closeModal(editModal);
-    });
-
-    // Close modals on escape key
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') {
-            closeModal(addModal);
-            closeModal(editModal);
-        }
-    });
-
-    // Search functionality
-    searchInput.addEventListener('input', function() {
-        const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll('#servicesTable tbody tr');
-        let hasVisibleRows = false;
-
-        rows.forEach(row => {
-            const rowText = row.innerText.toLowerCase();
-            if (rowText.includes(filter)) {
-                row.style.display = '';
-                hasVisibleRows = true;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    });
-
-    // Add Service Form Submission
-    document.getElementById('addServiceForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        // Basic validation
-        let valid = true;
-        clearAllErrors();
-
-        const name = document.getElementById('name').value.trim();
-        const serviceTypeId = document.getElementById('service_type_id').value;
-        const price = document.getElementById('price').value;
-        const status = document.getElementById('is_active').value;
-
-        if (!name) {
-            showError('name_error', 'Service name is required');
-            valid = false;
-        }
-
-        if (!serviceTypeId) {
-            showError('service_type_id_error', 'Service type is required');
-            valid = false;
-        }
-
-        if (!price || parseFloat(price) < 0) {
-            showError('price_error', 'Valid price is required');
-            valid = false;
-        }
-
-        if (!status) {
-            showError('is_active_error', 'Status is required');
-            valid = false;
-        }
-
-        if (!valid) return;
-
-        // File validation (optional)
-        const iconFile = document.getElementById('icon_file').files[0];
-        if (iconFile) {
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            const maxSize = 2 * 1024 * 1024; // 2MB
-
-            if (!validTypes.includes(iconFile.type)) {
-                showError('icon_file_error', 'File must be JPG, PNG or GIF');
-                return;
-            }
-
-            if (iconFile.size > maxSize) {
-                showError('icon_file_error', 'File size must be less than 2MB');
-                return;
-            }
-        }
-
-        let formData = new FormData(this);
-
-        fetch(appUrl('services/list'), {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-            body: formData
-        })
-        .then(async res => {
-                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
-                return res.json();
-            })
-        .then(data => {
-            if (data.success) {
-                closeModal(addModal);
-                location.reload();
-            } else {
-                alert(data.message || 'Failed to add service');
-            }
-        })
-        .catch(error => {
-            alert(error.message || 'Server error, please try again');
-        });
-    });
-
-    // Edit Service Form Submission
-    document.getElementById('editServiceForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        // Basic validation
-        let valid = true;
-        clearAllErrors();
-
-        const name = document.getElementById('edit_name').value.trim();
-        const serviceTypeId = document.getElementById('edit_service_type_id').value;
-        const price = document.getElementById('edit_price').value;
-        const status = document.getElementById('edit_is_active').value;
-
-        if (!name) {
-            showError('edit_name_error', 'Service name is required');
-            valid = false;
-        }
-
-        if (!serviceTypeId) {
-            showError('edit_service_type_id_error', 'Service type is required');
-            valid = false;
-        }
-
-        if (!price || parseFloat(price) < 0) {
-            showError('edit_price_error', 'Valid price is required');
-            valid = false;
-        }
-
-        if (!status) {
-            showError('edit_is_active_error', 'Status is required');
-            valid = false;
-        }
-
-        if (!valid) return;
-
-        // File validation (optional)
-        const iconFile = document.getElementById('edit_icon_file').files[0];
-        if (iconFile) {
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            const maxSize = 2 * 1024 * 1024; // 2MB
-
-            if (!validTypes.includes(iconFile.type)) {
-                showError('edit_icon_file_error', 'File must be JPG, PNG or GIF');
-                return;
-            }
-
-            if (iconFile.size > maxSize) {
-                showError('edit_icon_file_error', 'File size must be less than 2MB');
-                return;
-            }
-        }
-
-        let id = document.getElementById('editServiceId').value;
-        let formData = new FormData(this);
-        formData.append('_method', 'PUT');
-
-        fetch(appUrl(`services/list/${id}`), {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-            body: formData
-        })
-        .then(async res => {
-                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
-                return res.json();
-            })
-        .then(data => {
-            if (data.success) {
-                closeModal(editModal);
-                location.reload();
-            } else {
-                alert(data.message || 'Failed to update service');
-            }
-        })
-        .catch(error => {
-            alert(error.message || 'Server error, please try again');
-        });
-    });
-
-    // Clear errors on input
-    document.querySelectorAll('#addServiceForm input, #addServiceForm select').forEach(field => {
-        field.addEventListener('input', function() {
-            this.style.borderColor = '#ddd';
-            const errorElement = document.getElementById(this.name + '_error');
-            if (errorElement) errorElement.style.display = 'none';
-        });
-    });
-
-    document.querySelectorAll('#editServiceForm input, #editServiceForm select').forEach(field => {
-        field.addEventListener('input', function() {
-            this.style.borderColor = '#ddd';
-            const errorElement = document.getElementById('edit_' + this.name + '_error');
-            if (errorElement) errorElement.style.display = 'none';
-        });
-    });
-});
-
-// Open Edit Modal Function
-function openEditModal(id) {
-    if (!servicesData[id]) {
-        alert('Service data not found');
-        return;
-    }
-
-    const service = servicesData[id];
-
-    document.getElementById('editServiceId').value = service.id;
-    document.getElementById('edit_name').value = service.name;
-    document.getElementById('edit_service_type_id').value = service.service_type_id;
-    document.getElementById('edit_price').value = service.price;
-    document.getElementById('edit_is_active').value = service.is_active ? '1' : '0'; // Set dropdown value
-
-    // Show current icon preview if exists
-    const previewContainer = document.getElementById('currentIconPreview');
-    if (service.icon_url) {
-        previewContainer.innerHTML = `
-            <div class="helper-text">Current Icon:</div>
-            <img src="${service.icon_url}" alt="Current Icon" style="max-width: 80px; border-radius: 4px;">
-        `;
-    } else {
-        previewContainer.innerHTML = '<div class="helper-text">No current icon</div>';
-    }
-
-    openModal(editModal);
-
-    // Auto-focus on name field
-    setTimeout(() => {
-        document.getElementById('edit_name')?.focus();
-    }, 300);
-}
-
-// Delete Service Function
-function deleteService(id) {
-    const service = servicesData[id];
-    if (!service) return;
-
-    if (!confirm(`Are you sure you want to delete the service "${service.name}"?`)) {
-        return;
-    }
-
-    fetch(appUrl(`services/list/${id}`), {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ id: id })
-    })
-    .then(async res => {
-                if (!res.ok) throw new Error(await window.responseErrorMessage(res, 'Request failed. Please try again.'));
-                return res.json();
-            })
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.message || 'Failed to delete service');
-        }
-    })
-    .catch(error => {
-        alert(error.message || 'Failed to delete service');
-    });
-}
-</script>
+    <x-field name="is_active" label="Show at the point of sale" type="segmented" :options="['1' => 'Active', '0' => 'Hidden']" data-default="1" />
+    <x-field name="icon_file" label="Picture" type="file" accept="image/*" help="Optional. JPG, PNG, GIF or WebP up to 2 MB. Leave empty to keep the current one." />
+</x-form-dialog>
 @endsection

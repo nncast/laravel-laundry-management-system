@@ -1,1714 +1,381 @@
 @extends('layouts.app')
 
-@section('title', 'Order Details - ' . $order->order_number)
-@section('page-title', 'Order Details')
+@section('title', 'Order ' . $order->order_number)
 
-@section('content')
+@php
+    $isManager = in_array(session('staff.role'), ['manager', 'admin'], true);
+    $flow = ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed'];
+    $position = array_search($order->status, array_keys($flow), true);
+    // The one obvious next step: [status, button text, icon, button style]
+    $next = [
+        'pending' => ['processing', 'Start processing', 'fa-play', 'btn-primary'],
+        'processing' => ['ready', 'Mark ready for pickup', 'fa-bell', 'btn-primary'],
+        'ready' => ['completed', 'Mark picked up', 'fa-check', 'btn-success'],
+    ][$order->status] ?? null;
+    $balance = $order->balance;
+    $canPay = $order->status !== 'cancelled' && $balance > 0;
+    $addonsTotal = $order->addons->sum('pivot.price');
+    $methods = ['cash' => ['Cash', 'fa-money-bill-wave'], 'card' => ['Card', 'fa-credit-card'], 'transfer' => ['Transfer', 'fa-building-columns'], 'other' => ['Other', 'fa-ellipsis']];
+@endphp
+
+@section('page-header')
+<header class="page-header detail-header">
+    <div class="page-heading">
+        <p class="eyebrow"><a href="{{ route('orders.index') }}" class="back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> Orders</a></p>
+        <h1 class="page-title">{{ $order->order_number }}</h1>
+        <div class="cluster header-badges">
+            <span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span>
+            @if($order->status !== 'cancelled')
+                @if($balance <= 0)
+                    <span class="badge badge-paid">Paid</span>
+                @else
+                    <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? 'Partly paid' : 'Unpaid' }}</span>
+                @endif
+            @endif
+            <span class="muted">{{ $order->order_date?->format('D, M j, Y') }}</span>
+        </div>
+    </div>
+    <div class="page-actions">
+        @if($next)
+            <button type="button" class="btn {{ $next[3] }}" data-set-status="{{ $next[0] }}"><i class="fas {{ $next[2] }}" aria-hidden="true"></i> {{ $next[1] }}</button>
+        @endif
+        @if($canPay)
+            <button type="button" class="btn {{ $next ? 'btn-secondary' : 'btn-primary' }}" data-dialog-open="paymentDialog"><i class="fas fa-peso-sign" aria-hidden="true"></i> Add payment</button>
+        @endif
+        @if($order->can_edit)
+            <a href="{{ route('pos.edit', $order) }}" class="btn btn-secondary"><i class="fas fa-pen" aria-hidden="true"></i> Edit</a>
+        @endif
+        <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print" aria-hidden="true"></i> Print</button>
+    </div>
+</header>
+@endsection
+
+@push('styles')
 <style>
-/* Add CSS for the simple modal system */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    overflow-y: auto;
-    padding: 20px;
+.detail-header .page-title { font-size: 26px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--text-muted); text-decoration: none; }
+.header-badges { margin-top: var(--s-2); }
+
+.progress { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); list-style: none; padding: var(--s-4) var(--s-5); }
+.progress li { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); font-weight: 700; color: var(--text-muted); }
+.progress li::before { content: ""; height: 6px; border-radius: 3px; background: var(--surface-sunken); }
+.progress li.done::before { background: var(--accent); }
+.progress li.current { color: var(--accent); }
+.progress li.current::before { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft-strong); }
+
+.items-table td:first-child { font-weight: 700; }
+.totals { padding: var(--s-4) var(--s-5) var(--s-5); border-top: 1px solid var(--border); }
+.totals .summary { max-width: 380px; margin-left: auto; }
+
+.balance-card { text-align: center; }
+.balance-card .card-body { display: grid; gap: var(--s-2); }
+.balance-amount { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; }
+.balance-card.is-due .balance-amount { color: var(--danger-text); }
+.balance-card.is-paid .balance-amount { color: var(--success-text); }
+
+.contact-row { display: flex; align-items: center; gap: var(--s-3); min-height: var(--tap); color: var(--text); text-decoration: none; }
+.contact-row > i { width: 20px; text-align: center; color: var(--text-muted); }
+.payment-row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--border); }
+.payment-row:last-child { border-bottom: 0; }
+.notes-form .textarea { min-height: 110px; }
+
+.pay-due { text-align: center; padding: var(--s-4); border-radius: var(--radius); background: var(--accent-soft); }
+.pay-due strong { display: block; font-size: 30px; letter-spacing: -0.02em; color: var(--accent); }
+.quick-cash { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); }
+.quick-cash .btn { padding: 0 var(--s-2); }
+.pay-result { min-height: 24px; font-weight: 700; text-align: center; }
+
+.print-only { display: none; }
+@media (max-width: 767px) {
+    .progress { padding: var(--s-3) var(--s-4); }
+    .progress li span { font-size: 11px; }
 }
-
-.modal.active {
-    display: flex;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 500px;
-    box-shadow: var(--shadow-lg);
-    animation: modalFadeIn 0.3s ease-out;
-}
-
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: var(--text);
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--text-muted);
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-
-.close-btn:hover {
-    background: var(--surface-muted);
-    color: var(--text);
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.modal-footer {
-    padding: 20px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--text);
-    font-size: 14px;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: var(--font);
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
-}
-
-.form-group textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-
-.required-star {
-    color: var(--danger);
-}
-
-.error-message {
-    color: var(--danger);
-    font-size: 12px;
-    margin-top: 5px;
-    display: none;
-}
-
-.btn-primary {
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.btn-primary:hover {
-    background: var(--accent-hover);
-}
-
-.btn-secondary {
-    background: var(--text-muted);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.btn-secondary:hover {
-    background: var(--text-secondary);
-}
-
-.btn-primary:disabled {
-    background: var(--border-strong);
-    cursor: not-allowed;
-}
-
-/* Original styles remain the same */
-/* Reset & Base - Mobile First */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-/* Order Container */
-.order-container {
-    width: 100%;
-    margin: 0 auto;
-    padding: 10px;
-}
-
-/* Order Header - Mobile */
-.order-header {
-    background: white;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: none;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    border: 1px solid var(--border);
-}
-
-.order-number {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--accent);
-    background: var(--accent-soft);
-    padding: 10px 15px;
-    border-radius: 8px;
-    text-align: center;
-    width: 100%;
-}
-
-.order-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-}
-
-.meta-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--border);
-}
-
-.meta-label {
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 500;
-    min-width: 100px;
-}
-
-.meta-value {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 12px;
-    text-align: right;
-}
-
-/* Status Badge & Selector */
-.status-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    min-width: 80px;
-    text-align: center;
-    text-transform: uppercase;
-    display: inline-block;
-}
-
-.status-badge.pending { background: var(--warning-soft); color: var(--warning-text); }
-.status-badge.processing { background: var(--accent-soft); color: var(--accent-hover); }
-.status-badge.completed { background: var(--success-soft); color: var(--success-text); }
-.status-badge.cancelled { background: var(--danger-soft); color: var(--danger-text); }
-
-.status-dropdown {
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: white;
-    font-size: 12px;
-    color: var(--text);
-    cursor: pointer;
-    min-width: 100px;
-    flex: 1;
-}
-
-/* Two Column Layout - Mobile: Stack */
-.two-columns {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.left-main, .right-sidebar {
-    width: 100%;
-}
-
-/* Main Content Box */
-.content-box {
-    background: white;
-    border-radius: 10px;
-    box-shadow: none;
-    overflow: hidden;
-    margin-bottom: 15px;
-    border: 1px solid var(--border);
-}
-
-.box-section {
-    padding: 15px;
-    border-bottom: 1px solid var(--border);
-}
-
-.box-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent-soft);
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.section-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-title i {
-    color: var(--accent);
-    font-size: 14px;
-}
-
-/* Order Items Table - Mobile Responsive */
-.table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 0 -15px;
-    padding: 0 15px;
-}
-
-.order-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 500px; /* Minimum width for table on mobile */
-}
-
-.order-table th {
-    background: var(--surface-muted);
-    padding: 10px 8px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 12px;
-    border-bottom: 2px solid var(--border);
-    white-space: nowrap;
-}
-
-.order-table td {
-    padding: 10px 8px;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-muted);
-    vertical-align: top;
-}
-
-.order-table tr:hover {
-    background: var(--surface-muted);
-}
-
-.service-name {
-    font-weight: 500;
-    color: var(--text);
-    font-size: 13px;
-    margin-bottom: 2px;
-}
-
-.service-variant {
-    font-size: 11px;
-    color: var(--text-faint);
-    line-height: 1.3;
-}
-
-/* Customer & Payment Grid */
-.info-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 6px 0;
-    border-bottom: 1px dashed var(--border);
-    flex-wrap: wrap;
-}
-
-.info-label {
-    color: var(--text-muted);
-    font-size: 12px;
-    min-width: 80px;
-}
-
-.info-value {
-    color: var(--text);
-    font-weight: 500;
-    font-size: 12px;
-    text-align: right;
-    flex: 1;
-}
-
-.payment-details {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.payment-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.payment-row.total {
-    border-top: 2px solid var(--text);
-    border-bottom: none;
-    margin-top: 10px;
-    padding-top: 12px;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.payment-label {
-    color: var(--text-muted);
-    font-size: 13px;
-}
-
-.payment-value {
-    color: var(--text);
-    font-weight: 500;
-    font-size: 13px;
-}
-
-.payment-row.total .payment-value {
-    font-weight: 700;
-    color: var(--text);
-}
-
-.balance-positive { color: var(--success) !important; }
-.balance-negative { color: var(--danger) !important; }
-
-/* Notes Section */
-.notes-display {
-    padding: 12px;
-    background: var(--surface-muted);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    font-size: 12px;
-    line-height: 1.5;
-    min-height: 50px;
-    margin-bottom: 10px;
-}
-
-.notes-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 12px;
-    resize: vertical;
-    font-family: inherit;
-    margin-bottom: 10px;
-    min-height: 80px;
-}
-
-.notes-textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235,0.1);
-}
-
-/* Store Info Box */
-.store-info-box {
-    background: white;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: none;
-    margin-bottom: 15px;
-    border: 1px solid var(--border);
-}
-
-.store-header {
-    text-align: center;
-    margin-bottom: 15px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--accent-soft);
-}
-
-.store-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-    word-break: break-word;
-}
-
-.store-details {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.store-details span {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    word-break: break-word;
-}
-
-.store-details i {
-    color: var(--accent);
-    width: 16px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.btn-action {
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: all 0.3s;
-    border: none;
-    width: 100%;
-    text-align: center;
-}
-
-.btn-action i {
-    font-size: 13px;
-}
-.btn-payment {
-    background: var(--accent);
-    color: white;
-}
-.btn-payment:hover {
-    background: var(--accent-hover);
-    color: white;
-}
-.btn-edit { background: var(--accent); color: white; }
-.btn-edit:hover { background: var(--accent-hover); color: white; }
-
-.btn-complete { background: var(--success); color: white; }
-.btn-complete:hover { background: var(--success-hover); color: white; }
-
-.btn-cancel { background: var(--danger); color: white; }
-.btn-cancel:hover { background: var(--danger-hover); color: white; }
-
-.btn-save {
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 15px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.3s;
-    width: 100%;
-    margin-top: 5px;
-}
-
-.btn-save:hover { background: var(--accent-hover); }
-
-/* Footer */
-.order-footer {
-    background: white;
-    border-radius: 10px;
-    padding: 15px;
-    margin-top: 15px;
-    box-shadow: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    color: var(--text-muted);
-    font-size: 12px;
-    border: 1px solid var(--border);
-}
-
-.footer-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--border);
-}
-
-.footer-row:last-child {
-    border-bottom: none;
-}
-
-.footer-label {
-    color: var(--text-muted);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.footer-label i {
-    color: var(--accent);
-    font-size: 12px;
-    width: 16px;
-    text-align: center;
-}
-
-.footer-value {
-    color: var(--text);
-    font-weight: 500;
-}
-
-/* Tablet Styles (min-width: 600px) */
-@media (min-width: 600px) {
-    .order-container {
-        padding: 15px;
-        max-width: 100%;
-    }
-
-    .order-header {
-        flex-direction: row;
-        align-items: center;
-        padding: 20px;
-    }
-
-    .order-number {
-        width: auto;
-        min-width: 200px;
-        font-size: 20px;
-    }
-
-    .order-meta {
-        flex: 1;
-    }
-
-    .meta-label {
-        font-size: 13px;
-    }
-
-    .meta-value {
-        font-size: 13px;
-    }
-
-    .status-badge {
-        font-size: 12px;
-        min-width: 100px;
-    }
-
-    .status-dropdown {
-        min-width: 120px;
-    }
-
-    .section-title {
-        font-size: 16px;
-    }
-
-    .order-table th,
-    .order-table td {
-        padding: 12px 10px;
-        font-size: 13px;
-    }
-
-    .service-name {
-        font-size: 14px;
-    }
-
-    .info-label,
-    .info-value {
-        font-size: 13px;
-    }
-
-    .payment-label,
-    .payment-value {
-        font-size: 14px;
-    }
-
-    .notes-textarea {
-        font-size: 13px;
-    }
-
-    .store-name {
-        font-size: 20px;
-    }
-
-    .store-details {
-        font-size: 13px;
-    }
-
-    .btn-action {
-        font-size: 13px;
-        padding: 12px 15px;
-    }
-
-    .order-footer {
-        font-size: 13px;
-        padding: 20px;
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 20px;
-    }
-
-    .footer-row {
-        flex: 1;
-        border-bottom: none;
-        padding: 0;
-        justify-content: center;
-    }
-}
-
-/* Small Desktop (min-width: 768px) */
-@media (min-width: 768px) {
-    .order-container {
-        max-width: 90%;
-    }
-
-    .two-columns {
-        flex-direction: row;
-        gap: 20px;
-    }
-
-    .left-main {
-        flex: 1;
-    }
-
-    .right-sidebar {
-        width: 350px;
-        flex-shrink: 0;
-    }
-
-    .content-box {
-        margin-bottom: 0;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-    }
-
-    .info-row {
-        flex-direction: column;
-        border-bottom: none;
-        padding: 0;
-        gap: 4px;
-    }
-
-    .info-label,
-    .info-value {
-        width: 100%;
-        text-align: left;
-    }
-
-    .btn-save {
-        width: auto;
-        align-self: flex-start;
-    }
-}
-
-/* Large Desktop (min-width: 992px) */
-@media (min-width: 992px) {
-    .order-container {
-        max-width: 1200px;
-    }
-
-    .order-header {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 30px;
-        padding: 20px;
-    }
-
-    .order-number {
-        font-size: 24px;
-        min-width: 220px;
-        text-align: center;
-        padding: 12px 20px;
-        margin: 0;
-    }
-
-    .order-meta {
-        flex: 1;
-        display: flex;
-        flex-direction: row;
-        gap: 30px;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-start;
-    }
-
-    .meta-item {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-        border-bottom: none;
-        padding: 0;
-        min-height: auto;
-    }
-
-    .meta-label {
-        font-size: 13px;
-        min-width: auto;
-        white-space: nowrap;
-        color: var(--text-muted);
-    }
-
-    .meta-value {
-        font-size: 13px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--text);
-        white-space: nowrap;
-    }
-
-    /* Status selector adjustments */
-    .meta-item:nth-child(3) {
-        min-width: 200px;
-    }
-
-    .status-selector {
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-        width: auto;
-    }
-
-    .status-badge {
-        min-width: 90px;
-        font-size: 11px;
-    }
-
-    .status-dropdown {
-        width: 120px;
-        min-width: 120px;
-        font-size: 12px;
-        padding: 5px 8px;
-    }
-
-    .order-table {
-        min-width: 100%;
-    }
-
-    .order-footer {
-        justify-content: space-around;
-        padding: 20px 40px;
-    }
-}
-
-/* Extra Large Screens (min-width: 1200px) */
-@media (min-width: 1200px) {
-    .order-container {
-        padding: 20px 15px;
-    }
-
-    .order-header {
-        gap: 40px;
-    }
-
-    .order-meta {
-        gap: 40px;
-        justify-content: space-between;
-    }
-
-    .meta-item {
-        gap: 10px;
-    }
-
-    .meta-label,
-    .meta-value {
-        font-size: 14px;
-    }
-
-    .box-section {
-        padding: 20px;
-    }
-
-    .section-title {
-        font-size: 17px;
-    }
-
-    .store-name {
-        font-size: 22px;
-    }
-
-    .order-footer {
-        padding: 20px 50px;
-    }
-}
-
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .btn-action,
-    .btn-save,
-    .status-dropdown {
-        min-height: 44px; /* Minimum touch target size */
-    }
-
-    .notes-textarea {
-        font-size: 16px; /* Prevent iOS zoom on focus */
-    }
-
-    select.status-dropdown {
-        font-size: 16px; /* Prevent iOS zoom on focus */
-    }
-}
-
-/* Print Styles */
 @media print {
-    body {
-        background: white !important;
-        font-size: 12pt !important;
-    }
-
-    .order-container {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .btn-action,
-    .btn-save,
-    .status-dropdown,
-    .notes-textarea,
-    .order-footer {
-        display: none !important;
-    }
-
-    .content-box,
-    .store-info-box {
-        box-shadow: none !important;
-        border: 1px solid var(--border) !important;
-        page-break-inside: avoid;
-    }
+    .print-only { display: block; }
+    .detail-header, .balance-card, .no-print, .progress { display: none !important; }
+    .grid-sidebar { grid-template-columns: 1fr; }
+    .print-head { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #0b1b34; }
+    .print-head h2 { font-size: 20px; }
 }
 </style>
+@endpush
 
-<div class="order-container">
-    <!-- Order Header -->
-    <div class="order-header">
-        <div class="order-number">
-            {{ $order->order_number }}
-        </div>
-        <div class="order-meta">
-            <div class="meta-item">
-                <span class="meta-label">Order Date:</span>
-                <span class="meta-value">{{ \Carbon\Carbon::parse($order->order_date)->format('d/m/Y') }}</span>
+@section('content')
+<div class="print-only print-head">
+    <div>
+        <h2>{{ $settings->business_name ?? 'Soap Opera' }}</h2>
+        @if($settings->address)<div>{{ $settings->address }}</div>@endif
+        @if($settings->contact)<div>{{ $settings->contact }}</div>@endif
+    </div>
+    <div class="text-right">
+        <strong>Receipt</strong>
+        <div>{{ $order->order_number }}</div>
+        <div>{{ $order->order_date?->format('M j, Y') }}</div>
+    </div>
+</div>
+
+<div class="grid-sidebar">
+    <div class="stack">
+        @if($order->status === 'cancelled')
+            <div class="alert alert-danger no-print"><i class="fas fa-ban" aria-hidden="true"></i><span>This order was cancelled. It no longer counts in sales.</span></div>
+        @else
+            <div class="card no-print">
+                <ol class="progress" aria-label="Order progress">
+                    @foreach($flow as $key => $label)
+                        <li class="{{ $loop->index < $position ? 'done' : ($loop->index === $position ? 'current' : '') }}" @if($loop->index === $position) aria-current="step" @endif><span>{{ $label }}</span></li>
+                    @endforeach
+                </ol>
             </div>
-            @if($order->delivery_date)
-            <div class="meta-item">
-                <span class="meta-label">Delivery Date:</span>
-                <span class="meta-value">{{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }}</span>
+        @endif
+
+        <section class="card" aria-labelledby="items-title">
+            <header class="card-header"><h2 class="card-title" id="items-title"><i class="fas fa-shirt" aria-hidden="true"></i> Items</h2></header>
+            <div class="table-wrap static">
+                <table class="table items-table">
+                    <thead><tr><th>Service</th><th class="num">Price</th><th class="num">Qty</th><th class="num">Total</th></tr></thead>
+                    <tbody>
+                        @forelse($order->items as $item)
+                        <tr>
+                            <td>{{ $item->service->name ?? 'Deleted service' }}</td>
+                            <td class="num">₱{{ number_format($item->price, 2) }}</td>
+                            <td class="num">{{ $item->qty }}</td>
+                            <td class="num">₱{{ number_format($item->total, 2) }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="4" class="muted">No services on this order.</td></tr>
+                        @endforelse
+                        @foreach($order->addons as $addon)
+                        <tr>
+                            <td>{{ $addon->name }} <span class="badge">Add-on</span></td>
+                            <td class="num">₱{{ number_format($addon->pivot->price, 2) }}</td>
+                            <td class="num">1</td>
+                            <td class="num">₱{{ number_format($addon->pivot->price, 2) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-            @endif
-            <div class="meta-item">
-                <span class="meta-label">Status:</span>
-                <div class="status-selector">
-                    <span class="status-badge {{ $order->status }}">{{ ucfirst($order->status) }}</span>
-                    <select class="status-dropdown" data-order-id="{{ $order->id }}" data-current="{{ $order->status }}" aria-label="Order status">
-                        <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Processing</option>
-                        <option value="ready" {{ $order->status == 'ready' ? 'selected' : '' }}>Ready for pickup</option>
-                        <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }}>Completed</option>
-                        <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+            <div class="totals">
+                <div class="summary">
+                    <div class="summary-row"><span>Services</span><span>₱{{ number_format($order->subtotal, 2) }}</span></div>
+                    @if($addonsTotal > 0)<div class="summary-row"><span>Add-ons</span><span>₱{{ number_format($addonsTotal, 2) }}</span></div>@endif
+                    @if($order->discount > 0)<div class="summary-row"><span>Discount{{ $order->discount_percent !== null ? ' (' . (float) $order->discount_percent . '%)' : '' }}</span><span>−₱{{ number_format($order->discount, 2) }}</span></div>@endif
+                    <div class="summary-row summary-total"><span>Total</span><span>₱{{ number_format($order->total, 2) }}</span></div>
+                    <div class="summary-row"><span>Paid</span><span>₱{{ number_format($order->paid_amount, 2) }}</span></div>
+                    <div class="summary-row"><span>Balance</span><span class="{{ $balance > 0 ? 'text-danger' : 'text-success' }}">₱{{ number_format(max($balance, 0), 2) }}</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="payments-title">
+            <header class="card-header">
+                <h2 class="card-title" id="payments-title"><i class="fas fa-receipt" aria-hidden="true"></i> Payments</h2>
+                @if($canPay)<button type="button" class="btn btn-sm btn-soft no-print" data-dialog-open="paymentDialog"><i class="fas fa-plus" aria-hidden="true"></i> Add payment</button>@endif
+            </header>
+            @forelse($order->payments->sortByDesc('created_at') as $payment)
+                <div class="payment-row">
+                    <span class="bubble-tile tone-green" aria-hidden="true"><i class="fas {{ $methods[$payment->payment_method][1] ?? 'fa-peso-sign' }}"></i></span>
+                    <span class="list-main">
+                        <span class="list-title">{{ $methods[$payment->payment_method][0] ?? ucfirst($payment->payment_method) }}</span>
+                        <span class="list-sub">{{ $payment->created_at->format('M j, Y · g:i A') }}</span>
+                    </span>
+                    <strong class="money">₱{{ number_format($payment->amount, 2) }}</strong>
+                </div>
+            @empty
+                <p class="empty">No payments yet.</p>
+            @endforelse
+        </section>
+
+        <section class="card" aria-labelledby="notes-title">
+            <header class="card-header"><h2 class="card-title" id="notes-title"><i class="fas fa-note-sticky" aria-hidden="true"></i> Notes</h2></header>
+            <div class="card-body">
+                <p class="print-only">{{ $order->notes ?: 'No notes.' }}</p>
+                <form class="notes-form stack-sm no-print" id="notesForm">
+                    <label class="sr-only" for="notes">Notes for this order</label>
+                    <textarea class="textarea" id="notes" maxlength="1000" placeholder="Stains, special care, pickup instructions…">{{ $order->notes }}</textarea>
+                    <div><button type="submit" class="btn btn-secondary"><i class="fas fa-floppy-disk" aria-hidden="true"></i> Save notes</button></div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <aside class="stack">
+        <section class="card balance-card {{ $order->status === 'cancelled' ? '' : ($balance > 0 ? 'is-due' : 'is-paid') }}" aria-label="Balance">
+            <div class="card-body">
+                <span class="eyebrow">{{ $balance > 0 && $order->status !== 'cancelled' ? 'Balance due' : 'Balance' }}</span>
+                <span class="balance-amount money">₱{{ number_format(max($balance, 0), 2) }}</span>
+                <span class="muted">of ₱{{ number_format($order->total, 2) }} · ₱{{ number_format($order->paid_amount, 2) }} paid</span>
+                @if($canPay)
+                    <button type="button" class="btn btn-primary btn-lg btn-block no-print" data-dialog-open="paymentDialog"><i class="fas fa-peso-sign" aria-hidden="true"></i> Collect payment</button>
+                @endif
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="customer-title">
+            <header class="card-header"><h2 class="card-title" id="customer-title"><i class="fas fa-user" aria-hidden="true"></i> Customer</h2></header>
+            <div class="card-body stack-sm">
+                @if($order->customer)
+                    <strong>{{ $order->customer->name }}</strong>
+                    @if($order->customer->contact)
+                        <a class="contact-row" href="tel:{{ $order->customer->contact }}"><i class="fas fa-phone" aria-hidden="true"></i> {{ $order->customer->contact }}</a>
+                    @endif
+                    @if($order->customer->address)
+                        <span class="contact-row"><i class="fas fa-location-dot" aria-hidden="true"></i> {{ $order->customer->address }}</span>
+                    @endif
+                    <a href="{{ route('orders.index', ['search' => $order->customer->name]) }}" class="btn btn-ghost btn-sm no-print" style="align-self:flex-start"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Their other orders</a>
+                @else
+                    <span class="muted">Walk-in customer</span>
+                @endif
+            </div>
+        </section>
+
+        <section class="card no-print" aria-labelledby="details-title">
+            <header class="card-header"><h2 class="card-title" id="details-title"><i class="fas fa-circle-info" aria-hidden="true"></i> Details</h2></header>
+            <div class="card-body stack-sm">
+                <dl class="dl">
+                    <dt>Taken by</dt><dd>{{ $order->staff->name ?? '—' }}</dd>
+                    <dt>Created</dt><dd>{{ $order->created_at?->format('M j, Y g:i A') }}</dd>
+                    <dt>Updated</dt><dd>{{ $order->updated_at?->format('M j, Y g:i A') }}</dd>
+                </dl>
+                <div class="field">
+                    <label class="label" for="statusSelect">Change status</label>
+                    <select class="select" id="statusSelect">
+                        @foreach(\App\Models\Order::STATUSES as $value)
+                            <option value="{{ $value }}" @selected($order->status === $value)>{{ ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'][$value] }}</option>
+                        @endforeach
                     </select>
                 </div>
+                @if(!in_array($order->status, ['completed', 'cancelled'], true))
+                    <button type="button" class="btn btn-danger-soft" data-set-status="cancelled"><i class="fas fa-ban" aria-hidden="true"></i> Cancel order</button>
+                @endif
             </div>
-        </div>
-    </div>
-
-    <!-- Two Column Layout -->
-    <div class="two-columns">
-        <!-- Left Main Content -->
-        <div class="left-main">
-            <!-- Single Content Box -->
-            <div class="content-box">
-                <!-- Order Items Section -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3 class="section-title"><i class="fas fa-list-alt"></i> Order Items</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="order-table">
-                            <thead>
-                                <tr>
-                                    <th>Service Name</th>
-                                    <th>Price</th>
-                                    <th>QTY</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($order->items as $item)
-                                <tr>
-                                    <td>
-                                        <div>
-                                            <div class="service-name">{{ $item->service->name ?? 'N/A' }}</div>
-                                            @if($item->variant)
-                                            <div class="service-variant">[{{ $item->variant }}]</div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td>{{ number_format($item->price, 2) }} PHP</td>
-                                    <td>{{ $item->qty }}</td>
-                                    <td>{{ number_format($item->total, 2) }} PHP</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-faint);">
-                                        No items in this order
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Customer Information Section -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3 class="section-title"><i class="fas fa-user"></i> Invoice To</h3>
-                    </div>
-                    <div class="info-grid">
-                        @if($order->customer)
-                        <div class="info-row">
-                            <span class="info-label">Name:</span>
-                            <span class="info-value">{{ $order->customer->name }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Phone:</span>
-                            <span class="info-value">{{ $order->customer->contact ?? '-' }}</span>
-                        </div>
-                        @if($order->customer->address)
-                        <div class="info-row">
-                            <span class="info-label">Address:</span>
-                            <span class="info-value">{{ $order->customer->address }}</span>
-                        </div>
-                        @endif
-                        @else
-                        <div class="info-row">
-                            <span class="info-value" style="color: var(--text-muted); font-style: italic;">
-                                Walk In Customer
-                            </span>
-                        </div>
-                        @endif
-                    </div>
-                </div>
-
-                <!-- Payment Details Section -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3 class="section-title"><i class="fas fa-credit-card"></i> Payment Details</h3>
-                    </div>
-                    <div class="payment-details">
-                        <div class="payment-row">
-                            <span class="payment-label">Sub Total:</span>
-                            <span class="payment-value">{{ number_format($order->subtotal, 2) }} PHP</span>
-                        </div>
-                        @if($order->addons->count() > 0)
-                        <div class="payment-row">
-                            <span class="payment-label">Addons:</span>
-                            <span class="payment-value">{{ number_format($order->addons->sum('pivot.price'), 2) }} PHP</span>
-                        </div>
-                        @endif
-                        <div class="payment-row">
-                            <span class="payment-label">Discount{{ $order->discount_percent !== null ? ' (' . (float) $order->discount_percent . '%)' : '' }}:</span>
-                            <span class="payment-value">{{ number_format($order->discount, 2) }} PHP</span>
-                        </div>
-                        @if($order->tax > 0)
-                        <div class="payment-row">
-                            <span class="payment-label">Tax:</span>
-                            <span class="payment-value">{{ number_format($order->tax, 2) }} PHP</span>
-                        </div>
-                        @endif
-                        <div class="payment-row total">
-                            <span class="payment-label">Gross Total:</span>
-                            <strong class="payment-value">{{ number_format($order->total, 2) }} PHP</strong>
-                        </div>
-                        <div class="payment-row">
-                            <span class="payment-label">Paid Amount:</span>
-                            <span class="payment-value">{{ number_format($order->paid_amount, 2) }} PHP</span>
-                        </div>
-                        <div class="payment-row total">
-                            <span class="payment-label">Balance:</span>
-                            <strong class="payment-value {{ ($order->total - $order->paid_amount) > 0 ? 'balance-negative' : 'balance-positive' }}">
-                                {{ number_format($order->total - $order->paid_amount, 2) }} PHP
-                            </strong>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notes Section -->
-                <div class="box-section">
-                    <div class="section-header">
-                        <h3 class="section-title"><i class="fas fa-sticky-note"></i> Notes</h3>
-                    </div>
-                    <div class="notes-display">
-                        {{ $order->notes ?? 'No notes available' }}
-                    </div>
-                    <textarea class="notes-textarea" placeholder="Add notes for this order..." rows="3" maxlength="1000" data-order-id="{{ $order->id }}">{{ $order->notes }}</textarea>
-                    <button type="button" class="btn-save" data-order-id="{{ $order->id }}">Save Notes</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Sidebar -->
-        <div class="right-sidebar">
-            <!-- Store Info Box -->
-            <div class="store-info-box">
-                <div class="store-header">
-                    <h2 class="store-name">{{ $settings->business_name ?? 'Soap Opera' }}</h2>
-                </div>
-                <div class="store-details">
-                    @if($settings->contact)
-                    <span><i class="fas fa-phone"></i> {{ $settings->contact }}</span>
-                    @endif
-                    @if($settings->address)
-                    <span><i class="fas fa-map-marker-alt"></i> {{ $settings->address }}</span>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Action Buttons Box -->
-            <div class="store-info-box">
-                <div class="store-header">
-                    <h2 class="store-name"><i class="fas fa-cogs"></i> Actions</h2>
-                </div>
-                <div class="action-buttons">
-                    @if($order->status !== 'cancelled' && $order->balance > 0)
-                    <button type="button" class="btn-action btn-payment add-payment-btn"
-                            data-order-id="{{ $order->id }}"
-                            data-order-total="{{ $order->total }}"
-                            data-paid-amount="{{ $order->paid_amount }}">
-                        <i class="fas fa-credit-card"></i> Add Payment
-                    </button>
-                    @endif
-
-                    @if($order->can_edit)
-                    <a href="{{ route('pos.edit', $order) }}" class="btn-action btn-edit">
-                        <i class="fas fa-edit"></i> Edit Order
-                    </a>
-                    @endif
-                    @if(!in_array($order->status, ['completed', 'cancelled']))
-                    <button type="button" class="btn-action btn-complete btn-mark-complete" data-order-id="{{ $order->id }}">
-                        <i class="fas fa-check"></i> Mark Complete
-                    </button>
-                    <button type="button" class="btn-action btn-cancel btn-cancel-order" data-order-id="{{ $order->id }}">
-                        <i class="fas fa-times"></i> Cancel Order
-                    </button>
-                    @endif
-                    <button type="button" class="btn-action btn-edit" onclick="window.print()">
-                        <i class="fas fa-print"></i> Print
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer with Created and Updated Dates -->
-    <div class="order-footer">
-        <div class="footer-row">
-            <span class="footer-label">
-                <i class="fas fa-calendar-plus"></i> Created:
-            </span>
-            <span class="footer-value">
-                {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}
-            </span>
-        </div>
-        <div class="footer-row">
-            <span class="footer-label">
-                <i class="fas fa-calendar-check"></i> Last Updated:
-            </span>
-            <span class="footer-value">
-                {{ \Carbon\Carbon::parse($order->updated_at)->format('d/m/Y H:i') }}
-            </span>
-        </div>
-    </div>
-
+        </section>
+    </aside>
 </div>
 
-<!-- Payment Modal HTML - SIMPLE VERSION -->
-<div id="paymentModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add Payment</h3>
-            <button type="button" class="close-btn" id="closePaymentModal">&times;</button>
+<dialog id="paymentDialog" class="dialog dialog-sm" aria-labelledby="paymentTitle">
+    <form id="paymentForm" novalidate>
+        <div class="dialog-header">
+            <h2 class="dialog-title" id="paymentTitle">Add payment</h2>
+            <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
         </div>
-
-        <form method="POST" id="paymentForm">
-            @csrf
-            <input type="hidden" id="paymentOrderId" name="order_id">
-
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="amount">
-                        Amount <span class="required-star">*</span>
-                    </label>
-                    <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
-                    <div class="error-message" id="amount_error"></div>
+        <div class="dialog-body">
+            <div class="pay-due"><span class="muted">Balance due</span><strong class="money">₱{{ number_format(max($balance, 0), 2) }}</strong></div>
+            <div class="field">
+                <span class="label" id="methodLabel">Method</span>
+                <div class="segmented block" role="radiogroup" aria-labelledby="methodLabel">
+                    @foreach($methods as $value => [$label, $icon])
+                        <label><input type="radio" name="payment_method" value="{{ $value }}" @checked($value === 'cash')><span><i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }}</span></label>
+                    @endforeach
                 </div>
-
             </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="cancelPayment">Cancel</button>
-                <button type="submit" class="btn-primary" id="submitPayment">Add Payment</button>
+            <div class="field">
+                <label class="label" for="amount">Amount received</label>
+                <div class="input-affix">
+                    <span class="affix" aria-hidden="true">₱</span>
+                    <input class="input" type="number" id="amount" name="amount" inputmode="decimal" min="0.01" step="0.01" value="{{ number_format(max($balance, 0), 2, '.', '') }}" aria-describedby="payResult">
+                </div>
+                <div class="field-error" id="amountError"></div>
             </div>
-        </form>
-    </div>
-</div>
-
-<script>
-// Modal Utility Functions
-function openModal(modal) {
-    modal.classList.add('active');
-    document.body.classList.add('modal-open');
-}
-
-function closeModal(modal) {
-    modal.classList.remove('active');
-    document.body.classList.remove('modal-open');
-    clearPaymentErrors();
-}
-
-function clearPaymentErrors() {
-    document.querySelectorAll('#paymentForm .error-message').forEach(error => {
-        error.style.display = 'none';
-        error.textContent = '';
-    });
-    document.querySelectorAll('#paymentForm input').forEach(field => {
-        field.style.borderColor = '#ddd';
-    });
-}
-
-function showPaymentError(fieldId, message) {
-    const errorElement = document.getElementById(fieldId);
-    const inputElement = document.querySelector(`#${fieldId.replace('_error', '')}`);
-    if (errorElement && inputElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        inputElement.style.borderColor = '#dc3545';
-    }
-}
-
-// Notifications use the shared toast from the layout
-function showNotification(message, type = 'info') {
-    window.showToast(message, type);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Status dropdown change handler
-    const statusDropdown = document.querySelector('.status-dropdown');
-    const statusBadge = document.querySelector('.status-badge');
-
-    if(statusDropdown) {
-        statusDropdown.addEventListener('change', function() {
-            const status = this.value;
-            const orderId = this.dataset.orderId;
-
-            // The value before this change, so we can revert on failure
-            const originalStatus = this.dataset.current || status;
-
-            // Update badge immediately
-            statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-            statusBadge.className = 'status-badge ' + status;
-
-            // Show loading state
-            statusDropdown.disabled = true;
-
-            // Send AJAX request to update status - USE POST ONLY
-            fetch(appUrl(`orders/${orderId}/update-status`), {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    status: status
-                })
-            })
-            .then(async response => {
-                const text = await response.text();
-
-                try {
-                    const data = JSON.parse(text);
-                    return { response: response, data: data };
-                } catch (e) {
-                    throw new Error('Server returned invalid JSON');
-                }
-            })
-            .then(({ response, data }) => {
-                statusDropdown.disabled = false;
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${data.message || 'Server error'}`);
-                }
-
-                if (data.success) {
-                    // Success - update UI with server response
-                    if (data.order && data.order.status) {
-                        const newStatus = data.order.status;
-                        statusBadge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                        statusBadge.className = 'status-badge ' + newStatus;
-                        statusDropdown.value = newStatus;
-                        statusDropdown.dataset.current = newStatus;
-                    }
-
-                    // Show success message
-                    showNotification('Status updated successfully!', 'success');
-
-                } else {
-                    // Server returned error
-                    showNotification(data.message || 'Failed to update status', 'error');
-
-                    // Revert to original status
-                    if (statusDropdown && statusBadge) {
-                        statusDropdown.value = originalStatus;
-                        statusBadge.textContent = originalStatus.charAt(0).toUpperCase() + originalStatus.slice(1);
-                        statusBadge.className = 'status-badge ' + originalStatus;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Fetch error details:', error);
-                statusDropdown.disabled = false;
-
-                // Show error message
-                showNotification('Error: ' + error.message, 'error');
-
-                // Revert to original status
-                if (statusDropdown && statusBadge) {
-                    statusDropdown.value = originalStatus;
-                    statusBadge.textContent = originalStatus.charAt(0).toUpperCase() + originalStatus.slice(1);
-                    statusBadge.className = 'status-badge ' + originalStatus;
-                }
-            });
-        });
-    }
-
-    // Save notes button
-    const saveNotesBtn = document.querySelector('.btn-save');
-    if(saveNotesBtn) {
-        saveNotesBtn.addEventListener('click', function() {
-            const orderId = this.dataset.orderId;
-            const notes = document.querySelector('.notes-textarea').value;
-
-
-            // Disable button and show loading
-            const originalText = this.textContent;
-            this.textContent = 'Saving...';
-            this.disabled = true;
-
-            // Send AJAX request to save notes
-            fetch(appUrl(`orders/${orderId}/add-notes`), {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    notes: notes
-                })
-            })
-            .then(async response => {
-                if (!response.ok) throw new Error(await window.responseErrorMessage(response, 'Request failed'));
-                return response.json();
-            })
-            .then(data => {
-                this.textContent = originalText;
-                this.disabled = false;
-
-                if (data.success) {
-                    const display = document.querySelector('.notes-display');
-                    if (display) display.textContent = data.notes || 'No notes available';
-                    showNotification('Notes saved successfully!', 'success');
-                } else {
-                    alert('Failed to save notes: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                this.textContent = originalText;
-                this.disabled = false;
-                alert(error.message || 'Network error. Please try again.');
-            });
-        });
-    }
-
-    // Mark as complete button
-    const markCompleteBtn = document.querySelector('.btn-mark-complete');
-    if(markCompleteBtn) {
-        markCompleteBtn.addEventListener('click', function() {
-            const orderId = this.dataset.orderId;
-
-            if (confirm('Are you sure you want to mark this order as complete?')) {
-                // Update the status dropdown and badge first
-                if (statusDropdown) {
-                    statusDropdown.value = 'completed';
-                    statusBadge.textContent = 'Completed';
-                    statusBadge.className = 'status-badge completed';
-                }
-
-                // Disable button and show loading
-                const originalText = this.textContent;
-                this.textContent = 'Processing...';
-                this.disabled = true;
-
-                // Send AJAX request to update status to completed
-                fetch(appUrl(`orders/${orderId}/update-status`), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        status: 'completed'
-                    })
-                })
-                .then(async response => {
-                    if (!response.ok) throw new Error(await window.responseErrorMessage(response, 'Request failed'));
-                    return response.json();
-                })
-                .then(data => {
-                    this.textContent = originalText;
-                    this.disabled = false;
-
-                    if (data.success) {
-                        alert('Order marked as complete!');
-                        location.reload();
-                    } else {
-                        alert('Failed to update order: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    this.textContent = originalText;
-                    this.disabled = false;
-                    alert(error.message || 'Network error. Please try again.');
-                });
-            }
-        });
-    }
-
-    // Cancel order button
-    const cancelOrderBtn = document.querySelector('.btn-cancel-order');
-    if(cancelOrderBtn) {
-        cancelOrderBtn.addEventListener('click', function() {
-            const orderId = this.dataset.orderId;
-
-            if (confirm('Are you sure you want to cancel this order?')) {
-                // Update the status dropdown and badge first
-                if (statusDropdown) {
-                    statusDropdown.value = 'cancelled';
-                    statusBadge.textContent = 'Cancelled';
-                    statusBadge.className = 'status-badge cancelled';
-                }
-
-                // Disable button and show loading
-                const originalText = this.textContent;
-                this.textContent = 'Cancelling...';
-                this.disabled = true;
-
-                // Send AJAX request to change status to cancelled
-                fetch(appUrl(`orders/${orderId}/update-status`), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        status: 'cancelled'
-                    })
-                })
-                .then(async response => {
-                    if (!response.ok) throw new Error(await window.responseErrorMessage(response, 'Request failed'));
-                    return response.json();
-                })
-                .then(data => {
-                    this.textContent = originalText;
-                    this.disabled = false;
-
-                    if (data.success) {
-                        alert('Order cancelled successfully!');
-                        location.reload();
-                    } else {
-                        alert('Failed to cancel order: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    this.textContent = originalText;
-                    this.disabled = false;
-                    alert(error.message || 'Network error. Please try again.');
-                });
-            }
-        });
-    }
-
-    // ============================
-    // PAYMENT MODAL FUNCTIONALITY
-    // ============================
-    const paymentModal = document.getElementById('paymentModal');
-    const paymentForm = document.getElementById('paymentForm');
-    const submitPaymentBtn = document.getElementById('submitPayment');
-    const cancelPaymentBtn = document.getElementById('cancelPayment');
-    const closePaymentModal = document.getElementById('closePaymentModal');
-
-    // Check if CSRF token exists, create if not
-    if (!document.querySelector('meta[name="csrf-token"]')) {
-        const csrfMeta = document.createElement('meta');
-        csrfMeta.name = 'csrf-token';
-        csrfMeta.content = '{{ csrf_token() }}';
-        document.head.appendChild(csrfMeta);
-    }
-
-    // Open payment modal
-    document.addEventListener('click', function(e) {
-        const paymentBtn = e.target.closest('.add-payment-btn');
-        if (paymentBtn) {
-            e.preventDefault();
-            const orderId = paymentBtn.getAttribute('data-order-id');
-            const orderTotal = parseFloat(paymentBtn.getAttribute('data-order-total') || 0);
-            const paidAmount = parseFloat(paymentBtn.getAttribute('data-paid-amount') || 0);
-            const remaining = orderTotal - paidAmount;
-
-            // Set order ID
-            const orderIdField = document.getElementById('paymentOrderId');
-            if (orderIdField) {
-                orderIdField.value = orderId;
-            }
-
-            // Set amount to remaining balance
-            const amountField = document.getElementById('amount');
-            if (amountField) {
-                if (remaining > 0) {
-                    amountField.value = remaining.toFixed(2);
-                } else {
-                    amountField.value = '';
-                }
-            }
-
-            // Clear previous errors
-            clearPaymentErrors();
-
-            // Open modal
-            openModal(paymentModal);
-
-            // Auto-focus on amount field
-            setTimeout(() => {
-                amountField?.focus();
-                amountField?.select();
-            }, 300);
-        }
-    });
-
-    // Close payment modal
-    cancelPaymentBtn.addEventListener('click', () => closeModal(paymentModal));
-    closePaymentModal.addEventListener('click', () => closeModal(paymentModal));
-
-    // Handle form submission
-    paymentForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        // Simple validation
-        const amountField = document.getElementById('amount');
-        const orderIdField = document.getElementById('paymentOrderId');
-
-        if (!amountField || !amountField.value) {
-            showPaymentError('amount_error', 'Please enter an amount');
-            amountField?.focus();
-            return;
-        }
-
-        const amount = parseFloat(amountField.value);
-        if (isNaN(amount) || amount <= 0) {
-            showPaymentError('amount_error', 'Please enter a valid amount greater than 0');
-            amountField?.focus();
-            return;
-        }
-
-        if (!orderIdField || !orderIdField.value) {
-            alert('Error: Order ID is missing');
-            return;
-        }
-
-        const orderId = orderIdField.value;
-
-        // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-
-        // Create form data
-        const formData = new FormData();
-        formData.append('amount', amount);
-        formData.append('_token', csrfToken);
-
-        // Disable button and show loading
-        const originalText = submitPaymentBtn.innerHTML;
-        submitPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-        submitPaymentBtn.disabled = true;
-
-        try {
-            // Submit via AJAX
-            const response = await fetch(appUrl(`orders/${orderId}/add-payment`), {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                body: formData
-            });
-
-            if (!response.ok) {
-                showPaymentError('amount_error', await window.responseErrorMessage(response, 'Could not add the payment.'));
-                return;
-            }
-
-            const data = await response.json();
-
-            if (data.success) {
-                let msg = 'Payment added successfully!';
-                if (data.change > 0) msg += ` Change due: ${Number(data.change).toFixed(2)} PHP`;
-                showNotification(msg, 'success');
-                closeModal(paymentModal);
-                paymentForm.reset();
-
-                // Reload page after a short delay
-                setTimeout(() => window.location.reload(), 1200);
-            } else {
-                alert('Error: ' + (data.message || 'Something went wrong'));
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-            alert('Network error: ' + error.message);
-        } finally {
-            // Reset button state
-            submitPaymentBtn.innerHTML = originalText;
-            submitPaymentBtn.disabled = false;
-        }
-    });
-
-    // Clear errors on input
-    document.getElementById('amount')?.addEventListener('input', function() {
-        this.style.borderColor = '#ddd';
-        const errorElement = document.getElementById('amount_error');
-        if (errorElement) errorElement.style.display = 'none';
-    });
-
-    // Close modal on outside click
-    window.addEventListener('click', e => {
-        if(e.target === paymentModal) closeModal(paymentModal);
-    });
-
-    // Close modal on escape key
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') {
-            closeModal(paymentModal);
-        }
-    });
-});
-</script>
-@if(request()->boolean('print'))
-<script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
-@endif
+            <div class="quick-cash" aria-label="Quick amounts">
+                <button type="button" class="btn btn-secondary" data-amount="{{ max($balance, 0) }}">Exact</button>
+                <button type="button" class="btn btn-secondary" data-amount="100">₱100</button>
+                <button type="button" class="btn btn-secondary" data-amount="500">₱500</button>
+                <button type="button" class="btn btn-secondary" data-amount="1000">₱1,000</button>
+            </div>
+            <p class="pay-result" id="payResult" aria-live="polite"></p>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button>
+            <button type="submit" class="btn btn-primary" id="payButton">Record payment</button>
+        </div>
+    </form>
+</dialog>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const orderId = {{ $order->id }};
+    const balance = {{ max($balance, 0) }};
+    const labels = { pending: 'Pending', processing: 'Processing', ready: 'Ready for pickup', completed: 'Completed', cancelled: 'Cancelled' };
+
+    // ---- Status ----
+    async function setStatus(status, control) {
+        if (status === 'cancelled') {
+            const ok = await confirmAction({ title: 'Cancel this order?', message: 'It will no longer count in sales. You can change the status back later.', confirmText: 'Cancel order', cancelText: 'Keep order' });
+            if (!ok) { document.getElementById('statusSelect').value = @json($order->status); return; }
+        }
+        control?.classList.add('is-loading');
+        try {
+            await sendJson(appUrl(`orders/${orderId}/update-status`), { status });
+            flashToast(`Order marked ${labels[status].toLowerCase()}.`);
+            location.reload();
+        } catch (e) {
+            control?.classList.remove('is-loading');
+            showToast(e.message, 'error');
+        }
+    }
+    document.querySelectorAll('[data-set-status]').forEach(b => b.addEventListener('click', () => setStatus(b.dataset.setStatus, b)));
+    document.getElementById('statusSelect').addEventListener('change', e => setStatus(e.target.value));
+
+    // ---- Notes ----
+    document.getElementById('notesForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const button = e.target.querySelector('button[type="submit"]');
+        button.classList.add('is-loading');
+        try {
+            await sendJson(appUrl(`orders/${orderId}/add-notes`), { notes: document.getElementById('notes').value });
+            showToast('Notes saved.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            button.classList.remove('is-loading');
+        }
+    });
+
+    // ---- Payment ----
+    const dialog = document.getElementById('paymentDialog');
+    const amount = document.getElementById('amount');
+    const result = document.getElementById('payResult');
+    const payButton = document.getElementById('payButton');
+    const describe = () => {
+        const value = parseFloat(amount.value) || 0;
+        if (value <= 0) { result.textContent = ''; payButton.textContent = 'Record payment'; return; }
+        if (value > balance) { result.innerHTML = `Change to give back: <span class="text-success">${peso(value - balance)}</span>`; payButton.textContent = 'Record ' + peso(balance); }
+        else if (value < balance) { result.innerHTML = `Partial payment · <span class="text-danger">${peso(balance - value)}</span> still due`; payButton.textContent = 'Record ' + peso(value); }
+        else { result.textContent = 'Pays the order in full.'; payButton.textContent = 'Record ' + peso(value); }
+    };
+    amount.addEventListener('input', describe);
+    document.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { amount.value = Number(b.dataset.amount).toFixed(2); describe(); }));
+    dialog.addEventListener('close', () => { document.getElementById('amountError').textContent = ''; amount.removeAttribute('aria-invalid'); });
+    describe();
+
+    document.getElementById('paymentForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const value = parseFloat(amount.value) || 0;
+        const error = document.getElementById('amountError');
+        if (value <= 0) { error.textContent = 'Enter the amount received.'; amount.setAttribute('aria-invalid', 'true'); amount.focus(); return; }
+        payButton.classList.add('is-loading');
+        try {
+            const data = await sendJson(appUrl(`orders/${orderId}/add-payment`), {
+                amount: value,
+                payment_method: dialog.querySelector('input[name="payment_method"]:checked').value,
+            });
+            flashToast(data.change > 0 ? `Payment recorded. Give back ${peso(data.change)} change.` : 'Payment recorded.');
+            location.replace(appUrl(`orders/${orderId}/details`));
+        } catch (err) {
+            payButton.classList.remove('is-loading');
+            error.textContent = err.message;
+        }
+    });
+
+    @if($canPay && request()->boolean('pay'))
+    openDialog(dialog);
+    @endif
+    @if(request()->boolean('print'))
+    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+    @endif
+})();
+</script>
+@endpush

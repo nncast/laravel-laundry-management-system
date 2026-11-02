@@ -139,8 +139,8 @@ class BackupTest extends TestCase
 
     public function test_settings_page_shows_last_backup_time(): void
     {
-        $this->asAdmin()->get('/settings/mastersettings')->assertOk();
+        $this->asAdmin()->get('/settings/mastersettings')->assertOk()->assertSee('No backup yet');
         $this->asAdmin()->get('/backup/download')->assertOk();
-        $this->asAdmin()->get('/settings/mastersettings')->assertOk()->assertSee('Last backup:');
+        $this->asAdmin()->get('/settings/mastersettings')->assertOk()->assertSee('Last backup')->assertDontSee('No backup yet');
     }
 }

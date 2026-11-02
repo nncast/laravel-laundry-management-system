@@ -165,7 +165,7 @@ class LaundryAppTest extends TestCase
         $this->assertEquals(198, $order->total);
 
         $this->actingAsStaff($this->admin)->get("/orders/{$order->id}/details")
-            ->assertOk()->assertSee('Discount (10%):');
+            ->assertOk()->assertSee('Discount (10%)');
     }
 
     public function test_percent_discount_over_100_is_rejected(): void
@@ -351,6 +351,66 @@ class LaundryAppTest extends TestCase
         $this->actingAsStaff($this->admin)->get("/reports/order?start_date={$start}&end_date={$end}&status=ready")
             ->assertOk()
             ->assertViewHas('summary', fn ($s) => $s['total_orders'] === 1 && $s['ready_count'] === 1);
+    }
+
+    public function test_orders_list_filters_by_tab_payment_and_date(): void
+    {
+        $paid = $this->createOrder(['payment_amount' => 1000]);   // fully paid, so it moves to processing
+        $unpaid = $this->createOrder();
+        $old = $this->createOrder(['order_date' => now()->subDays(5)->toDateString()]);   // pending 5 days
+
+        $this->actingAsStaff($this->cashier)->get('/orders?status=overdue')
+            ->assertOk()
+            ->assertViewHas('orders', fn ($page) => $page->pluck('id')->all() === [$old->id])
+            ->assertViewHas('counts', fn ($c) => $c[''] === 3 && $c['open'] === 3 && $c['overdue'] === 1 && $c['processing'] === 1);
+
+        $this->actingAsStaff($this->cashier)->get('/orders?payment=unpaid')
+            ->assertViewHas('orders', fn ($page) => $page->pluck('id')->sort()->values()->all() === [$unpaid->id, $old->id]);
+
+        $this->actingAsStaff($this->cashier)->get('/orders?payment=paid')
+            ->assertViewHas('orders', fn ($page) => $page->pluck('id')->all() === [$paid->id]);
+
+        $this->actingAsStaff($this->cashier)->get('/orders?from=' . now()->toDateString())
+            ->assertViewHas('orders', fn ($page) => $page->count() === 2);
+    }
+
+    public function test_bulk_status_moves_several_orders(): void
+    {
+        $first = $this->createOrder();
+        $second = $this->createOrder();
+
+        $this->actingAsStaff($this->cashier)->postJson('/orders/bulk-status', ['ids' => [$first->id, $second->id], 'status' => 'ready'])
+            ->assertOk()->assertJson(['updated' => 2]);
+        $this->assertSame(['ready', 'ready'], Order::whereIn('id', [$first->id, $second->id])->pluck('status')->all());
+
+        $this->actingAsStaff($this->cashier)->postJson('/orders/bulk-status', ['ids' => [$first->id], 'status' => 'lost'])
+            ->assertStatus(422);
+    }
+
+    public function test_dashboard_counts_ready_overdue_and_unpaid_orders(): void
+    {
+        $ready = $this->createOrder();
+        $ready->update(['status' => 'ready']);
+        $this->createOrder(['order_date' => now()->subDays(2)->toDateString()]);   // pending 2 days: overdue
+
+        $stats = $this->actingAsStaff($this->admin)->getJson('/dashboard/stats')->json('stats');
+        $this->assertSame(1, $stats['readyCount']);
+        $this->assertSame(1, $stats['overdueCount']);
+        $this->assertSame(2, $stats['unpaidCount']);
+        $this->assertEquals(420, $stats['unpaidBalance']);
+
+        $this->actingAsStaff($this->admin)->get('/dashboard')
+            ->assertOk()
+            ->assertViewHas('readyOrders', fn ($orders) => $orders->pluck('id')->all() === [$ready->id]);
+    }
+
+    public function test_customer_list_shows_order_count_and_balance(): void
+    {
+        $this->createOrder();   // 210 owed by Juan
+
+        $this->actingAsStaff($this->cashier)->get('/customers')
+            ->assertOk()
+            ->assertViewHas('customers', fn ($page) => $page->first()->orders_count === 1 && (float) $page->first()->balance_due === 210.0);
     }
 
     public function test_cashier_cannot_delete_orders(): void
