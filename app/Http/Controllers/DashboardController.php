@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
+use App\Support\Format;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -36,7 +37,10 @@ class DashboardController extends Controller
         $revenueTrend = $this->percentChange($thisMonth->revenue, $lastMonth->revenue);
 
         // Money taken at the counter today, whatever day the order is from
-        $collectedToday = (float) Payment::where('created_at', '>=', $today)->sum('amount');
+        $collectedToday = (float) Payment::join('orders', 'orders.id', '=', 'payments.order_id')
+            ->where('payments.created_at', '>=', $today)
+            ->where('orders.currency', app(Format::class)->currency)
+            ->sum('payments.amount');
 
         $recentOrders = Order::with('customer:id,name')
             ->latest('id')
@@ -54,6 +58,7 @@ class DashboardController extends Controller
             ->join('order_items', 'services.id', '=', 'order_items.service_id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed')
+            ->where('orders.currency', app(Format::class)->currency)
             ->groupBy('services.id', 'services.name')
             ->orderByDesc('order_count')
             ->take(5)
@@ -137,19 +142,22 @@ class DashboardController extends Controller
      */
     private function stats(): array
     {
+        // Money sums count the business currency only (see Order::scopeInBusinessCurrency)
+        $currency = app(Format::class)->currency;
+
         $overall = Order::query()
             ->selectRaw('COUNT(*) as total_orders')
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders")
             ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_orders")
             ->selectRaw("SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) as ready_orders")
-            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as total_revenue")
-            ->selectRaw("SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total THEN 1 ELSE 0 END) as unpaid_count")
-            ->selectRaw("COALESCE(SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total THEN total - paid_amount ELSE 0 END), 0) as unpaid_balance")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' AND currency = ? THEN total ELSE 0 END), 0) as total_revenue", [$currency])
+            ->selectRaw("SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total AND currency = ? THEN 1 ELSE 0 END) as unpaid_count", [$currency])
+            ->selectRaw("COALESCE(SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total AND currency = ? THEN total - paid_amount ELSE 0 END), 0) as unpaid_balance", [$currency])
             ->first();
 
         $today = Order::today()
             ->selectRaw("SUM(CASE WHEN status <> 'cancelled' THEN 1 ELSE 0 END) as orders")
-            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as revenue")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' AND currency = ? THEN total ELSE 0 END), 0) as revenue", [$currency])
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed")
             ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing")
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending")
@@ -180,7 +188,7 @@ class DashboardController extends Controller
     {
         $row = Order::betweenDates($start, $end)
             ->selectRaw('COUNT(*) as orders')
-            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as revenue")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' AND currency = ? THEN total ELSE 0 END), 0) as revenue", [app(Format::class)->currency])
             ->first();
 
         return (object) ['orders' => (int) $row->orders, 'revenue' => (float) $row->revenue];
@@ -202,6 +210,7 @@ class DashboardController extends Controller
 
         $daily = Order::betweenDates($start, $end)
             ->where('status', 'completed')
+            ->inBusinessCurrency()
             ->selectRaw('substr(order_date, 1, 10) as day, COUNT(*) as orders, SUM(total) as sales')
             ->groupBy('day')
             ->get()

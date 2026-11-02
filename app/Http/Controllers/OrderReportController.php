@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\Format;
 use Illuminate\Http\Request;
 
 class OrderReportController extends Controller
@@ -21,6 +22,7 @@ class OrderReportController extends Controller
         return view('report-orders', [
             'orders' => $orders,
             'summary' => $this->summary($filters, $orders),
+            'otherCurrencies' => Order::otherCurrencyTotals($this->query($filters)),
             'filters' => $filters,
         ]);
     }
@@ -40,7 +42,7 @@ class OrderReportController extends Controller
         $rows = (function () use ($orders, $filters, $summary) {
             yield ["Order Report - {$filters['start_date']} to {$filters['end_date']}"];
             yield [];
-            yield ['Order Number', 'Date', 'Customer', 'Services', 'Amount', 'Paid', 'Balance', 'Status'];
+            yield ['Order Number', 'Date', 'Customer', 'Services', 'Currency', 'Amount', 'Paid', 'Balance', 'Status'];
 
             foreach ($orders as $order) {
                 yield [
@@ -49,6 +51,7 @@ class OrderReportController extends Controller
                     $order->customer->name ?? 'Walk-in Customer',
                     $order->items->map(fn ($item) => ($item->service->name ?? 'Deleted service')
                         . ($item->qty > 1 ? " (x{$item->qty})" : ''))->implode(', '),
+                    $order->currency,
                     number_format((float) $order->total, 2, '.', ''),
                     number_format((float) $order->paid_amount, 2, '.', ''),
                     number_format($order->balance, 2, '.', ''),
@@ -59,7 +62,7 @@ class OrderReportController extends Controller
             yield [];
             yield ['Summary'];
             yield ['Total Orders', $summary['total_orders']];
-            yield ['Total Amount', number_format($summary['total_amount'], 2, '.', '')];
+            yield ['Total Amount (' . app(Format::class)->currency . ')', number_format($summary['total_amount'], 2, '.', '')];
             yield ['Completed', $summary['completed_count']];
             yield ['Pending', $summary['pending_count']];
             yield ['Processing', $summary['processing_count']];
@@ -102,7 +105,7 @@ class OrderReportController extends Controller
     {
         $row = $this->query($filters)
             ->selectRaw('COUNT(*) as total_orders')
-            ->selectRaw('COALESCE(SUM(total), 0) as total_amount')
+            ->selectRaw('COALESCE(SUM(CASE WHEN currency = ? THEN total ELSE 0 END), 0) as total_amount', [app(Format::class)->currency])
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count")
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count")
             ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_count")

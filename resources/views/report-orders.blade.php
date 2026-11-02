@@ -5,7 +5,7 @@
 @php
     $start = \Carbon\Carbon::parse($filters['start_date']);
     $end = \Carbon\Carbon::parse($filters['end_date']);
-    $range = $start->equalTo($end) ? $start->format('M j, Y') : $start->format('M j') . ' – ' . $end->format('M j, Y');
+    $range = $start->equalTo($end) ? fmt_date($start) : fmt_date($start) . ' – ' . fmt_date($end);
     $statuses = ['' => 'All statuses', 'pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
 @endphp
 @section('page-subtitle', $range . ($filters['status'] ? ' · ' . $statuses[$filters['status']] : ''))
@@ -26,9 +26,10 @@
         </select>
     </div>
 </x-report-range>
+<x-other-currencies :rows="$otherCurrencies" />
 
 <section class="kpi-grid" aria-label="Totals for {{ $range }}" style="margin-bottom: var(--s-5)">
-    <div class="kpi"><span class="kpi-label">Orders</span><span class="kpi-value">{{ $summary['total_orders'] }}</span><span class="kpi-meta">₱{{ number_format($summary['total_amount'], 2) }} in total</span></div>
+    <div class="kpi"><span class="kpi-label">Orders</span><span class="kpi-value">{{ $summary['total_orders'] }}</span><span class="kpi-meta">{{ money($summary['total_amount']) }} in total</span></div>
     <div class="kpi"><span class="kpi-label"><span class="badge badge-pending">Pending</span></span><span class="kpi-value">{{ $summary['pending_count'] }}</span></div>
     <div class="kpi"><span class="kpi-label"><span class="badge badge-processing">Processing</span></span><span class="kpi-value">{{ $summary['processing_count'] }}</span></div>
     <div class="kpi"><span class="kpi-label"><span class="badge badge-ready">Ready for pickup</span></span><span class="kpi-value">{{ $summary['ready_count'] }}</span></div>
@@ -53,13 +54,13 @@
                 @foreach($orders as $order)
                 <tr data-href="{{ route('orders.details', $order) }}">
                     <td class="cell-primary"><a class="cell-title nowrap" href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a></td>
-                    <td data-label="Date" class="nowrap">{{ $order->order_date?->format('M j, Y') }}</td>
+                    <td data-label="Date" class="nowrap">{{ fmt_date($order->order_date) }}</td>
                     <td data-label="Customer">{{ $order->customer->name ?? 'Walk-in customer' }}</td>
                     <td data-label="Services" class="cell-sub">
                         {{ $order->items->map(fn ($item) => ($item->service->name ?? 'Deleted service') . ($item->qty > 1 ? " ×{$item->qty}" : ''))->implode(', ') ?: '—' }}
                     </td>
-                    <td data-label="Amount" class="num"><strong>₱{{ number_format($order->total, 2) }}</strong></td>
-                    <td data-label="Balance" class="num {{ $order->balance > 0 && $order->status !== 'cancelled' ? 'text-danger' : 'muted' }}">{{ $order->status !== 'cancelled' && $order->balance > 0 ? '₱' . number_format($order->balance, 2) : '—' }}</td>
+                    <td data-label="Amount" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
+                    <td data-label="Balance" class="num {{ $order->balance > 0 && $order->status !== 'cancelled' ? 'text-danger' : 'muted' }}">{{ $order->status !== 'cancelled' && $order->balance > 0 ? money($order->balance, $order->currency) : '—' }}</td>
                     <td data-label="Status"><span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span></td>
                 </tr>
                 @endforeach

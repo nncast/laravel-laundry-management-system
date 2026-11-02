@@ -2,7 +2,7 @@
 
 @section('title', 'Settings')
 @section('page-title', 'Settings')
-@section('page-subtitle', 'Your business details and data backups')
+@section('page-subtitle', 'Your business details, currency and formats, and data backups')
 
 @push('styles')
 <style>
@@ -10,12 +10,15 @@
 .logo-preview img { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
 .backup-status { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4); border-radius: var(--radius); background: var(--surface-muted); border: 1px solid var(--border); }
 .backup-status .bubble-tile { width: 44px; height: 44px; }
+.region-preview { display: grid; gap: 4px; padding: var(--s-3) var(--s-4); border-radius: var(--radius); background: var(--accent-soft); }
+.region-preview strong { font-size: var(--fs-lg); }
 .restore-box { display: grid; gap: var(--s-3); padding: var(--s-4); border: 1px solid #f3c2c4; border-radius: var(--radius); background: #fffafa; }
 </style>
 @endpush
 
 @section('content')
 <div class="grid-2" style="align-items:start">
+<div class="stack">
     <section class="card" aria-labelledby="profile-title">
         <header class="card-header">
             <div>
@@ -41,6 +44,56 @@
             </div>
         </form>
     </section>
+
+    @php
+        $fmt = app(\App\Support\Format::class);
+        $currencyOptions = collect(config('currencies'))->mapWithKeys(fn ($c, $code) => [$code => "{$c['symbol']}  {$c['name']} ({$code})"])->all();
+        $numberOptions = ['comma_dot' => '1,234.56', 'dot_comma' => '1.234,56', 'space_comma' => "1\u{202F}234,56"];
+        $sample = now()->setTime(21, 5);
+        $dateOptions = collect(\App\Support\Format::DATE_FORMATS)->mapWithKeys(fn ($label, $format) => [$format => $sample->translatedFormat($format) . ($label !== 'Nov 3, 2026' ? "  ({$label})" : '')])->all();
+        $timeOptions = ['12h' => $sample->translatedFormat('g:i A') . ' (12-hour)', '24h' => $sample->format('H:i') . ' (24-hour)'];
+        // For the live preview
+        $previewData = [
+            'currencies' => collect(config('currencies'))->map(fn ($c) => ['symbol' => $c['symbol'], 'decimals' => $c['decimals']]),
+            'numbers' => \App\Support\Format::NUMBER_FORMATS,
+            'dates' => collect(\App\Support\Format::DATE_FORMATS)->mapWithKeys(fn ($l, $format) => [$format => $sample->translatedFormat($format)]),
+            'times' => ['12h' => $sample->translatedFormat('g:i A'), '24h' => $sample->format('H:i')],
+            'saved' => $fmt->currency,
+        ];
+    @endphp
+    <section class="card" id="region" aria-labelledby="region-title">
+        <header class="card-header">
+            <div>
+                <h2 class="card-title" id="region-title"><i class="fas fa-earth-asia" aria-hidden="true"></i> Currency &amp; formats</h2>
+                <p class="card-subtitle">Used on every screen, receipt and export</p>
+            </div>
+            <span class="badge badge-info">{{ $fmt->currency }} {{ currency_symbol() }}</span>
+        </header>
+        <form method="POST" action="{{ route('settings.region') }}" id="regionForm">
+            @csrf
+            <div class="card-body form-grid">
+                <x-field name="currency" label="Currency" :options="$currencyOptions" :value="$fmt->currency" />
+                <div class="form-row">
+                    <x-field name="number_format" label="Numbers" :options="$numberOptions" :value="$fmt->numberFormat" />
+                    <x-field name="date_format" label="Dates" :options="$dateOptions" :value="$fmt->dateFormat" />
+                </div>
+                <x-field name="time_format" label="Time" type="segmented" :options="$timeOptions" :value="$fmt->timeFormat" />
+                <div class="region-preview" aria-live="polite">
+                    <span class="eyebrow">Preview</span>
+                    <div><strong id="previewMoney">{{ money(1250) }}</strong> · <span id="previewDate">{{ fmt_date($sample) }}</span> · <span id="previewTime">{{ fmt_time($sample) }}</span></div>
+                </div>
+                <div class="alert alert-warning" id="currencyWarning" hidden>
+                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                    <span>Prices are not converted: a {{ money(180) }} service becomes <strong id="previewConverted"></strong>. Update service, add-on and product prices after switching. Orders already taken keep their currency.</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk" aria-hidden="true"></i> Save currency &amp; formats</button>
+            </div>
+        </form>
+    </section>
+
+</div>
 
     <section class="card" id="backups" aria-labelledby="backup-title">
         <header class="card-header">
@@ -77,3 +130,30 @@
     </section>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    // Live preview of the currency and formats before saving
+    const data = @json($previewData);
+    const form = document.getElementById('regionForm');
+    const formatMoney = (amount, code, numbers) => {
+        const currency = data.currencies[code];
+        const [thousands, decimal] = data.numbers[numbers];
+        const [whole, fraction] = amount.toFixed(currency.decimals).split('.');
+        return currency.symbol + whole.replace(/\B(?=(\d{3})+(?!\d))/g, thousands) + (fraction ? decimal + fraction : '');
+    };
+    const update = () => {
+        const code = form.currency.value;
+        const numbers = form.number_format.value;
+        document.getElementById('previewMoney').textContent = formatMoney(1250, code, numbers);
+        document.getElementById('previewDate').textContent = data.dates[form.date_format.value];
+        document.getElementById('previewTime').textContent = data.times[form.querySelector('[name="time_format"]:checked').value];
+        const changed = code !== data.saved;
+        document.getElementById('currencyWarning').hidden = !changed;
+        if (changed) document.getElementById('previewConverted').textContent = formatMoney(180, code, numbers);
+    };
+    form.addEventListener('change', update);
+})();
+</script>
+@endpush

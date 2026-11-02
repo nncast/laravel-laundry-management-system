@@ -34,7 +34,7 @@ class CustomerController extends Controller
             ->withCount('orders')
             ->addSelect([
                 'balance_due' => Order::selectRaw('COALESCE(SUM(total - paid_amount), 0)')
-                    ->whereColumn('customer_id', 'customers.id')->unpaid(),
+                    ->whereColumn('customer_id', 'customers.id')->unpaid()->inBusinessCurrency(),
                 'last_order_date' => Order::select('order_date')
                     ->whereColumn('customer_id', 'customers.id')->orderByDesc('order_date')->limit(1),
             ])

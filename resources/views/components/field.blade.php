@@ -1,6 +1,6 @@
 {{--
     A labelled form control with its help text and server-side error.
-    <x-field name="price" label="Price" type="number" prefix="₱" required step="0.01" min="0" />
+    <x-field name="price" label="Price" type="number" :prefix="currency_symbol()" required :step="money_step()" min="0" />
     type: any input type, "textarea", or pass :options="[value => label]" for a select.
     Extra attributes (min, step, inputmode, pattern, data-default…) go on the control.
 --}}

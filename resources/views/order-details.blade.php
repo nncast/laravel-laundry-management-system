@@ -32,7 +32,7 @@
                     <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? 'Partly paid' : 'Unpaid' }}</span>
                 @endif
             @endif
-            <span class="muted">{{ $order->order_date?->format('D, M j, Y') }}</span>
+            <span class="muted">{{ fmt_date($order->order_date) }}</span>
         </div>
     </div>
     <div class="page-actions">
@@ -40,7 +40,7 @@
             <button type="button" class="btn {{ $next[3] }}" data-set-status="{{ $next[0] }}"><i class="fas {{ $next[2] }}" aria-hidden="true"></i> {{ $next[1] }}</button>
         @endif
         @if($canPay)
-            <button type="button" class="btn {{ $next ? 'btn-secondary' : 'btn-primary' }}" data-dialog-open="paymentDialog"><i class="fas fa-peso-sign" aria-hidden="true"></i> Add payment</button>
+            <button type="button" class="btn {{ $next ? 'btn-secondary' : 'btn-primary' }}" data-dialog-open="paymentDialog"><i class="fas fa-wallet" aria-hidden="true"></i> Add payment</button>
         @endif
         @if($order->can_edit)
             <a href="{{ route('pos.edit', $order) }}" class="btn btn-secondary"><i class="fas fa-pen" aria-hidden="true"></i> Edit</a>
@@ -110,7 +110,7 @@
     <div class="text-right">
         <strong>Receipt</strong>
         <div>{{ $order->order_number }}</div>
-        <div>{{ $order->order_date?->format('M j, Y') }}</div>
+        <div>{{ fmt_date($order->order_date) }}</div>
     </div>
 </div>
 
@@ -137,9 +137,9 @@
                         @forelse($order->items as $item)
                         <tr>
                             <td>{{ $item->service->name ?? 'Deleted service' }}</td>
-                            <td class="num">₱{{ number_format($item->price, 2) }}</td>
+                            <td class="num">{{ money($item->price, $order->currency) }}</td>
                             <td class="num">{{ $item->qty }}</td>
-                            <td class="num">₱{{ number_format($item->total, 2) }}</td>
+                            <td class="num">{{ money($item->total, $order->currency) }}</td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="muted">No services on this order.</td></tr>
@@ -147,9 +147,9 @@
                         @foreach($order->addons as $addon)
                         <tr>
                             <td>{{ $addon->name }} <span class="badge">Add-on</span></td>
-                            <td class="num">₱{{ number_format($addon->pivot->price, 2) }}</td>
+                            <td class="num">{{ money($addon->pivot->price, $order->currency) }}</td>
                             <td class="num">1</td>
-                            <td class="num">₱{{ number_format($addon->pivot->price, 2) }}</td>
+                            <td class="num">{{ money($addon->pivot->price, $order->currency) }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -157,12 +157,12 @@
             </div>
             <div class="totals">
                 <div class="summary">
-                    <div class="summary-row"><span>Services</span><span>₱{{ number_format($order->subtotal, 2) }}</span></div>
-                    @if($addonsTotal > 0)<div class="summary-row"><span>Add-ons</span><span>₱{{ number_format($addonsTotal, 2) }}</span></div>@endif
-                    @if($order->discount > 0)<div class="summary-row"><span>Discount{{ $order->discount_percent !== null ? ' (' . (float) $order->discount_percent . '%)' : '' }}</span><span>−₱{{ number_format($order->discount, 2) }}</span></div>@endif
-                    <div class="summary-row summary-total"><span>Total</span><span>₱{{ number_format($order->total, 2) }}</span></div>
-                    <div class="summary-row"><span>Paid</span><span>₱{{ number_format($order->paid_amount, 2) }}</span></div>
-                    <div class="summary-row"><span>Balance</span><span class="{{ $balance > 0 ? 'text-danger' : 'text-success' }}">₱{{ number_format(max($balance, 0), 2) }}</span></div>
+                    <div class="summary-row"><span>Services</span><span>{{ money($order->subtotal, $order->currency) }}</span></div>
+                    @if($addonsTotal > 0)<div class="summary-row"><span>Add-ons</span><span>{{ money($addonsTotal, $order->currency) }}</span></div>@endif
+                    @if($order->discount > 0)<div class="summary-row"><span>Discount{{ $order->discount_percent !== null ? ' (' . (float) $order->discount_percent . '%)' : '' }}</span><span>−{{ money($order->discount, $order->currency) }}</span></div>@endif
+                    <div class="summary-row summary-total"><span>Total</span><span>{{ money($order->total, $order->currency) }}</span></div>
+                    <div class="summary-row"><span>Paid</span><span>{{ money($order->paid_amount, $order->currency) }}</span></div>
+                    <div class="summary-row"><span>Balance</span><span class="{{ $balance > 0 ? 'text-danger' : 'text-success' }}">{{ money(max($balance, 0), $order->currency) }}</span></div>
                 </div>
             </div>
         </section>
@@ -174,12 +174,12 @@
             </header>
             @forelse($order->payments->sortByDesc('created_at') as $payment)
                 <div class="payment-row">
-                    <span class="bubble-tile tone-green" aria-hidden="true"><i class="fas {{ $methods[$payment->payment_method][1] ?? 'fa-peso-sign' }}"></i></span>
+                    <span class="bubble-tile tone-green" aria-hidden="true"><i class="fas {{ $methods[$payment->payment_method][1] ?? 'fa-wallet' }}"></i></span>
                     <span class="list-main">
                         <span class="list-title">{{ $methods[$payment->payment_method][0] ?? ucfirst($payment->payment_method) }}</span>
-                        <span class="list-sub">{{ $payment->created_at->format('M j, Y · g:i A') }}</span>
+                        <span class="list-sub">{{ fmt_date($payment->created_at) }} · {{ fmt_time($payment->created_at) }}</span>
                     </span>
-                    <strong class="money">₱{{ number_format($payment->amount, 2) }}</strong>
+                    <strong class="money">{{ money($payment->amount, $order->currency) }}</strong>
                 </div>
             @empty
                 <p class="empty">No payments yet.</p>
@@ -203,10 +203,10 @@
         <section class="card balance-card {{ $order->status === 'cancelled' ? '' : ($balance > 0 ? 'is-due' : 'is-paid') }}" aria-label="Balance">
             <div class="card-body">
                 <span class="eyebrow">{{ $balance > 0 && $order->status !== 'cancelled' ? 'Balance due' : 'Balance' }}</span>
-                <span class="balance-amount money">₱{{ number_format(max($balance, 0), 2) }}</span>
-                <span class="muted">of ₱{{ number_format($order->total, 2) }} · ₱{{ number_format($order->paid_amount, 2) }} paid</span>
+                <span class="balance-amount money">{{ money(max($balance, 0), $order->currency) }}</span>
+                <span class="muted">of {{ money($order->total, $order->currency) }} · {{ money($order->paid_amount, $order->currency) }} paid</span>
                 @if($canPay)
-                    <button type="button" class="btn btn-primary btn-lg btn-block no-print" data-dialog-open="paymentDialog"><i class="fas fa-peso-sign" aria-hidden="true"></i> Collect payment</button>
+                    <button type="button" class="btn btn-primary btn-lg btn-block no-print" data-dialog-open="paymentDialog"><i class="fas fa-wallet" aria-hidden="true"></i> Collect payment</button>
                 @endif
             </div>
         </section>
@@ -234,8 +234,8 @@
             <div class="card-body stack-sm">
                 <dl class="dl">
                     <dt>Taken by</dt><dd>{{ $order->staff->name ?? '—' }}</dd>
-                    <dt>Created</dt><dd>{{ $order->created_at?->format('M j, Y g:i A') }}</dd>
-                    <dt>Updated</dt><dd>{{ $order->updated_at?->format('M j, Y g:i A') }}</dd>
+                    <dt>Created</dt><dd>{{ fmt_datetime($order->created_at) }}</dd>
+                    <dt>Updated</dt><dd>{{ fmt_datetime($order->updated_at) }}</dd>
                 </dl>
                 <div class="field">
                     <label class="label" for="statusSelect">Change status</label>
@@ -260,7 +260,7 @@
             <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
         </div>
         <div class="dialog-body">
-            <div class="pay-due"><span class="muted">Balance due</span><strong class="money">₱{{ number_format(max($balance, 0), 2) }}</strong></div>
+            <div class="pay-due"><span class="muted">Balance due</span><strong class="money">{{ money(max($balance, 0), $order->currency) }}</strong></div>
             <div class="field">
                 <span class="label" id="methodLabel">Method</span>
                 <div class="segmented block" role="radiogroup" aria-labelledby="methodLabel">
@@ -272,16 +272,16 @@
             <div class="field">
                 <label class="label" for="amount">Amount received</label>
                 <div class="input-affix">
-                    <span class="affix" aria-hidden="true">₱</span>
-                    <input class="input" type="number" id="amount" name="amount" inputmode="decimal" min="0.01" step="0.01" value="{{ number_format(max($balance, 0), 2, '.', '') }}" aria-describedby="payResult">
+                    <span class="affix" aria-hidden="true">{{ currency_symbol($order->currency) }}</span>
+                    <input class="input" type="number" id="amount" name="amount" inputmode="decimal" min="{{ money_step($order->currency) }}" step="{{ money_step($order->currency) }}" value="{{ money_input(max($balance, 0), $order->currency) }}" aria-describedby="payResult">
                 </div>
                 <div class="field-error" id="amountError"></div>
             </div>
             <div class="quick-cash" aria-label="Quick amounts">
                 <button type="button" class="btn btn-secondary" data-amount="{{ max($balance, 0) }}">Exact</button>
-                <button type="button" class="btn btn-secondary" data-amount="100">₱100</button>
-                <button type="button" class="btn btn-secondary" data-amount="500">₱500</button>
-                <button type="button" class="btn btn-secondary" data-amount="1000">₱1,000</button>
+                @foreach(array_slice(app(\App\Support\Format::class)->currencyInfo($order->currency)['bills'], -3) as $bill)
+                    <button type="button" class="btn btn-secondary" data-amount="{{ $bill }}">{{ money($bill, $order->currency, whole: true) }}</button>
+                @endforeach
             </div>
             <p class="pay-result" id="payResult" aria-live="polite"></p>
         </div>
@@ -298,6 +298,9 @@
 (function () {
     const orderId = {{ $order->id }};
     const balance = {{ max($balance, 0) }};
+    // This order's own currency (it may predate a currency change)
+    const orderFmt = @json(['symbol' => currency_symbol($order->currency), 'decimals' => app(\App\Support\Format::class)->decimals($order->currency)]);
+    const money = value => window.money(value, orderFmt);
     const labels = { pending: 'Pending', processing: 'Processing', ready: 'Ready for pickup', completed: 'Completed', cancelled: 'Cancelled' };
 
     // ---- Status ----
@@ -342,12 +345,12 @@
     const describe = () => {
         const value = parseFloat(amount.value) || 0;
         if (value <= 0) { result.textContent = ''; payButton.textContent = 'Record payment'; return; }
-        if (value > balance) { result.innerHTML = `Change to give back: <span class="text-success">${peso(value - balance)}</span>`; payButton.textContent = 'Record ' + peso(balance); }
-        else if (value < balance) { result.innerHTML = `Partial payment · <span class="text-danger">${peso(balance - value)}</span> still due`; payButton.textContent = 'Record ' + peso(value); }
-        else { result.textContent = 'Pays the order in full.'; payButton.textContent = 'Record ' + peso(value); }
+        if (value > balance) { result.innerHTML = `Change to give back: <span class="text-success">${money(value - balance)}</span>`; payButton.textContent = 'Record ' + money(balance); }
+        else if (value < balance) { result.innerHTML = `Partial payment · <span class="text-danger">${money(balance - value)}</span> still due`; payButton.textContent = 'Record ' + money(value); }
+        else { result.textContent = 'Pays the order in full.'; payButton.textContent = 'Record ' + money(value); }
     };
     amount.addEventListener('input', describe);
-    document.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { amount.value = Number(b.dataset.amount).toFixed(2); describe(); }));
+    document.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { amount.value = Number(b.dataset.amount).toFixed(orderFmt.decimals); describe(); }));
     dialog.addEventListener('close', () => { document.getElementById('amountError').textContent = ''; amount.removeAttribute('aria-invalid'); });
     describe();
 
@@ -362,7 +365,7 @@
                 amount: value,
                 payment_method: dialog.querySelector('input[name="payment_method"]:checked').value,
             });
-            flashToast(data.change > 0 ? `Payment recorded. Give back ${peso(data.change)} change.` : 'Payment recorded.');
+            flashToast(data.change > 0 ? `Payment recorded. Give back ${money(data.change)} change.` : 'Payment recorded.');
             location.replace(appUrl(`orders/${orderId}/details`));
         } catch (err) {
             payButton.classList.remove('is-loading');

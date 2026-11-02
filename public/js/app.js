@@ -8,7 +8,17 @@
     window.escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => (
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
     ));
-    window.peso = value => '₱' + Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Money in the business currency, written the way the server writes it (Settings → Region,
+    // passed in as window.FMT): symbol, decimals and separators.
+    const FMT = window.FMT || { symbol: '', decimals: 2, thousands: ',', decimal: '.' };
+    // An order taken in another currency passes its own {symbol, decimals} as fmt.
+    window.roundMoney = (value, fmt = FMT) => Number(Math.round(Number(value || 0) + 'e' + fmt.decimals) + 'e-' + fmt.decimals);
+    window.money = (value, fmt = FMT) => {
+        const f = { ...FMT, ...fmt };
+        const n = window.roundMoney(value, f);
+        const [whole, fraction] = Math.abs(n).toFixed(f.decimals).split('.');
+        return (n < 0 ? '-' : '') + f.symbol + whole.replace(/\B(?=(\d{3})+(?!\d))/g, f.thousands) + (fraction ? f.decimal + fraction : '');
+    };
 
     // ---------------- Toasts ----------------
     // The region is a manual popover so it sits in the top layer, above an open

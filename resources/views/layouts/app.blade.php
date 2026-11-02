@@ -28,6 +28,7 @@
     window.APP_URL = @json(rtrim(url('/'), '/'));
     window.appUrl = (path = '') => window.APP_URL + '/' + String(path).replace(/^\/+/, '');
     window.CSRF_TOKEN = @json(csrf_token());
+    window.FMT = @json(app(\App\Support\Format::class)->forScript());
 </script>
 </head>
 
