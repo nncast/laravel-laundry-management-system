@@ -97,3 +97,16 @@ body {
 .tone-violet { --tile: #7b61f0; --tile-light: #bfaaff; }
 .tone-amber  { --tile: #f29a11; --tile-light: #ffd27a; }
 .tone-green  { --tile: #12a150; --tile-light: #7fe0a6; }
+
+/* Bubble mascot (resources/views/components/mascot.blade.php). Arms and legs use
+   currentColor: white on brand blue, .mascot-ink on light surfaces. */
+.mascot { display: block; width: 100%; height: auto; color: #fff; overflow: visible; }
+.mascot.mascot-ink { color: #1d4fc4; }
+@media (prefers-reduced-motion: no-preference) {
+    .mascot { animation: mascot-float 6s ease-in-out infinite; }
+    .mascot .mascot-eyes { transform-box: fill-box; transform-origin: center; animation: mascot-blink 5s infinite; }
+    .mascot .mascot-wave { transform-origin: 244px 148px; animation: mascot-wave 1.8s ease-in-out infinite; }
+}
+@keyframes mascot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes mascot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes mascot-wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-14deg); } }
