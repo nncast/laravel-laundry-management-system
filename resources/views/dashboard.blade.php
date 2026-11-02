@@ -642,6 +642,26 @@ hr {
     .welcome-art { position: absolute; right: -36px; top: -22px; width: 150px; opacity: 0.55; margin: 0; }
     .welcome-copy { max-width: none; }
 }
+/* Needs attention: problems found automatically on each load */
+.attention-panel { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; padding: 18px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.attention-mascot { width: 120px; flex-shrink: 0; }
+.attention-body { flex: 1; min-width: 0; }
+.attention-body h3 { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+.attention-empty { color: var(--text-muted); margin-top: -4px; }
+.attention-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.attention-group { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.attention-head { display: flex; gap: 10px; align-items: center; }
+.attention-head .bubble-tile { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }
+.attention-head b { display: block; font-size: 14px; color: var(--text); }
+.attention-head small { color: var(--text-muted); font-size: 12px; }
+.attention-group ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--text-secondary); }
+.attention-group a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.attention-group a:hover { text-decoration: underline; }
+.attention-more { display: inline-block; margin-top: 6px; font-size: 12.5px; }
+@media (max-width: 640px) {
+    .attention-panel { flex-direction: column; align-items: stretch; padding: 16px; }
+    .attention-mascot { width: 84px; align-self: center; }
+}
 </style>
 
 <div class="dashboard-container">
@@ -707,6 +727,63 @@ hr {
             </div>
         </div>
     </div>
+
+    {{-- Found automatically on each load (DashboardController::attention) --}}
+    @php $attentionCount = $lowStock->count() + $stuckOrders->count() + $unpaidOrders->count(); @endphp
+    <section class="attention-panel" aria-labelledby="attention-title">
+        <x-mascot :mood="$attentionCount ? 'curious' : 'proud'" class="attention-mascot mascot-ink" />
+        <div class="attention-body">
+            <h3 id="attention-title">{{ $attentionCount ? 'Needs attention' : 'All caught up' }}</h3>
+            @if ($attentionCount === 0)
+                <p class="attention-empty">No stuck orders, no unpaid completed orders and nothing low on stock.</p>
+            @else
+                <div class="attention-groups">
+                    @if ($stuckOrders->isNotEmpty())
+                        <div class="attention-group">
+                            <div class="attention-head">
+                                <span class="bubble-tile tone-amber"><i class="fas fa-hourglass-half"></i></span>
+                                <div><b>{{ $stuckOrders->count() }} {{ Str::plural('order', $stuckOrders->count()) }} waiting too long</b><small>{{ $stuckRule }}</small></div>
+                            </div>
+                            <ul>
+                                @foreach ($stuckOrders->take(3) as $order)
+                                    <li><a href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a> · {{ $order->customer?->name ?? 'No customer' }} · {{ $order->status_label }} since {{ $order->order_date->format('M j') }}</li>
+                                @endforeach
+                            </ul>
+                            @if ($stuckOrders->count() > 3)<a class="attention-more" href="{{ route('orders.index') }}">View all orders</a>@endif
+                        </div>
+                    @endif
+                    @if ($unpaidOrders->isNotEmpty())
+                        <div class="attention-group">
+                            <div class="attention-head">
+                                <span class="bubble-tile tone-violet"><i class="fas fa-peso-sign"></i></span>
+                                <div><b>{{ $unpaidOrders->count() }} completed {{ Str::plural('order', $unpaidOrders->count()) }} not fully paid</b><small>₱{{ number_format($unpaidOrders->sum('balance'), 2) }} still to collect</small></div>
+                            </div>
+                            <ul>
+                                @foreach ($unpaidOrders->take(3) as $order)
+                                    <li><a href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a> · {{ $order->customer?->name ?? 'No customer' }} · ₱{{ number_format($order->balance, 2) }} due</li>
+                                @endforeach
+                            </ul>
+                            @if ($unpaidOrders->count() > 3)<a class="attention-more" href="{{ route('orders.index') }}">View all orders</a>@endif
+                        </div>
+                    @endif
+                    @if ($lowStock->isNotEmpty())
+                        <div class="attention-group">
+                            <div class="attention-head">
+                                <span class="bubble-tile tone-sky"><i class="fas fa-box-open"></i></span>
+                                <div><b>{{ $lowStock->count() }} {{ Str::plural('product', $lowStock->count()) }} low on stock</b><small>At or below the minimum stock level</small></div>
+                            </div>
+                            <ul>
+                                @foreach ($lowStock->take(3) as $product)
+                                    <li>{{ $product->name }} · {{ $product->available_stock }} left (min {{ $product->minimum_stock_level }})</li>
+                                @endforeach
+                            </ul>
+                            @if (in_array(session('staff.role'), ['manager', 'admin']))<a class="attention-more" href="{{ route('products.index') }}">Open inventory</a>@endif
+                        </div>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </section>
 
     <!-- Main Content Grid -->
     <div class="main-content-grid">
