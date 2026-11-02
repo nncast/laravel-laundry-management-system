@@ -335,6 +335,24 @@ class LaundryAppTest extends TestCase
             ->assertOk()->assertJson(['order' => ['status' => 'completed']]);
     }
 
+    public function test_ready_orders_wait_for_pickup_and_can_still_be_edited(): void
+    {
+        $order = $this->createOrder();
+
+        $this->actingAsStaff($this->cashier)->postJson("/orders/{$order->id}/update-status", ['status' => 'ready'])
+            ->assertOk()->assertJson(['order' => ['status' => 'ready', 'status_label' => 'Ready for pickup']]);
+
+        $order->refresh();
+        $this->assertTrue($order->can_edit);
+        $this->actingAsStaff($this->admin)->get("/pos/{$order->id}/edit")->assertOk();
+
+        $start = now()->startOfMonth()->toDateString();
+        $end = now()->endOfMonth()->toDateString();
+        $this->actingAsStaff($this->admin)->get("/reports/order?start_date={$start}&end_date={$end}&status=ready")
+            ->assertOk()
+            ->assertViewHas('summary', fn ($s) => $s['total_orders'] === 1 && $s['ready_count'] === 1);
+    }
+
     public function test_cashier_cannot_delete_orders(): void
     {
         $order = $this->createOrder();

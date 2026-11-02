@@ -460,19 +460,21 @@
                     $statusClasses = [
                         'pending' => 'status-pending',
                         'processing' => 'status-processing',
+                        'ready' => 'status-ready',
                         'completed' => 'status-completed',
                         'cancelled' => 'status-cancelled'
                     ];
                     $statusIcons = [
                         'pending' => 'fa-clock',
                         'processing' => 'fa-cog',
+                        'ready' => 'fa-bell',
                         'completed' => 'fa-check-circle',
                         'cancelled' => 'fa-times-circle'
                     ];
                 @endphp
                 <span class="status-badge {{ $statusClasses[$order->status] ?? 'status-pending' }}">
                     <i class="fas {{ $statusIcons[$order->status] ?? 'fa-clock' }}"></i>
-                    {{ ucfirst($order->status) }}
+                    {{ $order->status_label }}
                 </span>
             </div>
             <div class="payment-info">

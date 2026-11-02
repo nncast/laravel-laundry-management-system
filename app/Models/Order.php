@@ -13,7 +13,8 @@ class Order extends Model
 {
     use HasFactory;
 
-    public const STATUSES = ['pending', 'processing', 'completed', 'cancelled'];
+    /** In workflow order. "ready" = washed and waiting for pickup. */
+    public const STATUSES = ['pending', 'processing', 'ready', 'completed', 'cancelled'];
 
     /**
      * The attributes that are mass assignable.
@@ -271,6 +272,7 @@ class Order extends Model
         return match($this->status) {
             'pending' => 'Pending',
             'processing' => 'Processing',
+            'ready' => 'Ready for pickup',
             'completed' => 'Completed',
             'cancelled' => 'Cancelled',
             default => ucfirst((string) $this->status)
@@ -282,7 +284,7 @@ class Order extends Model
      */
     public function getCanEditAttribute(): bool
     {
-        return in_array($this->status, ['pending', 'processing']);
+        return in_array($this->status, ['pending', 'processing', 'ready']);
     }
 
     /**

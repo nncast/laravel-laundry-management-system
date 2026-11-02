@@ -447,6 +447,7 @@
                     <option value="">All Status</option>
                     <option value="pending" {{ $filters['status'] == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="processing" {{ $filters['status'] == 'processing' ? 'selected' : '' }}>Processing</option>
+                    <option value="ready" {{ $filters['status'] == 'ready' ? 'selected' : '' }}>Ready for pickup</option>
                     <option value="completed" {{ $filters['status'] == 'completed' ? 'selected' : '' }}>Completed</option>
                     <option value="cancelled" {{ $filters['status'] == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>

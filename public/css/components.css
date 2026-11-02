@@ -182,7 +182,7 @@ body .main-content table tbody tr { transition: background-color 0.12s; }
 body .main-content table tbody tr:hover td { background: #f7fbff; }
 
 /* ---------- Status badges ---------- */
-body .main-content :is(.status-pending, .status-processing, .status-completed, .status-cancelled,
+body .main-content :is(.status-pending, .status-processing, .status-ready, .status-completed, .status-cancelled,
     .status-active, .status-inactive) {
     display: inline-flex;
     align-items: center;
@@ -199,6 +199,7 @@ body .main-content :is(.status-pending, .status-processing, .status-completed, .
 }
 body .main-content .status-pending { background: var(--warning-soft); color: var(--warning-text); }
 body .main-content .status-processing { background: var(--accent-soft); color: var(--accent); }
+body .main-content .status-ready { background: #f0ecff; color: #5b3fd0; }
 body .main-content .status-completed, body .main-content .status-active { background: var(--success-soft); color: var(--success-text); }
 body .main-content .status-cancelled { background: var(--danger-soft); color: var(--danger-text); }
 body .main-content .status-inactive { background: var(--surface-sunken); color: var(--text-muted); }
