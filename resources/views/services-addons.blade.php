@@ -83,8 +83,7 @@
 .addons-header .add-btn:hover {
     opacity: 0.85;
     background: var(--accent-hover);
-    transform: translateY(-1px);
-}
+    }
 
 .addons-header .add-btn i {
     font-size: 12px;
@@ -176,8 +175,7 @@
 
 .edit-btn:hover, .delete-btn:hover {
     opacity: 0.8;
-    transform: translateY(-1px);
-}
+    }
 
 /* Responsive Design */
 @media (max-width: 1200px) {

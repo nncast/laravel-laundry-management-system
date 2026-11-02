@@ -86,7 +86,8 @@
     background: white;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
+    border: 1px solid var(--border);
 }
 
 .table-header {

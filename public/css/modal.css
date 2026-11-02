@@ -29,7 +29,7 @@
     background: #fff;
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 500px;
     max-height: 90vh;

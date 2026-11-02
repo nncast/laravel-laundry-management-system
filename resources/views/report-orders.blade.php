@@ -35,8 +35,9 @@
     background: #fff;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     padding: 25px;
+    border: 1px solid var(--border);
 }
 
 /* Filter controls */
@@ -98,8 +99,7 @@
 
 .generate-btn:hover {
     background: var(--accent-hover);
-    transform: translateY(-1px);
-}
+    }
 
 /* Status badges */
 .status-badge {
@@ -136,8 +136,9 @@
     background: #fff;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
     margin-top: 15px;
+    border: 1px solid var(--border);
 }
 
 /* FIXED: Add more space between amount and status columns */
@@ -251,13 +252,11 @@
 
 .btn-download:hover {
     background: var(--warning-soft);
-    transform: translateY(-1px);
-}
+    }
 
 .btn-print:hover {
     background: var(--success-soft);
-    transform: translateY(-1px);
-}
+    }
 
 /* Empty state */
 .empty-state {

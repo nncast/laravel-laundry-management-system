@@ -30,7 +30,7 @@
     border-radius: 10px;
     width: 100%;
     max-width: 500px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-lg);
     animation: modalFadeIn 0.3s ease-out;
 }
 
@@ -206,10 +206,11 @@ body {
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     gap: 15px;
+    border: 1px solid var(--border);
 }
 
 .order-number {
@@ -304,9 +305,10 @@ body {
 .content-box {
     background: white;
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: none;
     overflow: hidden;
     margin-bottom: 15px;
+    border: 1px solid var(--border);
 }
 
 .box-section {
@@ -500,8 +502,9 @@ body {
     background: white;
     border-radius: 10px;
     padding: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: none;
     margin-bottom: 15px;
+    border: 1px solid var(--border);
 }
 
 .store-header {
@@ -607,12 +610,13 @@ body {
     border-radius: 10px;
     padding: 15px;
     margin-top: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     gap: 10px;
     color: var(--text-muted);
     font-size: 12px;
+    border: 1px solid var(--border);
 }
 
 .footer-row {

@@ -14,10 +14,6 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
     background-color: var(--bg);
-    background-image:
-        radial-gradient(680px 420px at 100% -6%, rgba(90, 170, 255, 0.16), transparent 70%),
-        radial-gradient(520px 420px at 18% 108%, rgba(120, 210, 255, 0.14), transparent 70%);
-    background-attachment: fixed;
     color: var(--text);
     font-size: 14px;
     line-height: 1.5;
@@ -31,9 +27,7 @@ body.sidebar-open, body.modal-open { overflow: hidden; }
 /* ---------------- Sidebar (floating card) ---------------- */
 .sidebar {
     width: var(--sidebar-width);
-    background: rgba(255, 255, 255, 0.92);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
@@ -170,7 +164,7 @@ body.sidebar-open, body.modal-open { overflow: hidden; }
     height: var(--topbar-height);
     gap: 16px;
     padding: var(--shell-gap) 32px 0 18px;
-    background: linear-gradient(180deg, rgba(241, 246, 253, 0.97) 70%, rgba(241, 246, 253, 0));
+    background: var(--bg);
 }
 .topbar-title { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .desktop-topbar h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -191,16 +185,14 @@ body.sidebar-open, body.modal-open { overflow: hidden; }
     box-shadow: var(--gloss), var(--glow);
     transition: var(--transition);
 }
-.topbar-cta:hover { background: var(--grad-button-hover); transform: translateY(-1px); }
+.topbar-cta:hover { background: var(--grad-button-hover); }
 
 .mobile-topbar {
     display: none;
     position: fixed; left: 0; right: 0; top: 0;
     height: 64px;
     padding: 0 12px;
-    background: rgba(255, 255, 255, 0.9);
-    -webkit-backdrop-filter: saturate(180%) blur(12px);
-    backdrop-filter: saturate(180%) blur(12px);
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
 }
 .mobile-topbar-content { display: flex; align-items: center; gap: 10px; width: 100%; }
@@ -217,7 +209,7 @@ body.sidebar-open, body.modal-open { overflow: hidden; }
 .menu-toggle { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
 .menu-toggle:hover { background: var(--surface-sunken); }
 .mobile-pos-link { background: var(--grad-button); border: none; color: #fff; box-shadow: var(--gloss), var(--glow); }
-.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(11, 27, 52, 0.4); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); z-index: 1000; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(11, 27, 52, 0.4); z-index: 1000; }
 
 /* ---------------- Main content ---------------- */
 .main-content {
@@ -250,9 +242,7 @@ input, select, textarea, button { font-family: inherit; }
     gap: 10px;
     padding: 12px 14px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.96);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
     border-left: 4px solid var(--accent);

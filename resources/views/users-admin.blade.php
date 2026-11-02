@@ -14,9 +14,10 @@
 .table-container {
     background: #fff;
     border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: none;
     padding: 25px;
     overflow-x: auto;
+    border: 1px solid var(--border);
 }
 
 .header-actions {
@@ -116,7 +117,8 @@ td {
     background: #ffffff;
     border-radius: 10px;
     padding: 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: none;
+    border: 1px solid var(--border);
 }
 .summary-card h4 {
     color: var(--text-muted);
@@ -156,7 +158,7 @@ td {
     background: #fff;
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 500px;
     max-height: 90vh;
