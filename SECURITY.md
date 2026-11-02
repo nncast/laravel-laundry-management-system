@@ -20,9 +20,9 @@ This is a small student project (not a funded security team), so please have rea
 
 This covers the Laundry Management System application in this repo — sign-in and sessions, the Cashier / Manager / Admin role checks, the POS and payment logic, reports and CSV export, and database backup and restore.
 
-Of particular interest: anything that lets a Cashier or Manager reach Admin-only pages (Reports, Staff, Master Settings, Backup & Restore), change order totals or payments outside the normal flow, download a backup without Admin access, or run arbitrary SQL through **Restore Backup**.
+Of particular interest: anything that lets a Cashier or Manager reach Admin-only pages (Reports, Staff, Settings, Backup & Restore), change order totals or payments outside the normal flow, download a backup without Admin access, or run arbitrary SQL through **Restore Backup**.
 
-Out of scope: deployments still using the default `admin` / `admin123` account (the README says to change it on first login), issues that require an attacker to already have Admin access, and vulnerabilities in third-party dependencies themselves (please report those upstream — e.g. Laravel, Chart.js).
+Out of scope: deployments still using the default `admin` / `admin123` account (the README says to change it on first login), issues that require an attacker to already have Admin access, and vulnerabilities in third-party dependencies themselves (please report those upstream — e.g. Laravel, Font Awesome).
 
 ## Supported Versions
 

@@ -46,6 +46,7 @@ We welcome contributions from our team and the community. Please follow these gu
 - Follow the existing project conventions.
 - Prefer small, reviewable changes.
 - Do not add unrelated formatting changes.
+- For screens, build on the design system in [docs/DESIGN.md](docs/DESIGN.md): colors and sizes come from `public/css/theme.css`, components from `public/css/app.css`. Keep page-specific CSS to layout, and keep touch targets at least 44 px.
 
 ## Pull requests
 
