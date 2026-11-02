@@ -2,2406 +2,1012 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>{{ isset($order) ? 'Edit Order' : 'POS' }} - {{ $system->business_name ?? 'Soap Opera' }}</title>
+<meta name="theme-color" content="#ffffff">
+@php $editing = isset($order); @endphp
+<title>{{ $editing ? 'Edit ' . $order->order_number : 'New order' }} - {{ $system->business_name ?? 'Soap Opera' }}</title>
 @if(!empty($system->favicon))
 <link rel="icon" href="{{ asset($system->favicon) }}?v={{ optional($system->updated_at)->timestamp }}" type="image/x-icon">
 @else
 <link rel="icon" href="{{ asset('images/brand/mark.svg') }}" type="image/svg+xml">
 @endif
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
-
-<!-- Font Awesome (same version as the rest of the app, so it is served from cache) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-
+<link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ @filemtime(public_path('css/theme.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
 <style>
-:root {
-    --blue: var(--accent);
-    --text-dark: var(--text);
-    --text-light: var(--text-muted);
-    --hover-bg: var(--accent);
-    --hover-text: #fff;
-    --transition: all 0.3s ease;
-}
+/* ===== Point of sale: catalog | order | customer + payment. Touch first: 48px+ targets ===== */
+:root { --pos-top: 64px; --pos-bar: 76px; }
+body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); }
 
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: var(--font); background:var(--bg); color:var(--text-dark); }
+.pos-topbar { display: flex; align-items: center; gap: var(--s-3); height: var(--pos-top); padding: 0 var(--s-4); background: var(--surface); border-bottom: 1px solid var(--border); }
+.pos-title { min-width: 0; line-height: 1.2; }
+.pos-title h1 { font-size: 18px; font-weight: 800; }
+.pos-title span { font-size: var(--fs-sm); color: var(--text-muted); }
+.pos-topbar-end { margin-left: auto; display: flex; align-items: center; gap: var(--s-4); }
+.pos-hints { font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
+.pos-staff { display: flex; align-items: center; gap: var(--s-2); font-weight: 700; }
+.pos-staff .avatar { width: 36px; height: 36px; }
 
-/* --- Modal Styles --- */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
+.pos { display: grid; grid-template-columns: minmax(0, 1fr) 380px 360px; height: calc(100dvh - var(--pos-top)); }
+.pos-side { display: contents; }
+.pos-side-head { display: none; }
 
-.modal.active {
-    display: flex;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 10px;
-    box-shadow: var(--shadow-lg);
-    max-width: 500px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border);
-}
-
-.modal-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text);
-    margin: 0;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-    background: var(--surface-muted);
-    color: var(--danger);
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.modal-footer {
-    padding: 15px 20px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.3s ease;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    border-color: var(--accent);
-    outline: none;
-}
-
-.error-message {
-    color: var(--danger);
-    font-size: 12px;
-    margin-top: 5px;
-    display: none;
-}
-
-.helper-text {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 5px;
-}
-
-.required-star {
-    color: var(--danger);
-}
-
-.btn-primary {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    background: var(--accent-hover);
-}
-
-.btn-cancel {
-    background: var(--text-muted);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-cancel:hover {
-    background: var(--text-secondary);
-}
-
-.modal-sm .modal-content {
-    max-width: 400px;
-}
-
-body.modal-open {
-    overflow: hidden;
-}
-
-/* --- Topbar --- */
-.topbar {
-    position: fixed;
-    top:0; left:0; width:100%;
-    height: 60px;
-    background:#fff;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding: 0 15px;
-    border-bottom:1px solid var(--border);
-    z-index:1000;
-}
-.topbar h2 { font-size:18px; font-weight:600; }
-.topbar button { background: var(--blue); border:none; color:#fff; padding:8px 12px; border-radius:6px; font-size:14px; cursor:pointer; }
-
-/* --- POS Container --- */
-.pos-container {
-    display:flex;
-    flex-wrap:wrap;
-    gap:15px;
-    padding: 70px 10px 10px;
-}
-
-/* --- Products Section --- */
-.products-section {
-    flex:1 1 100%;
-    background:#fff;
-    border-radius:10px;
-    padding:15px;
-    box-shadow: none;
-    border: 1px solid var(--border);
-}
-
-.products-section input {
-    width:100%; padding:10px 15px; border:1px solid var(--border-strong); border-radius:6px; margin-bottom:10px;
-}
-
-.product-grid {
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap:10px;
-    max-height:50vh;
-    overflow-y:auto;
-}
-.product-item {
-    text-align:center;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:10px;
-    cursor:pointer;
-    transition: transform 0.3s ease, border-color 0.3s ease;
-}
-.product-item:hover {
-    transform:scale(1.05);
-    border-color: var(--blue);
-}
-.product-item img {
-    width:60px; height:60px; border-radius:6px; object-fit:cover;
-}
-.product-item p { margin-top:5px; font-size:12px; }
-
-/* --- Order Section --- */
-.order-section {
-    flex:1 1 100%;
-    background:#fff;
-    border-radius:10px;
-    padding:15px;
-    box-shadow: none;
-    border: 1px solid var(--border);
-}
-.order-section table {
-    width:100%;
-    border-collapse: collapse;
-    margin-top:10px;
-}
-.order-section th, .order-section td {
-    border-bottom:1px solid var(--border);
-    padding:8px;
-    font-size:12px;
-    text-align:center;
-}
-.order-section th { background:var(--surface-muted); }
-
-button.qty-btn {
-    padding: 2px 6px;
-    border: none;
-    border-radius: 4px;
-    background: var(--blue);
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    margin: 0 2px;
-}
-button.qty-btn:hover {
-    background: var(--accent-hover);
-}
-
-/* --- Date Picker Styles --- */
-.date-picker-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    margin-top: 5px;
-    flex-wrap: wrap;
-}
-
-.date-picker-label {
-    font-size: 12px;
-    color: var(--text-light);
-    margin: 0;
-    white-space: nowrap;
-}
-
-.date-picker-container {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+/* Catalog */
+.pos-catalog { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.catalog-head { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5) var(--s-3); }
+.catalog-head .input { height: 52px; font-size: var(--fs-md); }
+.tiles-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--s-5) var(--s-6); }
+.tile-group + .tile-group { margin-top: var(--s-5); }
+.tile-group-title { margin-bottom: var(--s-3); font-size: var(--fs-sm); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-3); }
+.tile {
     position: relative;
+    display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2);
+    min-height: 124px; padding: var(--s-3) var(--s-4) var(--s-4);
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    color: var(--text); text-align: left; user-select: none; -webkit-user-select: none;
+    transition: transform var(--fast), border-color var(--fast), background-color var(--fast);
 }
+.tile .bubble-tile, .tile-img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
+.tile-name { font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tile-price { margin-top: auto; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tile-qty { position: absolute; top: 10px; right: 10px; min-width: 30px; height: 30px; padding: 0 8px; display: grid; place-items: center; border-radius: var(--radius-pill); background: var(--accent); color: #fff; font-weight: 800; }
+.tile.in-cart { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: #fbfdff; }
+.tile:active { transform: scale(0.97); background: var(--accent-soft); }
+.tile.pop { animation: tile-pop 220ms var(--ease); }
+@keyframes tile-pop { 40% { transform: scale(0.95); background: var(--accent-soft); } }
 
-.date-picker-text {
-    margin: 0;
-    font-weight: 600;
-    color: var(--text-dark);
-    font-size: 12px;
-    white-space: nowrap;
+/* Panels */
+.pos-cart, .pos-checkout { display: flex; flex-direction: column; min-height: 0; background: var(--surface); border-left: 1px solid var(--border); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 60px; padding: var(--s-2) var(--s-3) var(--s-2) var(--s-5); border-bottom: 1px solid var(--border); }
+.panel-head h2 { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-md); font-weight: 800; }
+.panel-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.panel-block { padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border); }
+.panel-block:last-child { border-bottom: 0; }
+.panel-block > .eyebrow { margin-bottom: var(--s-2); }
+
+.cart-lines { list-style: none; padding: 0; }
+.cart-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px var(--s-3); padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--border); }
+.line-name { font-weight: 700; }
+.line-unit { font-size: var(--fs-sm); color: var(--text-muted); }
+.line-total { font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.line-controls { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.cart-line .stepper button, .cart-line .stepper input { height: 48px; }
+.cart-line .stepper button { width: 48px; }
+.cart-empty { display: grid; justify-items: center; gap: var(--s-1); padding: var(--s-8) var(--s-6); text-align: center; color: var(--text-muted); }
+.cart-empty .mascot { width: 96px; margin-bottom: var(--s-2); }
+.addon-chip .addon-price { color: var(--text-muted); font-weight: 600; }
+.addon-chip[aria-pressed="true"] .addon-price { color: #dbe8ff; }
+.addon-chip[aria-pressed="true"] .fa-plus::before { content: "\f00c"; }
+
+/* Customer */
+.customer-results { list-style: none; padding: 4px; margin-top: var(--s-2); border: 1px solid var(--border); border-radius: var(--radius); max-height: 260px; overflow-y: auto; }
+.customer-results li[role="option"] { display: flex; align-items: center; gap: var(--s-3); min-height: 52px; padding: 0 var(--s-3); border-radius: var(--radius-sm); cursor: pointer; }
+.customer-results li[aria-selected="true"], .customer-results li[role="option"]:active { background: var(--accent-soft); }
+.customer-results .avatar, .customer-card .avatar { width: 36px; height: 36px; font-size: 14px; }
+.customer-results .muted { font-size: var(--fs-sm); }
+.customer-results .no-hit { padding: var(--s-3); color: var(--text-muted); }
+.recent { margin-top: var(--s-3); }
+.recent .chip { min-height: 40px; padding: 0 var(--s-3); }
+.customer-card { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border: 1px solid var(--accent-soft-strong); border-radius: var(--radius); background: var(--accent-soft); }
+.customer-info { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.customer-info strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.customer-stats { font-size: var(--fs-sm); color: var(--text-secondary); }
+.customer-stats .text-danger { font-weight: 700; }
+#repeatLast, #newCustomerBtn { margin-top: var(--s-3); }
+
+/* Totals + discount */
+.discount-ctl { display: flex; gap: var(--s-2); margin: var(--s-2) 0 var(--s-1); }
+.discount-ctl .input { flex: 1; min-width: 0; }
+#percentChips { margin-top: var(--s-2); }
+#percentChips .chip { min-height: 40px; }
+.total-row { font-size: 24px; }
+.checkout-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: var(--s-2); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
+.checkout-actions .btn { min-height: 60px; }
+.checkout-actions .btn-primary { font-size: 17px; }
+
+/* Payment dialog */
+.pay-due { text-align: center; padding: var(--s-3); border-radius: var(--radius); background: var(--accent-soft); }
+.pay-due strong { display: block; font-size: 32px; letter-spacing: -0.02em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tendered { height: 60px; font-size: 26px !important; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.quick-cash { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-2); }
+.quick-cash .btn { padding: 0 4px; min-height: 48px; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+.keypad button { min-height: 56px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); font-size: 22px; font-weight: 700; }
+.keypad button:active { background: var(--accent-soft); }
+.pay-result { min-height: 26px; text-align: center; font-weight: 700; }
+.pay-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: var(--s-5); align-items: start; }
+.pay-grid > * + * { margin-top: 0; }
+.pay-grid .keypad button { min-height: 64px; }
+@media (max-width: 719px) { .pay-grid { grid-template-columns: 1fr; gap: var(--s-3); } .pay-grid .keypad button { min-height: 52px; } }
+.success-body { display: grid; justify-items: center; text-align: center; gap: var(--s-2); }
+.success-body .mascot { width: 120px; }
+.ok-change { display: grid; gap: 2px; padding: var(--s-3) var(--s-5); border-radius: var(--radius); background: var(--success-soft); color: var(--success-text); }
+.ok-change strong { font-size: 30px; }
+.success-actions { flex-wrap: wrap; }
+.success-actions .btn-primary { flex-basis: 100%; min-height: 56px; }
+
+/* Bottom bar (phones and portrait tablets) */
+.pos-bar { display: none; }
+
+@media (hover: hover) {
+    .tile:hover { border-color: var(--accent-soft-strong); background: var(--surface-muted); }
+    .tile.in-cart:hover { border-color: var(--accent); }
+    .customer-results li[role="option"]:hover { background: var(--surface-hover); }
+    .keypad button:hover { background: var(--surface-hover); }
 }
+@media (pointer: coarse) { .pos-hints { display: none; } }
 
-.date-picker-button {
-    border: none;
-    background: var(--accent);
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
+/* Landscape tablets: catalog | one column with order, customer and payment */
+@media (max-width: 1279px) {
+    .pos { grid-template-columns: minmax(0, 1fr) 400px; }
+    .pos-side { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-left: 1px solid var(--border); }
+    .pos-cart { border-left: 0; flex: none; }
+    .pos-cart .panel-scroll, .pos-checkout .panel-scroll { flex: none; overflow: visible; }
+    /* Let the action bar stick to the bottom of the whole column, not just of its own panel */
+    .pos-checkout { display: contents; }
+    .pos-checkout .panel-scroll { border-top: 1px solid var(--border); }
+    .checkout-actions { position: sticky; bottom: 0; z-index: 2; margin-top: auto; }
 }
-
-.date-picker-button:hover {
-    background: var(--accent-hover);
-    box-shadow: none; border-color: var(--accent); }
-
-.date-picker-button i {
-    font-size: 12px;
-}
-
-.date-picker-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-    z-index: 10;
-}
-
-.date-picker-input::-webkit-calendar-picker-indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-}
-
-/* Calendar popup styling */
-.date-picker-input:focus {
-    outline: none;
-}
-
-/* Style the calendar popup */
-.date-picker-input::-webkit-datetime-edit,
-.date-picker-input::-webkit-inner-spin-button,
-.date-picker-input::-webkit-clear-button {
-    display: none;
-}
-
-/* For Firefox */
-.date-picker-input {
-    -moz-appearance: textfield;
-}
-
-/* Ensure calendar popup is centered */
-.date-picker-input[type="date"] {
-    text-align: center;
-}
-
-/* Calendar popup centering for WebKit browsers */
-@supports (-webkit-appearance: none) {
-    .date-picker-input[type="date"]:focus::-webkit-calendar-picker-indicator {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 320px;
-        height: 400px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: var(--shadow-lg);
-        border: 1px solid var(--border);
-        z-index: 999999;
+/* Phones and portrait tablets: full-width catalog, order slides up from the bottom bar */
+@media (max-width: 1023px) {
+    .pos { grid-template-columns: minmax(0, 1fr); }
+    .tiles-scroll { padding-bottom: calc(var(--pos-bar) + var(--s-6) + env(safe-area-inset-bottom)); }
+    .pos-side {
+        position: fixed; inset: 0; z-index: 60;
+        transform: translateY(102%); visibility: hidden;
+        transition: transform var(--normal) var(--ease), visibility var(--normal);
     }
+    .pos-side.is-open { transform: none; visibility: visible; }
+    .pos-side-head { display: flex; position: sticky; top: 0; z-index: 3; align-items: center; gap: var(--s-2); height: var(--pos-top); padding: 0 var(--s-3); background: var(--surface); border-bottom: 1px solid var(--border); }
+    .pos-side-head h2 { font-size: 18px; font-weight: 800; }
+    .pos-bar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+    .pos-bar .btn { min-height: 56px; justify-content: space-between; }
+    .toast-region { inset: auto 16px calc(var(--pos-bar) + 12px + env(safe-area-inset-bottom)) 16px !important; }
 }
-
-/* Firefox calendar styling */
-@-moz-document url-prefix() {
-    .date-picker-input[type="date"] {
-        opacity: 0;
-        position: absolute;
-        width: 100%;
-        height: 100%;
-    }
-
-    .date-picker-button {
-        pointer-events: none;
-    }
-}
-
-/* --- Customer Select Container --- */
-.customer-select-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.customer-select-container {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    position: relative;
-}
-
-.customer-select-container select {
-    flex: 1;
-    min-width: 150px;
-    padding: 6px 8px;
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    font-size: 12px;
-    background-color: white;
-    transition: border-color 0.3s ease;
-}
-
-.customer-select-container select:focus {
-    border-color: var(--accent);
-    outline: none;
-}
-
-.customer-select-container select.customer-select-error {
-    border-color: var(--danger) !important;
-    background-color: var(--danger-soft) !important;
-}
-
-.customer-select-container button {
-    padding: 6px 10px;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.btn-add-customer {
-    background: var(--success);
-    color: white;
-}
-
-.btn-add-customer:hover {
-    background: var(--success-hover);
-}
-
-/* Customer Error Message - Below the dropdown */
-.customer-error-message {
-    color: var(--danger);
-    font-size: 11px;
-    margin-top: -3px;
-    margin-bottom: 5px;
-    display: none;
-    align-items: flex-start;
-    gap: 5px;
-    padding: 3px 8px;
-    background-color: var(--danger-soft);
-    border-radius: 4px;
-    border-left: 3px solid var(--danger);
-}
-
-.customer-error-message i {
-    color: var(--danger);
-    font-size: 10px;
-    margin-top: 1px;
-}
-
-/* --- Addon Button Styles --- */
-.addon-button-container {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-left: 5px;
-}
-
-.addon-button {
-    border: none;
-    background: var(--info);
-    color: #fff;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-}
-
-.addon-button:hover {
-    background: var(--info-hover);
-    box-shadow: none; border-color: var(--accent); }
-
-.addon-button i {
-    font-size: 10px;
-}
-
-/* --- Addon List Item Styles --- */
-.addon-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 8px;
-    background: #fff;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.addon-item:hover {
-    background: var(--surface-muted);
-    border-color: var(--accent);
-}
-
-.addon-info {
-    flex: 1;
-}
-
-.addon-name {
-    font-weight: 500;
-    color: var(--text);
-    font-size: 14px;
-    margin-bottom: 3px;
-}
-
-.addon-price {
-    font-size: 12px;
-    color: var(--success);
-    font-weight: 600;
-}
-
-.addon-checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--border);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.addon-checkbox.checked {
-    background: var(--accent);
-    border-color: var(--accent);
-}
-
-.addon-checkbox.checked i {
-    color: white;
-    font-size: 12px;
-}
-
-/* Selected Addons Display */
-.selected-addon-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 10px;
-    background: var(--surface-muted);
-    border-radius: 4px;
-    margin-bottom: 4px;
-    font-size: 11px;
-}
-
-.selected-addon-name {
-    color: var(--text);
-}
-
-.selected-addon-price {
-    color: var(--success);
-    font-weight: 600;
-}
-
-.remove-addon-btn {
-    background: var(--danger);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 10px;
-}
-
-.remove-addon-btn:hover {
-    background: var(--danger-hover);
-}
-
-/* --- Payment Buttons --- */
-.payment-buttons {
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-top:15px;
-}
-.payment-buttons button {
-    flex:1 1 100%;
-    padding:12px 0;
-    border:none;
-    border-radius:8px;
-    font-weight:600;
-    font-size:13px;
-    color:#fff;
-    cursor:pointer;
-    transition: all 0.3s ease;
-}
-.btn-payment { background:var(--accent); }
-.btn-save { background:var(--success); }
-.btn-cancel { background:var(--danger); }
-.payment-buttons button:hover { opacity:0.9; }
-
-/* Add to your existing CSS */
-.btn-payment[data-edit-mode="true"] {
-    display: none !important;
-}
-
-/* --- Payment Modal Specific Styles --- */
-.payment-amount-display {
-    background: var(--surface-muted);
-    padding: 15px;
-    border-radius: 8px;
-    margin: 15px 0;
-    text-align: center;
-}
-
-.amount-label {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 5px;
-}
-
-.amount-value {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--success);
-}
-
-/* Payment Real-time Display Styles */
-.payment-change-display {
-    margin-top: 10px;
-    padding: 10px;
-    background: var(--success-soft);
-    border-radius: 6px;
-    border: 1px solid var(--success-soft);
-}
-
-.change-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--success-text);
-    font-size: 14px;
-}
-
-.change-info i {
-    color: var(--success);
-}
-
-.payment-shortfall-display {
-    margin-top: 10px;
-    padding: 10px;
-    background: var(--danger-soft);
-    border-radius: 6px;
-    border: 1px solid var(--danger-soft);
-}
-
-.shortfall-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--danger-text);
-    font-size: 14px;
-}
-
-.shortfall-info i {
-    color: var(--danger);
-}
-
-/* Highlight input based on amount */
-.payment-valid {
-    border-color: var(--success) !important;
-    background-color: var(--success-soft);
-}
-
-.payment-invalid {
-    border-color: var(--danger) !important;
-    background-color: var(--danger-soft);
-}
-
-/* Overpayment warning style */
-.payment-overpayment-display {
-    margin-top: 10px;
-    padding: 10px;
-    background: var(--warning-soft);
-    border-radius: 6px;
-    border: 1px solid var(--warning-soft);
-}
-
-.overpayment-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--warning-text);
-    font-size: 14px;
-}
-
-.overpayment-info i {
-    color: var(--warning-text);
-}
-
-/* --- Responsive --- */
-@media(min-width:769px){
-    .pos-container { flex-wrap:nowrap; padding:80px 20px 20px; }
-    .products-section { flex:1 1 400px; max-height:none; }
-    .order-section { flex:1.2 1 300px; }
-    .payment-buttons button { flex:1; }
-}
-
-/* Calendar popup centering for WebKit browsers */
-@supports (-webkit-appearance: none) {
-    .date-picker-input[type="date"]:focus::-webkit-calendar-picker-indicator {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 320px;
-        height: 400px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: var(--shadow-lg);
-        border: 1px solid var(--border);
-        z-index: 999999;
-    }
-}
-
-/* Firefox calendar styling */
-@-moz-document url-prefix() {
-    .date-picker-input[type="date"] {
-        opacity: 0;
-        position: absolute;
-        width: 100%;
-        height: 100%;
-    }
-
-    .date-picker-button {
-        pointer-events: none;
-    }
-}
-
-/* --- Fixes: layout & mobile --- */
-.topbar-back { display:inline-flex; align-items:center; gap:6px; background: var(--blue); color:#fff; padding:8px 12px; border-radius:6px; font-size:14px; text-decoration:none; }
-.topbar-back:hover { background:var(--accent-hover); }
-.product-item { display:flex; flex-direction:column; align-items:center; gap:4px; }
-.product-item:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
-.product-item p {
-    font-size:12px; line-height:1.3; margin-top:2px; word-break:break-word;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-}
-.product-price { font-size:11px; color:var(--success); font-weight:600; }
-textarea, input, select, button { font-family: inherit; }
-.order-section { min-width:0; overflow-x:auto; }
-.order-section table { min-width:320px; }
-.payment-buttons { display:flex; flex-wrap:wrap; gap:8px; }
-.payment-buttons button { flex:1 1 90px; min-height:42px; }
-button.qty-btn { min-width:28px; min-height:28px; }
-
-@media (max-width: 768px) {
-    .topbar h2 { font-size:16px; }
-    .pos-container { padding:70px 8px 12px; gap:10px; }
-    .products-section, .order-section { padding:12px; }
-    .product-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); max-height:38vh; }
-    .product-item:hover { transform:none; }
-    .customer-select-wrapper { width:100%; }
-    .customer-select-container { width:100%; flex-wrap:nowrap; }
-    .customer-select-container select { flex:1; min-width:0; width:auto; }
-    #discountInput { width:110px !important; }
-    input, select, textarea { font-size:16px !important; } /* stop iOS zoom */
-    .modal-content { max-height:90vh; overflow-y:auto; }
-}
-
-/* ---- Soap Opera POS ---- */
-[hidden] { display: none !important; }
-body {
-    background-color: var(--bg);
-    color: var(--text);
-}
-
-/* Top bar */
-.topbar { height: 68px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
-.topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbar-heading { display: flex; flex-direction: column; line-height: 1.2; }
-.topbar h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-.topbar-sub { font-size: 12.5px; color: var(--text-muted); }
-.topbar-back {
-    display: grid !important; place-items: center; width: 42px; height: 42px; padding: 0 !important;
-    background: var(--surface) !important; color: var(--text) !important;
-    border: 1px solid var(--border); border-radius: 50% !important; box-shadow: var(--shadow-sm);
-}
-.topbar-back:hover { background: var(--accent-soft) !important; color: var(--accent) !important; }
-.topbar-business { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45vw; }
-.topbar-business img { width: 26px; height: 26px; flex-shrink: 0; }
-
-/* Two panels */
-.pos-container { gap: 20px; align-items: flex-start; }
-.products-section, .order-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
-}
-.products-section { padding: 18px 18px 6px; display: flex; flex-direction: column; min-width: 0; }
-
-/* Catalog header: search + category chips */
-.catalog-head { display: flex; flex-direction: column; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-.catalog-search { position: relative; }
-.catalog-search i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-faint); pointer-events: none; }
-.products-section .catalog-search input {
-    width: 100%; height: 44px; margin: 0; padding: 0 16px 0 42px;
-    border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
-    background: var(--surface-muted); font-size: 14px; color: var(--text);
-}
-.products-section .catalog-search input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 4px var(--accent-ring); }
-.category-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
-.category-chips::-webkit-scrollbar { display: none; }
-.chip {
-    display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
-    height: 36px; padding: 0 8px 0 14px;
-    border: 1px solid var(--border); border-radius: var(--radius-pill);
-    background: var(--surface); color: var(--text-secondary);
-    font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
-    transition: background-color .15s, color .15s, border-color .15s, box-shadow .15s;
-}
-.chip i { font-size: 12px; color: var(--accent-light); }
-.chip:hover { background: var(--accent-soft); border-color: #c4dcfb; color: var(--accent); }
-.chip-count { min-width: 22px; height: 22px; padding: 0 7px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--text-muted); font-size: 11.5px; font-weight: 700; }
-.chip.active { background: var(--grad-button); border-color: transparent; color: #fff; box-shadow: var(--gloss), var(--glow); }
-.chip.active i { color: #fff; }
-.chip.active .chip-count { background: rgba(255,255,255,0.25); color: #fff; }
-
-/* Sections */
-.product-catalog { overflow-y: auto; padding: 4px 4px 12px; margin: 0 -4px; scroll-behavior: smooth; }
-.service-section { padding-top: 16px; }
-.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.section-head h3 { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
-.section-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-faint); }
-.bubble-tile.section-tile { width: 32px; height: 32px; border-radius: 11px; font-size: 13px; }
-.catalog-empty { padding: 36px 12px; text-align: center; color: var(--text-muted); font-size: 14px; }
-
-/* Service cards */
-.products-section .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 12px; max-height: none; overflow: visible; }
-.product-item {
-    position: relative;
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px;
-    min-height: 150px; padding: 16px 10px 14px;
-    border: 1px solid var(--border); border-radius: 14px;
-    background: var(--surface);
-    color: var(--text); font: inherit; text-align: center; cursor: pointer;
-    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-}
-.product-item:hover { border-color: #b9d6fb; box-shadow: none; }
-.product-item:active { transform: scale(0.98); }
-.product-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.product-item.in-order { border-color: var(--accent); background: var(--accent-soft); }
-.product-item img { width: 52px; height: 52px; border-radius: 16px; object-fit: cover; box-shadow: none; }
-.bubble-tile.item-tile { width: 52px; height: 52px; border-radius: 17px; font-size: 21px; }
-.item-name { font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
-.product-item .product-price { margin-top: auto; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 800; }
-.item-qty {
-    position: absolute; top: 8px; right: 8px;
-    min-width: 24px; height: 24px; padding: 0 7px;
-    display: grid; place-items: center;
-    border-radius: var(--radius-pill);
-    background: var(--grad-button); color: #fff; box-shadow: var(--gloss), var(--glow);
-    font-size: 12px; font-weight: 800;
-}
-
-/* Order panel */
-.order-section { padding: 20px; }
-.order-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-.order-head h3 { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
-.order-head h3 i { color: var(--accent-light); }
-.order-count { padding: 4px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
-.order-meta { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; }
-.order-meta p { font-size: 13px; }
-.customer-select-container { display: flex; align-items: center; gap: 8px; }
-.customer-select-container select { height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); font-size: 13.5px; color: var(--text); min-width: 180px; }
-.customer-select-container select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
-.icon-btn {
-    display: grid; place-items: center; flex-shrink: 0;
-    width: 40px; height: 40px; border: 0; border-radius: 50%;
-    background: var(--grad-button); color: #fff; font-size: 14px; cursor: pointer;
-    box-shadow: var(--gloss), var(--glow); transition: transform .15s;
-}
-.icon-btn:hover { background: var(--grad-button-hover); }
-.icon-btn.icon-btn-sm { width: 28px; height: 28px; font-size: 11px; }
-.date-picker-button { border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); padding: 5px 12px; font-weight: 700; }
-.date-picker-button:hover { background: #d8e9ff; box-shadow: none; }
-
-.order-section table { margin-top: 14px; border-collapse: separate; border-spacing: 0; }
-.order-section th { background: var(--surface-muted); color: var(--text-muted); font-size: 12px; font-weight: 700; padding: 10px 8px; border-bottom: 1px solid var(--border); }
-.order-section th:first-child { border-top-left-radius: 12px; text-align: left; padding-left: 12px; }
-.order-section th:last-child { border-top-right-radius: 12px; }
-.order-section td { font-size: 13px; padding: 10px 8px; }
-.order-section td:first-child { text-align: left; padding-left: 12px; font-weight: 600; }
-button.qty-btn {
-    width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 0; margin: 0 4px;
-    border: 1px solid var(--border); border-radius: 50%;
-    background: var(--surface); color: var(--accent); font-weight: 800; font-size: 14px; line-height: 1;
-}
-button.qty-btn:hover { background: var(--accent-soft); border-color: #c4dcfb; }
-.order-section td:nth-child(3) { white-space: nowrap; }
-
-.order-summary { margin-top: 14px; padding: 14px; border-radius: 16px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 13px; }
-.order-summary > div { margin-bottom: 8px !important; }
-#discountInput { height: 34px; border-radius: 10px !important; text-align: right; }
-.discount-field { display: inline-flex; align-items: center; gap: 6px; }
-#discountType { height: 34px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
-.order-summary > .discount-hint { margin: -4px 0 8px !important; text-align: right; font-size: 12px; color: var(--text-muted); }
-.gross-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 !important; padding-top: 12px; border-top: 1px dashed var(--border-strong); font-size: 15px; }
-.gross-row #grossTotal { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
-.order-section label[for="notes"] { display: block; margin: 14px 0 6px; font-size: 13px !important; font-weight: 700; color: var(--text-secondary); }
-#notes { height: 64px !important; border-radius: 14px !important; padding: 10px 12px !important; font-size: 13px !important; background: var(--surface-muted); resize: vertical; }
-#notes:focus { outline: none; border-color: var(--accent) !important; background: var(--surface); box-shadow: 0 0 0 4px var(--accent-ring); }
-.selected-addon-item { border-radius: 12px !important; }
-
-.payment-buttons { margin-top: 16px; gap: 10px; }
-.payment-buttons button { min-height: 48px; border-radius: var(--radius-pill); font-size: 14.5px; font-weight: 700; transform: none; transition: background .15s, transform .15s; }
-.payment-buttons .btn-payment { flex: 1.4 1 120px; border: 0; background: var(--grad-button); color: #fff; box-shadow: var(--gloss), var(--glow); }
-.payment-buttons .btn-payment:hover { background: var(--grad-button-hover); opacity: 1; }
-.payment-buttons .btn-save { border: 1px solid #b9d6fb; background: var(--accent-soft); color: var(--accent); }
-.payment-buttons .btn-save:hover { background: #d8e9ff; opacity: 1; }
-.payment-buttons .btn-cancel { border: 1px solid transparent; background: transparent; color: var(--text-muted); font-weight: 600; }
-.payment-buttons .btn-cancel:hover { background: var(--danger-soft); color: var(--danger); opacity: 1; }
-
-/* Desktop: catalog scrolls on its own, order panel stays beside it */
-@media (min-width: 769px) {
-    .pos-container { padding: 88px 24px 24px; }
-    .products-section { flex: 1.5 1 480px; position: sticky; top: 88px; height: calc(100vh - 112px); }
-    .product-catalog { flex: 1; min-height: 0; }
-    .order-section { flex: 1 1 380px; max-width: 520px; }
-}
-@media (max-width: 768px) {
-    .topbar { padding: 0 12px; }
-    .topbar-business { display: none; }
-    .pos-container { padding: 80px 10px 14px; }
-    .products-section { padding: 14px 14px 4px; }
-    .product-catalog { max-height: 56vh; }
-    .products-section .product-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
-    .product-item { min-height: 138px; padding: 14px 8px 12px; }
-    .product-item:hover { transform: none; }
-    .order-section { padding: 16px; }
-    .customer-select-container select { min-width: 0; }
-    button.qty-btn { margin: 0 2px; }
-    .order-section th, .order-section td { padding-left: 4px; padding-right: 4px; }
+@media (max-width: 639px) {
+    .catalog-head { padding: var(--s-3) var(--s-4) var(--s-2); }
+    .tiles-scroll { padding-left: var(--s-4); padding-right: var(--s-4); }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+    .tile { min-height: 112px; }
+    .pos-staff span:last-child, .pos-hints { display: none; }
+    .quick-cash { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
+<script>
+    window.APP_URL = @json(rtrim(url('/'), '/'));
+    window.appUrl = (path = '') => window.APP_URL + '/' + String(path).replace(/^\/+/, '');
+    window.CSRF_TOKEN = @json(csrf_token());
+</script>
 </head>
-<body>
+@php
+    // Icon for a service type, picked from its name so it stays the same between visits
+    $typeIcon = function (string $name): string {
+        $icons = [
+            'wash' => 'fa-soap', 'fold' => 'fa-soap', 'laundry' => 'fa-soap',
+            'dry' => 'fa-wind', 'iron' => 'fa-shirt', 'press' => 'fa-shirt',
+            'special' => 'fa-hand-sparkles', 'care' => 'fa-hand-sparkles', 'delicate' => 'fa-hand-sparkles',
+            'blanket' => 'fa-bed', 'comforter' => 'fa-bed', 'bed' => 'fa-bed', 'shoe' => 'fa-shoe-prints',
+        ];
+        foreach ($icons as $word => $icon) {
+            if (stripos($name, $word) !== false) return $icon;
+        }
+        return 'fa-basket-shopping';
+    };
+    $tones = ['tone-blue', 'tone-sky', 'tone-indigo', 'tone-aqua', 'tone-violet'];
+    $categories = $serviceGroups->keys()->values();
+    $staffName = session('staff.name') ?? 'Staff';
 
-<div class="topbar">
-    <div class="topbar-left">
-        <a href="{{ isset($order) ? route('orders.details', $order) : route('orders.index') }}" class="topbar-back" title="Back" aria-label="Back"><i class="fas fa-arrow-left"></i></a>
-        <div class="topbar-heading">
-            <h2>{{ isset($order) ? 'Edit Order' : 'New Order' }}</h2>
-            <span class="topbar-sub">Point of sale</span>
-        </div>
+    // Add-on chips: the active add-ons, plus any inactive ones already on the order being edited (at the price sold)
+    $addonChoices = $addons->mapWithKeys(fn ($a) => [$a->id => ['id' => $a->id, 'name' => $a->name, 'price' => (float) $a->price]]);
+    if ($editing) {
+        foreach ($order->addons as $addon) {
+            $addonChoices[$addon->id] = ['id' => $addon->id, 'name' => $addon->name, 'price' => (float) $addon->pivot->price];
+        }
+    }
+
+    // For the script below (@json takes a plain variable: it splits its argument on commas)
+    $posServices = $services->map(fn ($s) => [$s->id, ['id' => $s->id, 'name' => $s->name, 'price' => (float) $s->price]])->values();
+    $posAddons = $addonChoices->map(fn ($a) => [$a['id'], $a])->values();
+    $posCustomers = $customers->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'contact' => $c->contact])->values();
+
+    $initial = [
+        'orderId' => $editing ? $order->id : null,
+        'items' => $editing ? $order->items->map(fn ($item) => ['id' => $item->service_id, 'name' => $item->service->name ?? 'Deleted service', 'price' => (float) $item->price, 'qty' => $item->qty])->values() : [],
+        'addons' => $editing ? $order->addons->pluck('id')->values() : [],
+        'customerId' => $editing ? $order->customer_id : ($preselectedCustomerId ?? null),
+        'date' => $editing ? $order->order_date?->toDateString() : null,
+        'discountType' => $editing && $order->discount_percent !== null ? 'percent' : 'amount',
+        'discountValue' => $editing ? (float) ($order->discount_percent ?? $order->discount) : 0,
+        'paid' => $editing ? (float) $order->paid_amount : 0,
+    ];
+@endphp
+<body class="pos-body">
+<a class="skip-link" href="#serviceSearch">Skip to services</a>
+
+<header class="pos-topbar">
+    <a href="{{ $editing ? route('orders.details', $order) : route('dashboard') }}" class="icon-btn outlined" id="leavePos" aria-label="{{ $editing ? 'Back to the order' : 'Leave the point of sale' }}"><i class="fas fa-arrow-left" aria-hidden="true"></i></a>
+    <div class="pos-title">
+        <h1>{{ $editing ? 'Edit order' : 'New order' }}</h1>
+        <span>{{ $editing ? $order->order_number : ($system->business_name ?? 'Soap Opera') }}</span>
     </div>
-    <span class="topbar-business"><img src="{{ asset('images/brand/mark.svg') }}" alt="" width="26" height="26"> {{ $system->business_name ?? 'Soap Opera' }}</span>
-</div>
+    <div class="pos-topbar-end">
+        <span class="pos-hints"><kbd>/</kbd> services · <kbd>F2</kbd> customer · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> charge</span>
+        <span class="pos-staff"><span class="avatar" aria-hidden="true">{{ strtoupper(mb_substr($staffName, 0, 1)) }}</span><span>{{ $staffName }}</span></span>
+    </div>
+</header>
 
-<div class="pos-container">
-
-    <!-- Service catalog, one section per service type -->
-    @php
-        // Icon + color for a category, picked from its name so it stays the same between visits
-        $categoryLook = function (string $name, int $index): array {
-            $icons = [
-                'wash' => 'fa-soap', 'fold' => 'fa-soap', 'laundry' => 'fa-soap',
-                'dry' => 'fa-wind', 'iron' => 'fa-shirt', 'press' => 'fa-shirt',
-                'special' => 'fa-hand-sparkles', 'care' => 'fa-hand-sparkles', 'delicate' => 'fa-hand-sparkles',
-                'blanket' => 'fa-bed', 'comforter' => 'fa-bed', 'bed' => 'fa-bed', 'shoe' => 'fa-shoe-prints',
-            ];
-            $icon = 'fa-basket-shopping';
-            foreach ($icons as $word => $candidate) {
-                if (stripos($name, $word) !== false) { $icon = $candidate; break; }
-            }
-            $tones = ['tone-blue', 'tone-sky', 'tone-indigo', 'tone-aqua', 'tone-violet'];
-            return [$icon, $tones[$index % count($tones)]];
-        };
-        $categories = $serviceGroups->keys()->values();
-    @endphp
-    <div class="products-section">
+<main class="pos" id="main">
+    {{-- ===== Services ===== --}}
+    <section class="pos-catalog" aria-label="Services">
         <div class="catalog-head">
-            <div class="catalog-search">
+            <div class="search">
                 <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-                <input type="search" id="searchInput" placeholder="Search services..." aria-label="Search services" autocomplete="off">
+                <input class="input" type="search" id="serviceSearch" placeholder="Search services" aria-label="Search services" autocomplete="off" data-search-shortcut>
             </div>
-            <div class="category-chips" role="group" aria-label="Filter by category">
-                <button type="button" class="chip active" data-cat="all" aria-pressed="true">All <span class="chip-count">{{ $services->count() }}</span></button>
+            @if($categories->count() > 1)
+            <div class="chips scroll" role="group" aria-label="Service types">
+                <button type="button" class="chip" aria-pressed="true" data-cat="all">All <span class="chip-count">{{ $services->count() }}</span></button>
                 @foreach($categories as $i => $category)
-                    @php [$icon] = $categoryLook($category, $i); @endphp
-                    <button type="button" class="chip" data-cat="cat-{{ $i }}" aria-pressed="false"><i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $category }} <span class="chip-count">{{ $serviceGroups[$category]->count() }}</span></button>
+                    <button type="button" class="chip" aria-pressed="false" data-cat="cat-{{ $i }}"><i class="fas {{ $typeIcon($category) }}" aria-hidden="true"></i> {{ $category }} <span class="chip-count">{{ $serviceGroups[$category]->count() }}</span></button>
                 @endforeach
             </div>
+            @endif
         </div>
 
-        <div class="product-catalog">
+        <div class="tiles-scroll" id="tilesScroll">
             @forelse($categories as $i => $category)
-                @php [$icon, $tone] = $categoryLook($category, $i); @endphp
-                <section class="service-section" data-cat="cat-{{ $i }}" aria-labelledby="cat-title-{{ $i }}">
-                    <header class="section-head">
-                        <span class="bubble-tile {{ $tone }} section-tile" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
-                        <h3 id="cat-title-{{ $i }}">{{ $category }}</h3>
-                        <span class="section-count">{{ $serviceGroups[$category]->count() }} {{ Str::plural('service', $serviceGroups[$category]->count()) }}</span>
-                    </header>
-                    <div class="product-grid">
+                <section class="tile-group" data-cat="cat-{{ $i }}" aria-labelledby="cat-title-{{ $i }}">
+                    <h2 class="tile-group-title" id="cat-title-{{ $i }}">{{ $category }}</h2>
+                    <div class="tiles">
                         @foreach($serviceGroups[$category] as $service)
-                        <button type="button" class="product-item" data-name="{{ strtolower($service->name) }}" data-service-id="{{ $service->id }}" onclick="addToOrder({{ $service->id }})">
-                            <span class="item-qty" aria-label="in order" hidden></span>
-                            @if(!empty($service->icon))
-                                <img src="{{ $service->icon_url }}" alt="" loading="lazy" width="52" height="52" onerror="this.onerror=null;this.src='{{ asset('images/services/placeholder.jpg') }}'">
+                        <button type="button" class="tile" data-service="{{ $service->id }}" data-name="{{ strtolower($service->name) }}" aria-label="Add {{ $service->name }}, ₱{{ number_format($service->price, 2) }}">
+                            <span class="tile-qty" hidden></span>
+                            @if($service->icon && !str_contains($service->icon, 'placeholder'))
+                                <img class="tile-img" src="{{ $service->icon_url }}" alt="" loading="lazy" width="40" height="40">
                             @else
-                                <span class="bubble-tile {{ $tone }} item-tile" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
+                                <span class="bubble-tile {{ $tones[$i % count($tones)] }}" aria-hidden="true"><i class="fas {{ $typeIcon($category) }}"></i></span>
                             @endif
-                            <span class="item-name" title="{{ $service->name }}">{{ $service->name }}</span>
-                            <span class="product-price">₱{{ number_format($service->price, 2) }}</span>
+                            <span class="tile-name">{{ $service->name }}</span>
+                            <span class="tile-price">₱{{ number_format($service->price, 2) }}</span>
                         </button>
                         @endforeach
                     </div>
                 </section>
             @empty
-                <p class="catalog-empty">No active services yet. Add some under Services &rsaquo; Service List.</p>
+                <div class="empty">
+                    <span class="empty-icon" aria-hidden="true"><i class="fas fa-tags"></i></span>
+                    <p class="empty-title">No services to sell yet</p>
+                    <p>A manager can add them under Services.</p>
+                    @if(in_array(session('staff.role'), ['manager', 'admin'], true))<a class="btn btn-primary" href="{{ route('services.list') }}">Add services</a>@endif
+                </div>
             @endforelse
-            <p class="catalog-empty" id="catalogNoMatch" hidden>No services match your search.</p>
+            <p class="empty" id="noMatch" hidden>No services match your search.</p>
         </div>
-    </div>
+    </section>
 
-    <!-- Order Section -->
-    <div class="order-section">
-        <div class="order-head">
-            <h3><i class="fas fa-receipt"></i> Current order</h3>
-            <span class="order-count" id="orderCount">0 items</span>
-        </div>
-        <div class="order-meta">
-            <div>
-                <!-- Order Number Display -->
-                <p>Order: <strong id="orderNumber">@if(isset($order)){{ $order->order_number }}@else New Order @endif</strong></p>
-                <div class="date-picker-wrapper">
-                <span class="date-picker-label"><p style="color:var(--text);">Date: </p></span>
+    {{-- ===== Order, customer, payment ===== --}}
+    <div class="pos-side" id="posSide">
+        <header class="pos-side-head">
+            <button type="button" class="icon-btn" id="closeSide" aria-label="Back to services"><i class="fas fa-arrow-left" aria-hidden="true"></i></button>
+            <h2>Review order</h2>
+        </header>
 
-                <div class="date-picker-container">
-                    <span class="date-picker-text" id="orderDateText"></span>
-                    <button type="button" class="date-picker-button">
-                        <i class="fas fa-calendar-alt"></i>
-                    </button>
-                    <input type="date" id="orderDateInput" class="date-picker-input" value="@if(isset($order)){{ \Carbon\Carbon::parse($order->order_date)->format('Y-m-d') }}@endif">
+        <section class="pos-cart" aria-labelledby="cartTitle">
+            <header class="panel-head">
+                <h2 id="cartTitle">Order <span class="chip-count" id="lineCount">0</span></h2>
+                <button type="button" class="btn btn-sm btn-ghost" id="clearCart" disabled><i class="fas fa-trash" aria-hidden="true"></i> Clear</button>
+            </header>
+            <div class="panel-scroll">
+                <ul class="cart-lines" id="cartLines" aria-label="Services in this order"></ul>
+                <div class="cart-empty" id="cartEmpty">
+                    <x-mascot mood="curious" class="mascot-ink" />
+                    <p class="empty-title">Tap a service to add it</p>
+                    <p>Each tap adds one. Change amounts here.</p>
                 </div>
-            </div>
-
-            </div>
-            <div class="customer-select-wrapper">
-                <div class="customer-select-container">
-                    <select id="selectCustomer">
-                        <option value="">Select Customer</option>
-                        @php $selectedCustomer = isset($order) ? $order->customer_id : null; @endphp
-                        @foreach($customers as $customer)<option value="{{ $customer->id }}"@selected($selectedCustomer == $customer->id)>{{ $customer->name }}</option>@endforeach
-                    </select>
-                    <button type="button" class="icon-btn" onclick="openAddCustomerModal()" title="Add customer" aria-label="Add customer">
-                    <i class="fas fa-user-plus"></i>
-                </button>
-                </div>
-                <!-- Customer Error Message -->
-                <div class="customer-error-message" id="customerError">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>Please select a customer before saving</span>
-                </div>
-            </div>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Service</th>
-                    <th>Price</th>
-                    <th>QTY</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="orderItemsBody">
-                @if(isset($order) && $order->items->count() > 0)
-                    @foreach($order->items as $item)
-                    <tr id="item-{{ $item->id }}" data-item-id="{{ $item->id }}" data-service-id="{{ $item->service_id }}">
-                        <td>{{ $item->service->name ?? 'N/A' }}</td>
-                        <td class="item-price">{{ number_format($item->price, 2) }}</td>
-                        <td>
-                            <button type="button" class="qty-btn" onclick="changeQty({{ $item->service_id }}, -1, {{ $item->id }})">-</button>
-                            <span id="qty-{{ $item->service_id }}">{{ $item->qty }}</span>
-                            <button type="button" class="qty-btn" onclick="changeQty({{ $item->service_id }}, 1, {{ $item->id }})">+</button>
-                        </td>
-                        <td class="item-total" id="total-{{ $item->service_id }}">{{ number_format($item->price * $item->qty, 2) }}</td>
-                    </tr>
-                    @endforeach
-                @else
-                <tr>
-                    <td colspan="4" style="text-align:center; padding:20px; color:var(--text-faint);">No items added yet.</td>
-                </tr>
-                @endif
-            </tbody>
-        </table>
-        <div class="order-summary">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <span>Add-ons:</span>
-                    <button type="button" class="icon-btn icon-btn-sm" onclick="openAddonModal()" title="Add add-on" aria-label="Add add-on">
-                        <i class="fas fa-plus"></i>
-                    </button>
-
-                </div>
-                <strong id="addonTotal">@if(isset($order)){{ number_format($order->addons->sum('pivot.price'), 2) }}@else 0.00 @endif PHP</strong>
-            </div>
-
-            <!-- Selected Addons List -->
-            <div id="selectedAddonsList" style="margin-top:5px; margin-bottom:10px; @if(!isset($order) || $order->addons->count() == 0) display:none; @endif">
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:3px;">Selected Add-ons:</div>
-                <div id="selectedAddonsContainer">
-                    @if(isset($order))
-                        @foreach($order->addons as $addon)
-                        <div class="selected-addon-item" id="addon-{{ $addon->id }}" data-addon-id="{{ $addon->id }}">
-                            <span class="selected-addon-name">{{ $addon->name }}</span>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <span class="selected-addon-price">{{ number_format($addon->pivot->price, 2) }} PHP</span>
-                                <button type="button" class="remove-addon-btn" onclick="removeAddon({{ $addon->id }})">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
+                @if($addonChoices->isNotEmpty())
+                <div class="panel-block">
+                    <h3 class="eyebrow">Add-ons</h3>
+                    <div class="chips" id="addonChips">
+                        @foreach($addonChoices as $addon)
+                            <button type="button" class="chip addon-chip" aria-pressed="false" data-addon="{{ $addon['id'] }}"><i class="fas fa-plus" aria-hidden="true"></i> {{ $addon['name'] }} <span class="addon-price">₱{{ number_format($addon['price'], 2) }}</span></button>
                         @endforeach
-                    @endif
-                </div>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span>Sub Total:</span>
-                <strong id="subTotal">0.00 PHP</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                <span>Discount:</span>
-                <span class="discount-field">
-                    <input type="number" id="discountInput" value="{{ isset($order) ? (float) ($order->discount_percent ?? $order->discount) : 0 }}" min="0" step="0.01" aria-label="Discount" style="width:80px; padding:4px 6px; border:1px solid var(--border-strong); border-radius:4px; font-size:12px;">
-                    {{-- ₱ = a fixed amount, % = a percentage of the services and add-ons --}}
-                    <select id="discountType" aria-label="Discount type">
-                        <option value="amount">₱</option>
-                        <option value="percent" @selected(isset($order) && $order->discount_percent !== null)>%</option>
-                    </select>
-                </span>
-            </div>
-            <div id="discountHint" class="discount-hint" hidden></div>
-            <div class="gross-row">
-                <span><strong>Gross Total:</strong></span>
-                <strong id="grossTotal">0.00 PHP</strong>
-            </div>
-
-            <!-- Payment Info (for edit mode) -->
-            @if(isset($order) && $order->payments->count() > 0)
-            <div style="margin-top:10px; padding:8px; background:var(--surface-muted); border-radius:6px; border:1px solid var(--surface-sunken);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-                    <span style="color:var(--text-muted); font-size:11px;">Paid Amount:</span>
-                    <strong style="color:var(--success); font-size:11px;">{{ number_format($order->paid_amount, 2) }} PHP</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="color:var(--text-muted); font-size:11px;">Balance:</span>
-                    <strong style="color:{{ $order->balance > 0 ? 'var(--danger)' : 'var(--success)' }}; font-size:11px;">
-                        {{ number_format($order->balance, 2) }} PHP
-                    </strong>
-                </div>
-            </div>
-            @endif
-        </div>
-
-        <div style="margin-top:10px;">
-            <label for="notes" style="font-size:12px;">Notes:</label>
-            <textarea id="notes" placeholder="Enter notes here..." style="width:100%; height:50px; border-radius:6px; border:1px solid var(--border-strong); padding:5px; font-size:12px;">{{ isset($order) ? $order->notes : '' }}</textarea>
-        </div>
-
-        <div class="payment-buttons">
-            <button class="btn-payment"
-                    onclick="openPaymentModal()"
-                    @if(isset($order)) data-edit-mode="true" @endif>
-                Payment
-            </button>
-            <button class="btn-save" onclick="validateAndSaveOrder()">{{ isset($order) ? 'Update Order' : 'Save' }}</button>
-            <button class="btn-cancel" onclick="cancelOrder()">{{ isset($order) ? 'Cancel Edit' : 'Cancel' }}</button>
-        </div>
-    </div>
-
-</div>
-
-<!-- Add Service Modal -->
-<div id="addServiceModal" class="modal modal-sm">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add Service</h3>
-            <button type="button" class="close-btn" onclick="closeAddModal()">&times;</button>
-        </div>
-
-        <div class="modal-body">
-            <div class="form-group">
-                <label>Name:</label>
-                <p id="modal_service_name" style="padding:8px 10px; background:var(--surface-muted); border-radius:6px; margin-top:5px;"></p>
-                <input type="hidden" id="modal_service_id">
-            </div>
-
-            <div class="form-group">
-                <label>Qty: <span class="required-star">*</span></label>
-                <input type="number" id="modal_service_qty" value="1" min="1" style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; margin-top:5px;">
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-            <button type="button" class="btn-primary" onclick="confirmAddService()">Add</button>
-        </div>
-    </div>
-</div>
-
-<!-- Add Customer Modal -->
-<div id="addCustomerModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add Customer</h3>
-            <button type="button" class="close-btn" onclick="closeCustomerModal()">&times;</button>
-        </div>
-
-        <form id="addCustomerForm" onsubmit="handleAddCustomer(event)">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="customer_name">
-                        Customer Name <span class="required-star">*</span>
-                    </label>
-                    <input type="text" name="name" id="customer_name" placeholder="Enter customer name" required>
-                    <div class="error-message" id="customer_name_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="customer_contact">
-                        Contact Number
-                    </label>
-                    <input type="text" name="contact" id="customer_contact" placeholder="e.g., 09123456789">
-                    <div class="error-message" id="customer_contact_error"></div>
-                    <div class="helper-text">Optional - 10 to 15 digits only</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="customer_address">
-                        Address
-                    </label>
-                    <textarea name="address" id="customer_address" rows="3" placeholder="Enter customer address"></textarea>
-                    <div class="error-message" id="customer_address_error"></div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeCustomerModal()">Cancel</button>
-                <button type="submit" class="btn-primary">Save Customer</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Payment Modal -->
-<div id="paymentModal" class="modal modal-sm">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Process Payment</h3>
-            <button type="button" class="close-btn" onclick="closePaymentModal()">&times;</button>
-        </div>
-
-        <div class="modal-body">
-            <!-- Amount Display -->
-            <div class="payment-amount-display">
-                <div class="amount-label">Total Amount Due</div>
-                <div class="amount-value" id="paymentTotalAmount">0.00 PHP</div>
-                @if(isset($order) && $order->payments->count() > 0)
-                <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">
-                    Previously paid: <strong>{{ number_format($order->paid_amount, 2) }} PHP</strong>
+                    </div>
                 </div>
                 @endif
-            </div>
-
-            <!-- Amount Input -->
-            <div class="form-group">
-                <label for="paymentAmount">
-                    Payment Amount <span class="required-star">*</span>
-                </label>
-                <input type="number" id="paymentAmount"
-                       placeholder="Enter payment amount"
-                       min="0"
-                       step="0.01"
-                       class="form-control">
-                <div class="error-message" id="payment_amount_error"></div>
-                <div class="helper-text">Enter the amount being paid</div>
-
-                <!-- Real-time change display -->
-                <div class="payment-change-display" id="paymentChangeDisplay" style="display: none;">
-                    <div class="change-info">
-                        <i class="fas fa-exchange-alt"></i>
-                        <span>Change: <strong id="paymentChangeAmount">0.00</strong> PHP</span>
+                <div class="panel-block form-grid">
+                    <div class="field">
+                        <label class="label" for="orderDate">Order date</label>
+                        <input class="input" type="date" id="orderDate">
                     </div>
-                </div>
-
-                <!-- Real-time shortfall display -->
-                <div class="payment-shortfall-display" id="paymentShortfallDisplay" style="display: none;">
-                    <div class="shortfall-info">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Shortfall: <strong id="paymentShortfallAmount">0.00</strong> PHP</span>
-                    </div>
-                </div>
-
-                <!-- Overpayment warning -->
-                <div class="payment-overpayment-display" id="paymentOverpaymentDisplay" style="display: none;">
-                    <div class="overpayment-info">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Overpayment: <strong id="paymentOverpaymentAmount">0.00</strong> PHP (Order already paid)</span>
+                    <div class="field">
+                        <label class="label" for="notes">Notes</label>
+                        <textarea class="textarea" id="notes" rows="2" maxlength="500" placeholder="Stains, special care, pickup time…">{{ $editing ? $order->notes : '' }}</textarea>
                     </div>
                 </div>
             </div>
+        </section>
 
+        <section class="pos-checkout" aria-label="Customer and payment">
+            <div class="panel-scroll">
+                <div class="panel-block" id="customerBlock">
+                    <h2 class="eyebrow" id="customerLabel">Customer</h2>
+                    <div id="customerPicker">
+                        <div class="search">
+                            <i class="fas fa-user" aria-hidden="true"></i>
+                            <input class="input" type="search" id="customerSearch" placeholder="Name or phone" autocomplete="off"
+                                   role="combobox" aria-labelledby="customerLabel" aria-expanded="false" aria-controls="customerResults" aria-autocomplete="list" aria-describedby="customerError">
+                        </div>
+                        <ul class="customer-results" id="customerResults" role="listbox" aria-label="Matching customers" hidden></ul>
+                        <div class="chips recent" id="recentCustomers" aria-label="Recent customers"></div>
+                        <button type="button" class="btn btn-soft btn-block" id="newCustomerBtn" data-dialog-open="newCustomerDialog"><i class="fas fa-user-plus" aria-hidden="true"></i> New customer</button>
+                    </div>
+                    <div class="customer-card" id="customerCard" hidden>
+                        <span class="avatar" id="customerInitial" aria-hidden="true"></span>
+                        <div class="customer-info">
+                            <strong id="customerName"></strong>
+                            <span class="muted" id="customerContact"></span>
+                            <span class="customer-stats" id="customerStats"></span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-ghost" id="changeCustomer">Change</button>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-block" id="repeatLast" hidden><i class="fas fa-rotate-right" aria-hidden="true"></i> <span>Repeat last order</span></button>
+                    <p class="field-error" id="customerError"></p>
+                </div>
 
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closePaymentModal()">Cancel</button>
-            <button type="button" class="btn-primary" onclick="processPayment()">Process Payment</button>
-        </div>
+                <div class="panel-block">
+                    <div class="summary">
+                        <div class="summary-row"><span>Services</span><span id="sumServices">₱0.00</span></div>
+                        <div class="summary-row"><span>Add-ons</span><span id="sumAddons">₱0.00</span></div>
+                        <div class="summary-row"><span id="discountLabel">Discount</span><span id="sumDiscount">₱0.00</span></div>
+                    </div>
+                    <div class="discount-ctl">
+                        <div class="segmented" role="radiogroup" aria-label="Discount type">
+                            <label><input type="radio" name="discountType" value="amount" @checked($initial['discountType'] === 'amount')><span>₱</span></label>
+                            <label><input type="radio" name="discountType" value="percent" @checked($initial['discountType'] === 'percent')><span>%</span></label>
+                        </div>
+                        <input class="input" type="number" id="discountValue" min="0" step="0.01" inputmode="decimal" placeholder="No discount" aria-label="Discount" value="{{ $initial['discountValue'] ?: '' }}">
+                    </div>
+                    <div class="chips" id="percentChips" hidden>
+                        @foreach([5, 10, 15, 20] as $pct)<button type="button" class="chip" data-pct="{{ $pct }}">{{ $pct }}%</button>@endforeach
+                    </div>
+                    <div class="summary" style="margin-top: var(--s-3)">
+                        <div class="summary-row summary-total total-row"><span>Total</span><span id="sumTotal">₱0.00</span></div>
+                        @if($editing)
+                            <div class="summary-row"><span>Paid so far</span><span>₱{{ number_format($order->paid_amount, 2) }}</span></div>
+                            <div class="summary-row"><span>Balance</span><span id="sumBalance">₱0.00</span></div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <footer class="checkout-actions">
+                <button type="button" class="btn btn-secondary btn-lg" id="saveOnly">{{ $editing ? 'Save changes' : 'Pay later' }}</button>
+                <button type="button" class="btn btn-primary btn-lg" id="chargeBtn"><span id="chargeLabel">{{ $editing ? 'Collect' : 'Charge' }}</span>&nbsp;<span id="chargeAmount">₱0.00</span></button>
+            </footer>
+        </section>
     </div>
+</main>
+
+<div class="pos-bar">
+    <button type="button" class="btn btn-primary btn-block" id="openSide"><span id="barCount">0 items</span><span>Review order <i class="fas fa-chevron-up" aria-hidden="true"></i></span><span id="barTotal">₱0.00</span></button>
 </div>
 
-<!-- Addon Selection Modal -->
-<div id="addonModal" class="modal modal-sm">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Select Add-ons</h3>
-            <button type="button" class="close-btn" onclick="closeAddonModal()">&times;</button>
-        </div>
+<div class="sr-only" aria-live="polite" id="announcer"></div>
 
-        <div class="modal-body">
-            <div style="margin-bottom:10px;">
-                <input type="text" id="addonSearchInput" placeholder="Search add-ons..."
-                       style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:12px;">
+{{-- ===== Dialogs ===== --}}
+<dialog id="paymentDialog" class="dialog dialog-lg" aria-labelledby="payTitle">
+    <form id="payForm">
+        <div class="dialog-header">
+            <h2 class="dialog-title" id="payTitle">Payment</h2>
+            <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+        </div>
+        <div class="dialog-body pay-grid">
+            <div class="stack-sm">
+            <div class="pay-due"><span class="muted">Amount due</span><strong id="payDue">₱0.00</strong></div>
+            <div class="segmented block" role="radiogroup" aria-label="Payment method">
+                @foreach(['cash' => ['Cash', 'fa-money-bill-wave'], 'card' => ['Card', 'fa-credit-card'], 'transfer' => ['Transfer', 'fa-building-columns'], 'other' => ['Other', 'fa-ellipsis']] as $value => [$label, $icon])
+                    <label><input type="radio" name="payMethod" value="{{ $value }}" @checked($value === 'cash')><span><i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }}</span></label>
+                @endforeach
             </div>
-
-            <div class="addons-list-container" style="max-height:300px; overflow-y:auto;">
-                <div id="addonsList">
-                    <!-- Addons will be loaded here -->
-                </div>
-
-                <div id="noAddonsMessage" style="text-align:center; padding:20px; color:var(--text-faint); display:none;">
-                    <i class="fas fa-box-open" style="font-size:24px; margin-bottom:10px;"></i>
-                    <p>No addons available</p>
-                </div>
+            <div class="field">
+                <label class="label" for="tendered">Amount received</label>
+                <div class="input-affix"><span class="affix" aria-hidden="true">₱</span><input class="input tendered" type="text" id="tendered" inputmode="decimal" autocomplete="off" aria-describedby="payResult"></div>
+            </div>
+            <div class="quick-cash" aria-label="Quick amounts">
+                <button type="button" class="btn btn-secondary" data-cash="exact">Exact</button>
+                @foreach([100, 200, 500, 1000] as $bill)<button type="button" class="btn btn-secondary" data-cash="{{ $bill }}">₱{{ number_format($bill) }}</button>@endforeach
+            </div>
+            <p class="pay-result" id="payResult" aria-live="polite"></p>
+            </div>
+            <div class="keypad" aria-label="Number pad">
+                @foreach(['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'] as $key)<button type="button" data-key="{{ $key }}">{{ $key }}</button>@endforeach
+                <button type="button" data-key="back" aria-label="Delete last digit"><i class="fas fa-delete-left" aria-hidden="true"></i></button>
             </div>
         </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-cancel" onclick="closeAddonModal()">Cancel</button>
-            <button type="button" class="btn-primary" onclick="saveSelectedAddons()">Apply Selected</button>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary" data-dialog-close>Back</button>
+            <button type="submit" class="btn btn-primary btn-lg" id="payConfirm">Complete</button>
         </div>
+    </form>
+</dialog>
+
+<dialog id="newCustomerDialog" class="dialog dialog-sm" aria-labelledby="newCustomerTitle">
+    <form id="newCustomerForm" novalidate>
+        <div class="dialog-header">
+            <h2 class="dialog-title" id="newCustomerTitle">New customer</h2>
+            <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+        </div>
+        <div class="dialog-body">
+            <div class="field"><label class="label" for="nc-name">Name <span class="req" aria-hidden="true">*</span></label><input class="input" id="nc-name" name="name" maxlength="255" autocomplete="off" required><p class="field-error"></p></div>
+            <div class="field"><label class="label" for="nc-contact">Phone</label><input class="input" id="nc-contact" name="contact" type="tel" inputmode="numeric" maxlength="15" placeholder="09123456789"><p class="help">Optional. 10 to 15 digits.</p><p class="field-error"></p></div>
+            <div class="field"><label class="label" for="nc-address">Address</label><textarea class="textarea" id="nc-address" name="address" rows="2" maxlength="500"></textarea><p class="field-error"></p></div>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button>
+            <button type="submit" class="btn btn-primary">Save customer</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="successDialog" class="dialog dialog-sm" aria-labelledby="okTitle" data-keep-open>
+    <div class="dialog-body success-body">
+        <x-mascot mood="proud" class="mascot-ink" />
+        <h2 class="dialog-title" id="okTitle">Order saved</h2>
+        <p class="muted" id="okNumber"></p>
+        <div class="ok-change" id="okChange" hidden><span>Change to give back</span><strong id="okChangeAmount"></strong></div>
+        <p id="okBalance"></p>
     </div>
-</div>
+    <div class="dialog-footer success-actions">
+        <a class="btn btn-secondary" id="okPrint" href="#"><i class="fas fa-print" aria-hidden="true"></i> Print receipt</a>
+        <a class="btn btn-secondary" id="okView" href="#"><i class="fas fa-receipt" aria-hidden="true"></i> View order</a>
+        <a class="btn btn-primary" href="{{ route('pos.index') }}" id="okNew"><i class="fas fa-plus" aria-hidden="true"></i> Next order</a>
+    </div>
+</dialog>
+
+<dialog id="confirmDialog" class="dialog dialog-sm" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <form method="dialog">
+        <div class="dialog-body confirm-body">
+            <span class="confirm-icon" aria-hidden="true"><i class="fas fa-triangle-exclamation"></i></span>
+            <h2 id="confirmTitle" class="dialog-title">Are you sure?</h2>
+            <p id="confirmMessage"></p>
+        </div>
+        <div class="dialog-footer">
+            <button class="btn btn-secondary" value="cancel" data-confirm-cancel>Cancel</button>
+            <button class="btn btn-danger" value="ok" data-confirm-ok>Confirm</button>
+        </div>
+    </form>
+</dialog>
+
+<div id="toastRegion" class="toast-region" aria-live="polite"></div>
+
+<script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}"></script>
 <script>
-// ============================================
-// GLOBAL VARIABLES
-// ============================================
-const APP_URL = @json(rtrim(url('/'), '/'));
-const appUrl = (path = '') => APP_URL + '/' + String(path).replace(/^\/+/, '');
-const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
-
-function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-// Today's date in the user's local timezone (toISOString() would give the UTC date)
-function localDateString(date = new Date()) {
-    const pad = n => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-// Turn a failed fetch response into a readable message
-async function errorMessageFrom(response, fallback) {
-    try {
-        const data = await response.json();
-        if (data.errors) return Object.values(data.errors).flat().join('\n');
-        if (data.message) return data.message;
-    } catch (e) { /* not JSON */ }
-    if (response.status === 419) return 'Your session expired. Please refresh the page and try again.';
-    if (response.status === 401) return 'Your session ended. Please log in again.';
-    return fallback;
-}
-
-let servicesData = @json($services);
-let addonsData = [];
-
-// Order Items - Using inline PHP to avoid Blade parsing issues
-let orderItems = <?php
-    if(isset($order)) {
-        $items = $order->items->map(function($item) {
-            return [
-                'id' => $item->service_id,
-                'name' => $item->service->name ?? 'N/A',
-                'price' => floatval($item->price),
-                'qty' => $item->qty,
-                'total' => floatval($item->price * $item->qty), // Calculate total dynamically
-                'item_id' => $item->id
-            ];
-        })->toArray();
-        echo json_encode($items);
-    } else {
-        echo '[]';
-    }
-?>;
-
-// Selected Addons - Using inline PHP
-let selectedAddons = <?php
-    if(isset($order)) {
-        $addons = $order->addons->map(function($addon) {
-            return [
-                'id' => $addon->id,
-                'name' => $addon->name,
-                'price' => floatval($addon->pivot->price)
-            ];
-        })->toArray();
-        echo json_encode($addons);
-    } else {
-        echo '[]';
-    }
-?>;
-
-// Order Data
-let orderData = {
-    paymentAmount: null, // New payment amount (set when processing payment)
-    totalAmount: <?php echo isset($order) ? $order->total : '0'; ?>,
-    customerId: <?php echo isset($order) && $order->customer_id ? $order->customer_id : 'null'; ?>,
-    orderId: <?php echo isset($order) ? $order->id : 'null'; ?>,
-    isEditMode: <?php echo isset($order) ? 'true' : 'false'; ?>,
-    paidAmount: <?php echo isset($order) ? $order->paid_amount : '0'; ?>
-};
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-function formatDate(dateString) {
-    // Parse Y-m-d as a local date (new Date('Y-m-d') is treated as UTC)
-    const [y, m, d] = String(dateString).split('-').map(Number);
-    const date = new Date(y, (m || 1) - 1, d || 1);
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-}
-
-function getTotalPaidAmount() {
-    return orderData.paidAmount || 0;
-}
-
-// ============================================
-// MODAL UTILITY FUNCTIONS
-// ============================================
-function openModal(modal) {
-    modal.classList.add('active');
-    document.body.classList.add('modal-open');
-}
-
-function closeModal(modal) {
-    modal.classList.remove('active');
-    document.body.classList.remove('modal-open');
-}
-
-// ============================================
-// DATE PICKER FUNCTIONS
-// ============================================
-function initOrderDate() {
-    const dateInput = document.getElementById('orderDateInput');
-    const dateText = document.getElementById('orderDateText');
-
-    if (dateInput.value) {
-        dateText.textContent = formatDate(dateInput.value);
-    } else {
-        const today = localDateString();
-        dateInput.value = today;
-        dateText.textContent = formatDate(today);
-    }
-}
-
-// ============================================
-// CUSTOMER FUNCTIONS
-// ============================================
-function validateCustomerSelection() {
-    const customerSelect = document.getElementById('selectCustomer');
-    const customerError = document.getElementById('customerError');
-
-    customerSelect.classList.remove('customer-select-error');
-    customerError.style.display = 'none';
-
-    if (!customerSelect.value) {
-        customerSelect.classList.add('customer-select-error');
-        customerError.style.display = 'flex';
-        customerSelect.focus();
-        return false;
-    }
-
-    return true;
-}
-
-function clearCustomerError() {
-    const customerSelect = document.getElementById('selectCustomer');
-    const customerError = document.getElementById('customerError');
-
-    customerSelect.classList.remove('customer-select-error');
-    customerError.style.display = 'none';
-}
-
-// ============================================
-// ADD CUSTOMER MODAL FUNCTIONS
-// ============================================
-function openAddCustomerModal() {
-    document.getElementById('addCustomerForm').reset();
-    clearCustomerErrors();
-    openModal(document.getElementById("addCustomerModal"));
-}
-
-function closeCustomerModal() {
-    closeModal(document.getElementById("addCustomerModal"));
-}
-
-function clearCustomerErrors() {
-    document.querySelectorAll('#addCustomerForm .error-message').forEach(error => {
-        error.style.display = 'none';
-    });
-}
-
-async function handleAddCustomer(event) {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-
-    try {
-        const response = await fetch('{{ route("customers.store") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': CSRF_TOKEN,
-                'Accept': 'application/json'
-            },
-            body: formData
-        });
-
-        if (!response.ok && response.status !== 422) {
-            alert(await errorMessageFrom(response, 'Error adding customer. Please try again.'));
-            return;
-        }
-
-        const data = await response.json();
-
-        if (response.ok && data.customer) {
-            const select = document.getElementById('selectCustomer');
-            const option = document.createElement('option');
-            option.value = data.customer.id;
-            option.textContent = data.customer.name;
-            select.appendChild(option);
-            select.value = data.customer.id;
-            closeCustomerModal();
-            clearCustomerError();
-            alert('Customer added successfully!');
-        } else {
-            if (data.errors) {
-                Object.keys(data.errors).forEach(field => {
-                    const errorElement = document.getElementById(`customer_${field}_error`);
-                    if (errorElement) {
-                        errorElement.textContent = data.errors[field][0];
-                        errorElement.style.display = 'block';
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error adding customer. Please try again.');
-    }
-}
-
-// ============================================
-// ADDON MODAL FUNCTIONS
-// ============================================
-function openAddonModal() {
-    loadAddons();
-    openModal(document.getElementById("addonModal"));
-}
-
-function closeAddonModal() {
-    closeModal(document.getElementById("addonModal"));
-}
-
-function loadAddons() {
-    fetch(appUrl('pos/addons/active'), {
-        headers: { 'Accept': 'application/json' }
-    })
-    .then(response => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
-    .then(data => {
-        if (data.success) {
-            addonsData = data.addons.map(addon => ({
-                ...addon,
-                price: parseFloat(addon.price) || 0
-            }));
-            displayAddons(addonsData);
-        } else {
-            console.error('Error loading addons:', data.message);
-            showNoAddonsMessage();
-        }
-    })
-    .catch(error => {
-        console.error('Fetch error:', error);
-        showNoAddonsMessage();
-    });
-}
-
-function displayAddons(addons) {
-    const addonsList = document.getElementById('addonsList');
-    const noAddonsMessage = document.getElementById('noAddonsMessage');
-
-    if (!addons || addons.length === 0) {
-        addonsList.innerHTML = '';
-        noAddonsMessage.style.display = 'block';
-        return;
-    }
-
-    noAddonsMessage.style.display = 'none';
-
-    let html = '';
-    addons.forEach(addon => {
-        const isSelected = selectedAddons.some(selected => selected.id == addon.id);
-        const price = parseFloat(addon.price) || 0;
-
-        html += `
-            <div class="addon-item" data-id="${addon.id}">
-                <div class="addon-info">
-                    <div class="addon-name">${escapeHtml(addon.name)}</div>
-                    <div class="addon-price">${price.toFixed(2)} PHP</div>
-                </div>
-                <div class="addon-checkbox ${isSelected ? 'checked' : ''}">
-                    ${isSelected ? '<i class="fas fa-check"></i>' : ''}
-                </div>
-            </div>
-        `;
-    });
-
-    addonsList.innerHTML = html;
-
-    document.querySelectorAll('.addon-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const id = parseInt(this.dataset.id);
-            const addon = addonsData.find(a => a.id == id);
-            if (addon) toggleAddon(id, addon.name, parseFloat(addon.price) || 0);
-        });
-    });
-}
-
-function toggleAddon(id, name, price) {
-    const index = selectedAddons.findIndex(addon => addon.id == id);
-
-    if (index === -1) {
-        selectedAddons.push({ id, name, price });
-    } else {
-        selectedAddons.splice(index, 1);
-    }
-
-    const addonItem = document.querySelector(`.addon-item[data-id="${id}"]`);
-    if (addonItem) {
-        const checkbox = addonItem.querySelector('.addon-checkbox');
-        checkbox.classList.toggle('checked');
-        checkbox.innerHTML = checkbox.classList.contains('checked') ? '<i class="fas fa-check"></i>' : '';
-    }
-}
-
-function saveSelectedAddons() {
-    updateAddonDisplay();
-    updateTotals();
-    closeAddonModal();
-}
-
-function updateAddonDisplay() {
-    const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-    document.getElementById('addonTotal').textContent = addonTotal.toFixed(2) + " PHP";
-
-    const container = document.getElementById('selectedAddonsContainer');
-    const listContainer = document.getElementById('selectedAddonsList');
-
-    if (selectedAddons.length === 0) {
-        container.innerHTML = '';
-        listContainer.style.display = 'none';
-        return;
-    }
-
-    listContainer.style.display = 'block';
-
-    let html = '';
-    selectedAddons.forEach(addon => {
-        html += `
-            <div class="selected-addon-item" data-addon-id="${addon.id}">
-                <span class="selected-addon-name">${escapeHtml(addon.name)}</span>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="selected-addon-price">${addon.price.toFixed(2)} PHP</span>
-                    <button type="button" class="remove-addon-btn" onclick="removeAddon(${addon.id})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
-function removeAddon(id) {
-    selectedAddons = selectedAddons.filter(addon => addon.id != id);
-    updateAddonDisplay();
-    updateTotals();
-}
-
-// ============================================
-// PAYMENT MODAL FUNCTIONS (FIXED)
-// ============================================
-function resetPaymentModalErrors() {
-    const errorElement = document.getElementById('payment_amount_error');
-    if (errorElement) {
-        errorElement.style.display = 'none';
-        errorElement.textContent = '';
-    }
-}
-
-function openPaymentModal() {
-    if (orderData.isEditMode) {
-        alert('Please use the dedicated payment screen to process payments for existing orders.');
-        return;
-    }
-
-    if (orderItems.length === 0 && selectedAddons.length === 0) {
-        alert('Please add items or add-ons to the order first.');
-        return;
-    }
-
-    const total = calculateTotal();
-    const paid = getTotalPaidAmount();
-    const remainingBalance = total - paid;
-
-
-    orderData.totalAmount = total;
-
-    // Display the remaining balance (can be negative if overpaid)
-    if (remainingBalance > 0) {
-        document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
-        document.getElementById('paymentAmount').value = remainingBalance.toFixed(2);
-    } else if (remainingBalance === 0) {
-        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--text-muted); font-size:12px;">(Order already fully paid)</small>';
-        document.getElementById('paymentAmount').value = '0.00';
-    } else {
-        // Overpaid case
-        const overpayment = Math.abs(remainingBalance);
-        document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--warning-text); font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
-        document.getElementById('paymentAmount').value = '0.00';
-    }
-
-    resetPaymentModalErrors();
-    openModal(document.getElementById("paymentModal"));
-    calculatePaymentStatus();
-}
-
-function closePaymentModal() {
-    closeModal(document.getElementById("paymentModal"));
-}
-
-function calculatePaymentStatus() {
-    const paymentInput = document.getElementById('paymentAmount');
-    const paymentAmount = parseFloat(paymentInput.value) || 0;
-    const total = calculateTotal();
-    const paid = getTotalPaidAmount();
-    const remainingBalance = total - paid;
-
-    // Reset all displays
-    paymentInput.classList.remove('payment-valid', 'payment-invalid');
-    document.getElementById('paymentChangeDisplay').style.display = 'none';
-    document.getElementById('paymentShortfallDisplay').style.display = 'none';
-    document.getElementById('paymentOverpaymentDisplay').style.display = 'none';
-
-    if (paymentAmount === 0) return;
-
-    // If order is already overpaid (remainingBalance < 0)
-    if (remainingBalance < 0) {
-        // Any payment is considered overpayment
-        const overpayment = paymentAmount;
-        document.getElementById('paymentOverpaymentAmount').textContent = overpayment.toFixed(2);
-        document.getElementById('paymentOverpaymentDisplay').style.display = 'block';
-        paymentInput.classList.add('payment-valid');
-    }
-    // If there's still balance to pay (remainingBalance > 0)
-    else if (remainingBalance > 0) {
-        if (paymentAmount > remainingBalance) {
-            const change = paymentAmount - remainingBalance;
-            document.getElementById('paymentChangeAmount').textContent = change.toFixed(2);
-            document.getElementById('paymentChangeDisplay').style.display = 'block';
-            paymentInput.classList.add('payment-valid');
-        } else if (paymentAmount < remainingBalance && paymentAmount > 0) {
-            const shortfall = remainingBalance - paymentAmount;
-            document.getElementById('paymentShortfallAmount').textContent = shortfall.toFixed(2);
-            document.getElementById('paymentShortfallDisplay').style.display = 'block';
-            paymentInput.classList.add('payment-invalid');
-        } else if (paymentAmount === remainingBalance) {
-            paymentInput.classList.add('payment-valid');
-        }
-    }
-    // If order is exactly paid (remainingBalance === 0)
-    else {
-        // Any payment is overpayment
-        const overpayment = paymentAmount;
-        document.getElementById('paymentOverpaymentAmount').textContent = overpayment.toFixed(2);
-        document.getElementById('paymentOverpaymentDisplay').style.display = 'block';
-        paymentInput.classList.add('payment-valid');
-    }
-}
-
-function processPayment() {
-    const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-    const netTotal = calculateTotal();
-    const paid = getTotalPaidAmount();
-    const remainingBalance = netTotal - paid;
-
-    if (paymentAmount < 0) {
-        const errorElement = document.getElementById('payment_amount_error');
-        errorElement.textContent = 'Payment amount cannot be negative';
-        errorElement.style.display = 'block';
-        return;
-    }
-
-    // Warn if trying to pay when order is already overpaid
-    if (remainingBalance < 0 && paymentAmount > 0) {
-        if (!confirm('This order is already overpaid by ' + Math.abs(remainingBalance).toFixed(2) + ' PHP. Adding more payment will increase the overpayment. Continue?')) {
-            return;
-        }
-    }
-
-    // Warn if payment is 0 but there's still balance
-    if (paymentAmount === 0 && remainingBalance > 0) {
-        if (!confirm('Payment amount is 0, but there is still a balance of ' + remainingBalance.toFixed(2) + ' PHP. Record as no additional payment?')) {
-            return;
-        }
-    }
-
-    // For edit mode, store the new payment amount
-    orderData.paymentAmount = paymentAmount;
-
-    const newPaidAmount = paid + paymentAmount;
-    const newBalance = netTotal - newPaidAmount;
-
-    let message = `Payment recorded!\n`;
-    message += `Current Order Total: ${netTotal.toFixed(2)} PHP\n`;
-    message += `Previously Paid: ${paid.toFixed(2)} PHP\n`;
-    message += `New Payment: ${paymentAmount.toFixed(2)} PHP\n`;
-    message += `Total Paid: ${newPaidAmount.toFixed(2)} PHP\n`;
-
-    if (paymentAmount > Math.max(0, remainingBalance)) {
-        const change = paymentAmount - Math.max(0, remainingBalance);
-        message += `Change Due: ${change.toFixed(2)} PHP\n`;
-    }
-
-    if (newBalance > 0) {
-        message += `Remaining Balance: ${newBalance.toFixed(2)} PHP`;
-    } else if (newBalance < 0) {
-        message += `Overpayment: ${Math.abs(newBalance).toFixed(2)} PHP`;
-    } else {
-        message += `Order is fully paid!`;
-    }
-
-    alert(message);
-    closePaymentModal();
-}
-
-// ============================================
-// ORDER ITEM FUNCTIONS
-// ============================================
-function addToOrder(id) {
-    const service = servicesData.find(s => s.id == id);
-    if (!service) return;
-
-    // Check if item already exists
-    const existingItem = orderItems.find(item => item.id == id);
-
-    document.getElementById("modal_service_id").value = service.id;
-    document.getElementById("modal_service_name").textContent = service.name;
-    document.getElementById("modal_service_qty").value = existingItem ? existingItem.qty : 1;
-
-    openModal(document.getElementById("addServiceModal"));
-}
-
-function closeAddModal() {
-    closeModal(document.getElementById("addServiceModal"));
-}
-
-function confirmAddService() {
-    const id = parseInt(document.getElementById("modal_service_id").value);
-    const service = servicesData.find(s => s.id == id);
-    if (!service) return;
-
-    const name = service.name;
-    const qty = parseInt(document.getElementById("modal_service_qty").value) || 1;
-    const price = parseFloat(service.price) || 0;
-    const total = price * qty;
-
-    const existingIndex = orderItems.findIndex(i => i.id == id);
-    if (existingIndex !== -1) {
-        // Update existing item
-        orderItems[existingIndex].qty = qty;
-        orderItems[existingIndex].total = total;
-    } else {
-        // Add new item
-        orderItems.push({
-            id,
-            name,
-            price,
-            qty,
-            total,
-            item_id: null // Will be set when updating existing order
-        });
-    }
-
-    updateOrderTable();
-    closeAddModal();
-}
-
-function changeQty(id, delta, itemId = null) {
-
-    // Try to find item by item_id first (for existing items in edit mode)
-    let itemIndex = orderItems.findIndex(i => i.item_id == itemId);
-
-    // If not found by item_id, try by service id
-    if (itemIndex === -1) {
-        itemIndex = orderItems.findIndex(i => i.id == id);
-    }
-
-    if (itemIndex === -1) {
-        console.error('Item not found:', id, itemId);
-        return;
-    }
-
-    const item = orderItems[itemIndex];
-
-    if (delta === -1 && item.qty === 1) {
-        if (confirm(`Remove "${item.name}" from order?`)) {
-            orderItems.splice(itemIndex, 1);
-            updateOrderTable();
-        }
-        return;
-    } else {
-        item.qty += delta;
-        if (item.qty < 1) item.qty = 1;
-        item.total = item.price * item.qty;
-
-        // Update the quantity display in the table
-        const qtySpan = document.getElementById(`qty-${item.id}`);
-        if (qtySpan) {
-            qtySpan.textContent = item.qty;
-        }
-
-        // Update the total display in the table
-        const totalElement = document.getElementById(`total-${item.id}`);
-        if (totalElement) {
-            totalElement.textContent = item.total.toFixed(2);
-        }
-    }
-
-    updateTotals();
-}
-
-function updateOrderTable() {
-    const tbody = document.getElementById("orderItemsBody");
-    tbody.innerHTML = "";
-
-    if (orderItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-faint);">No items added yet.</td></tr>';
-    } else {
-        orderItems.forEach(item => {
-            const itemId = item.item_id || item.id;
-            const total = item.price * item.qty;
-
-            tbody.innerHTML += `<tr id="item-${itemId}" data-item-id="${itemId}" data-service-id="${item.id}">
-                <td>${escapeHtml(item.name)}</td>
-                <td class="item-price">${item.price.toFixed(2)}</td>
-                <td>
-                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, -1, ${itemId})">-</button>
-                    <span id="qty-${item.id}">${item.qty}</span>
-                    <button type="button" class="qty-btn" onclick="changeQty(${item.id}, 1, ${itemId})">+</button>
-                </td>
-                <td class="item-total" id="total-${item.id}">${total.toFixed(2)}</td>
-            </tr>`;
-        });
-    }
-
-    updateTotals();
-}
-
-// Pesos off: the fixed amount, or the percentage of services + add-ons rounded to
-// centavos, never more than the order (the server works it out the same way).
-function discountAmount(gross) {
-    const value = Math.max(0, parseFloat(document.getElementById("discountInput").value) || 0);
-    const isPercent = document.getElementById("discountType").value === "percent";
-    const amount = isPercent ? Math.round(gross * Math.min(value, 100)) / 100 : value;
-    return Math.min(amount, gross);
-}
-
-function calculateTotal() {
-    let subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
-    let addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-    let gross = subtotal + addonTotal;
-    return gross - discountAmount(gross);
-}
-
-// A percentage can't go over 100, so the box never shows more than will be applied
-function onDiscountChange() {
-    const input = document.getElementById("discountInput");
-    if (document.getElementById("discountType").value === "percent" && parseFloat(input.value) > 100) {
-        input.value = 100;
-    }
-    updateTotals();
-}
-
-// Show how many of each service are already in the order, on its catalog card
-function refreshItemBadges() {
-    const qtyById = {};
-    orderItems.forEach(item => { qtyById[item.id] = (qtyById[item.id] || 0) + item.qty; });
-    document.querySelectorAll(".product-item").forEach(card => {
-        const qty = qtyById[card.dataset.serviceId] || 0;
-        const badge = card.querySelector(".item-qty");
-        card.classList.toggle("in-order", qty > 0);
-        if (badge) { badge.hidden = qty === 0; badge.textContent = qty; }
-    });
-    const lines = orderItems.length;
-    const counter = document.getElementById("orderCount");
-    if (counter) counter.textContent = lines === 1 ? "1 item" : lines + " items";
-}
-
-function updateTotals() {
-    refreshItemBadges();
-    const total = calculateTotal();
-    orderData.totalAmount = total;
-
-    const subtotal = orderItems.reduce((sum, i) => sum + i.total, 0);
-    const addonTotal = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
-
-    // With %, show what it comes to in pesos
-    const discountHint = document.getElementById("discountHint");
-    discountHint.hidden = document.getElementById("discountType").value !== "percent";
-    discountHint.textContent = discountAmount(subtotal + addonTotal).toFixed(2) + " PHP off";
-
-    document.getElementById("subTotal").textContent = subtotal.toFixed(2) + " PHP";
-    document.getElementById("grossTotal").textContent = total.toFixed(2) + " PHP";
-
-    if (document.getElementById('paymentModal').classList.contains('active')) {
-        const paid = getTotalPaidAmount();
-        const remainingBalance = total - paid;
-
-        if (remainingBalance > 0) {
-            document.getElementById('paymentTotalAmount').textContent = remainingBalance.toFixed(2) + ' PHP';
-        } else if (remainingBalance === 0) {
-            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--text-muted); font-size:12px;">(Order already fully paid)</small>';
-        } else {
-            const overpayment = Math.abs(remainingBalance);
-            document.getElementById('paymentTotalAmount').innerHTML = '0.00 PHP <br><small style="color:var(--warning-text); font-size:12px;">(Overpaid by ' + overpayment.toFixed(2) + ' PHP)</small>';
-        }
-
-        calculatePaymentStatus();
-    }
-}
-
-function cancelOrder() {
-    if (orderData.isEditMode) {
-        if (confirm('Are you sure you want to cancel editing? All unsaved changes will be lost.')) {
-            window.location.href = appUrl(`orders/${orderData.orderId}/details`);
-        }
-    } else {
-        if (orderItems.length === 0 && selectedAddons.length === 0) {
-            alert("Cart is already empty.");
-            return;
-        }
-
-        if (confirm("Are you sure you want to cancel the order? This will clear the cart.")) {
-            orderItems = [];
-            selectedAddons = [];
-            orderData = {
-                paymentAmount: null,
-                totalAmount: 0,
-                customerId: null,
-                isEditMode: false,
-                orderId: null,
-                paidAmount: 0
-            };
-            updateAddonDisplay();
-            updateOrderTable();
-            document.getElementById('notes').value = '';
-            document.getElementById('discountInput').value = 0;
-            document.getElementById('discountType').value = 'amount';
-            updateTotals();
-            document.getElementById('selectCustomer').value = '';
-            clearCustomerError();
-        }
-    }
-}
-
-// ============================================
-// SAVE ORDER FUNCTION
-// ============================================
-async function saveOrder() {
-    if (orderItems.length === 0 && selectedAddons.length === 0) {
-        alert('No items or add-ons in the order to save.');
-        return;
-    }
-
-    // Validate customer selection
-    if (!validateCustomerSelection()) {
-        return;
-    }
-
-    // For edit mode, check if payment is being added
-    if (orderData.isEditMode && orderData.paymentAmount === null) {
-        const proceed = confirm('No new payment recorded. Update order without payment?');
-        if (!proceed) return;
-    }
-
-    // For new order, check if payment is made
-    if (!orderData.isEditMode && orderData.paymentAmount === null) {
-        const proceed = confirm('Payment has not been recorded. Save as unpaid order?');
-        if (!proceed) return;
-    }
-
-    // Prepare order data
-    const netTotal = calculateTotal();
-    const discount = parseFloat(document.getElementById('discountInput').value) || 0;
-
-    const orderDataToSend = {
-        customer_id: document.getElementById('selectCustomer').value,
-        order_date: document.getElementById('orderDateInput').value,
-        notes: document.getElementById('notes').value,
-        discount: discount,
-        discount_type: document.getElementById('discountType').value,
-        items: orderItems.map(item => ({
-            service_id: item.id,
-            qty: item.qty
-        })),
-        addons: selectedAddons.map(addon => ({
-            addon_id: addon.id
-        })),
-        payment_amount: orderData.paymentAmount || 0,
-        payment_method: 'cash'
+(function () {
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const services = new Map(@json($posServices));
+    const addonChoices = new Map(@json($posAddons));
+    const customers = @json($posCustomers);
+    const recentIds = @json($recentCustomerIds);
+    const initial = @json($initial);
+    const editing = initial.orderId !== null;
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+    const DRAFT = 'soapOpera.posDraft';
+
+    // ---------------- State ----------------
+    const state = {
+        items: initial.items.map(i => ({ ...i })),       // [{id, name, price, qty}] in the order they were added
+        addons: new Set(initial.addons),
+        customer: null,
+        summary: null,                                   // the picked customer's history (repeat last order)
     };
-    if (orderData.isEditMode) orderDataToSend._method = 'PUT';
+    const money = n => peso(Math.round(n * 100) / 100);
 
-    // Determine the endpoint
-    const endpoint = orderData.isEditMode
-        ? appUrl(`pos/${orderData.orderId}`)
-        : appUrl('pos/orders');
+    // ---------------- Totals (same rules as the server) ----------------
+    function totals() {
+        const servicesTotal = state.items.reduce((s, i) => s + i.price * i.qty, 0);
+        const addonsTotal = [...state.addons].reduce((s, id) => s + (addonChoices.get(id)?.price || 0), 0);
+        const gross = Math.round((servicesTotal + addonsTotal) * 100) / 100;
+        const value = Math.max(0, parseFloat($('discountValue').value) || 0);
+        const percent = discountType() === 'percent';
+        const discount = Math.min(percent ? Math.round(gross * Math.min(value, 100)) / 100 : value, gross);
+        const total = Math.round((gross - discount) * 100) / 100;
+        return { services: servicesTotal, addons: addonsTotal, gross, discount, total, due: Math.max(0, Math.round((total - initial.paid) * 100) / 100), percent, value };
+    }
+    const discountType = () => document.querySelector('input[name="discountType"]:checked').value;
+    const itemCount = () => state.items.reduce((s, i) => s + i.qty, 0);
 
-    // Show loading state
-    const saveButton = document.querySelector('.btn-save');
-    const originalText = saveButton.textContent;
-    saveButton.textContent = orderData.isEditMode ? 'Updating...' : 'Saving...';
-    saveButton.disabled = true;
+    // ---------------- Rendering ----------------
+    function render() {
+        const list = $('cartLines');
+        list.replaceChildren(...state.items.map(lineElement));
+        $('cartEmpty').hidden = state.items.length > 0;
+        $('lineCount').textContent = itemCount();
+        $('clearCart').disabled = state.items.length === 0 && state.addons.size === 0;
 
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST', // Use POST for both, with _method parameter
-            headers: {
-                'X-CSRF-TOKEN': CSRF_TOKEN,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(orderDataToSend)
+        document.querySelectorAll('.tile').forEach(tile => {
+            const line = state.items.find(i => i.id === Number(tile.dataset.service));
+            tile.classList.toggle('in-cart', Boolean(line));
+            const badge = tile.querySelector('.tile-qty');
+            badge.hidden = !line;
+            badge.textContent = line ? line.qty : '';
         });
+        document.querySelectorAll('[data-addon]').forEach(chip => chip.setAttribute('aria-pressed', String(state.addons.has(Number(chip.dataset.addon)))));
 
-        if (!response.ok) {
-            const verb = orderData.isEditMode ? 'updating' : 'creating';
-            alert('❌ ' + await errorMessageFrom(response, `Error ${verb} order. Please try again.`));
-            return;
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            const action = orderData.isEditMode ? 'updated' : 'created';
-            let message = `✅ Order ${data.order?.order_number || data.order_number} ${action} successfully!`;
-            if (data.order && data.order.balance > 0) {
-                message += `\nBalance due: ${Number(data.order.balance).toFixed(2)} PHP`;
-            }
-            alert(message);
-
-            if (orderData.isEditMode) {
-                window.location.href = appUrl(`orders/${orderData.orderId}/details`);
-                return;
-            } else {
-                // Reset for next order
-                orderItems = [];
-                selectedAddons = [];
-                orderData = {
-                    paymentAmount: null,
-                    totalAmount: 0,
-                    customerId: null,
-                    isEditMode: false,
-                    orderId: null,
-                    paidAmount: 0
-                };
-                updateAddonDisplay();
-                updateOrderTable();
-                document.getElementById('notes').value = '';
-                document.getElementById('discountInput').value = 0;
-                document.getElementById('discountType').value = 'amount';
-                updateTotals();
-                document.getElementById('selectCustomer').value = '';
-                clearCustomerError();
-
-                // Redirect to order details for new order
-                if (data.order && data.order.id) {
-                    window.location.href = appUrl(`orders/${data.order.id}/details`);
-                    return;
-                }
-            }
-
-        } else {
-            let errorMessage = orderData.isEditMode ? 'Error updating order' : 'Error creating order';
-            if (data.message) errorMessage += ': ' + data.message;
-            alert('❌ ' + errorMessage);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('❌ Network error. Please check your connection and try again.');
-    } finally {
-        // Restore button state
-        saveButton.textContent = originalText;
-        saveButton.disabled = false;
-    }
-}
-
-function validateAndSaveOrder() {
-    // First validate customer
-    if (!validateCustomerSelection()) {
-        return;
+        const t = totals();
+        $('sumServices').textContent = money(t.services);
+        $('sumAddons').textContent = money(t.addons);
+        $('sumDiscount').textContent = t.discount > 0 ? '−' + money(t.discount) : money(0);
+        $('discountLabel').textContent = t.percent && t.value > 0 ? `Discount (${Math.min(t.value, 100)}%)` : 'Discount';
+        $('percentChips').hidden = !t.percent;
+        document.querySelectorAll('[data-pct]').forEach(c => c.setAttribute('aria-pressed', String(t.percent && Number(c.dataset.pct) === t.value)));
+        $('sumTotal').textContent = money(t.total);
+        if (editing) $('sumBalance').textContent = money(t.due);
+        $('chargeAmount').textContent = money(editing ? t.due : t.total);
+        $('chargeBtn').disabled = editing && t.due <= 0;
+        $('barCount').textContent = itemCount() === 1 ? '1 item' : itemCount() + ' items';
+        $('barTotal').textContent = money(t.total);
+        saveDraft();
     }
 
-    // Then save order
-    saveOrder();
-}
+    function lineElement(item) {
+        const li = document.createElement('li');
+        li.className = 'cart-line';
+        li.innerHTML = `
+            <div><div class="line-name"></div><div class="line-unit"></div></div>
+            <div class="line-total"></div>
+            <div class="line-controls">
+                <div class="stepper">
+                    <button type="button" data-step="-1"><i class="fas fa-minus" aria-hidden="true"></i></button>
+                    <input type="number" inputmode="numeric" min="1" max="10000" step="1">
+                    <button type="button" data-step="1"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                </div>
+                <button type="button" class="icon-btn danger" data-remove><i class="fas fa-trash" aria-hidden="true"></i></button>
+            </div>`;
+        li.querySelector('.line-name').textContent = item.name;
+        li.querySelector('.line-unit').textContent = `${money(item.price)} each`;
+        li.querySelector('.line-total').textContent = money(item.price * item.qty);
+        const input = li.querySelector('input');
+        input.value = item.qty;
+        input.setAttribute('aria-label', `Quantity of ${item.name}`);
+        li.querySelector('[data-step="-1"]').setAttribute('aria-label', `One less ${item.name}`);
+        li.querySelector('[data-step="1"]').setAttribute('aria-label', `One more ${item.name}`);
+        li.querySelector('[data-remove]').setAttribute('aria-label', `Remove ${item.name}`);
+        li.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => setQty(item.id, item.qty + Number(b.dataset.step))));
+        input.addEventListener('change', () => setQty(item.id, Math.min(10000, Math.max(0, parseInt(input.value, 10) || 0))));
+        li.querySelector('[data-remove]').addEventListener('click', () => setQty(item.id, 0));
+        return li;
+    }
 
-// ============================================
-// INITIALIZATION
-// ============================================
-document.addEventListener("DOMContentLoaded", () => {
-    initOrderDate();
+    const announce = text => { $('announcer').textContent = text; };
 
-    // Date picker event
-    document.getElementById('orderDateInput').addEventListener('change', function() {
-        document.getElementById('orderDateText').textContent = formatDate(this.value);
+    // ---------------- Cart actions ----------------
+    function addService(id, qty = 1) {
+        const service = services.get(id);
+        if (!service) return false;
+        const line = state.items.find(i => i.id === id);
+        if (line) line.qty = Math.min(10000, line.qty + qty);
+        else state.items.push({ ...service, qty });
+        render();
+        announce(`${service.name}: ${state.items.find(i => i.id === id).qty} in order`);
+        return true;
+    }
+
+    function setQty(id, qty) {
+        const index = state.items.findIndex(i => i.id === id);
+        if (index === -1) return;
+        if (qty >= 1) { state.items[index].qty = qty; render(); return; }
+        const [removed] = state.items.splice(index, 1);
+        render();
+        showToast(`Removed ${removed.name}.`, 'info', 5000, { label: 'Undo', onClick: () => { state.items.splice(index, 0, removed); render(); } });
+    }
+
+    document.querySelectorAll('.tile').forEach(tile => {
+        tile.addEventListener('click', () => {
+            addService(Number(tile.dataset.service));
+            tile.classList.remove('pop');
+            void tile.offsetWidth;   // restart the tap animation
+            tile.classList.add('pop');
+        });
     });
 
-    // Customer select event
-    document.getElementById('selectCustomer').addEventListener('change', function() {
-        if (this.value) clearCustomerError();
+    document.querySelectorAll('[data-addon]').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const id = Number(chip.dataset.addon);
+            state.addons.has(id) ? state.addons.delete(id) : state.addons.add(id);
+            render();
+        });
     });
 
-    // Payment amount real-time calculation
-    const paymentAmountInput = document.getElementById('paymentAmount');
-    if (paymentAmountInput) {
-        paymentAmountInput.addEventListener('input', calculatePaymentStatus);
-        paymentAmountInput.addEventListener('keyup', calculatePaymentStatus);
-        paymentAmountInput.addEventListener('change', calculatePaymentStatus);
-    }
+    $('clearCart').addEventListener('click', () => {
+        const before = { items: state.items.map(i => ({ ...i })), addons: new Set(state.addons) };
+        state.items = [];
+        state.addons.clear();
+        render();
+        showToast('Order cleared.', 'info', 6000, { label: 'Undo', onClick: () => { state.items = before.items; state.addons = before.addons; render(); } });
+    });
 
-    // Product search
-    // Catalog: search box + category chips work together
-    let activeCategory = 'all';
-    const catalogSearch = document.getElementById("searchInput");
-    const filterCatalog = () => {
-        const query = catalogSearch.value.trim().toLowerCase();
-        let anyVisible = false;
-        document.querySelectorAll(".service-section").forEach(section => {
-            const inCategory = activeCategory === 'all' || section.dataset.cat === activeCategory;
+    // Discount: ₱ or %, with quick percentages
+    document.querySelectorAll('input[name="discountType"]').forEach(r => r.addEventListener('change', render));
+    $('discountValue').addEventListener('input', () => {
+        if (discountType() === 'percent' && parseFloat($('discountValue').value) > 100) $('discountValue').value = 100;
+        render();
+    });
+    document.querySelectorAll('[data-pct]').forEach(chip => chip.addEventListener('click', () => { $('discountValue').value = chip.dataset.pct; render(); }));
+
+    // ---------------- Catalog search + type chips ----------------
+    let activeCat = 'all';
+    function filterCatalog() {
+        const query = $('serviceSearch').value.trim().toLowerCase();
+        let any = false;
+        document.querySelectorAll('.tile-group').forEach(group => {
             let shown = 0;
-            section.querySelectorAll(".product-item").forEach(item => {
-                const visible = inCategory && (item.dataset.name || '').includes(query);
-                item.hidden = !visible;
+            group.querySelectorAll('.tile').forEach(tile => {
+                const visible = (activeCat === 'all' || group.dataset.cat === activeCat) && tile.dataset.name.includes(query);
+                tile.hidden = !visible;
                 if (visible) shown++;
             });
-            section.hidden = shown === 0;
-            if (shown) anyVisible = true;
+            group.hidden = shown === 0;
+            if (shown) any = true;
         });
-        const noMatch = document.getElementById("catalogNoMatch");
-        if (noMatch) noMatch.hidden = anyVisible || !document.querySelector(".service-section");
-    };
-    catalogSearch.addEventListener("input", filterCatalog);
-    document.querySelectorAll(".category-chips .chip").forEach(chip => {
-        chip.addEventListener("click", () => {
-            activeCategory = chip.dataset.cat;
-            document.querySelectorAll(".category-chips .chip").forEach(c => {
-                c.classList.toggle("active", c === chip);
-                c.setAttribute("aria-pressed", c === chip ? "true" : "false");
-            });
+        $('noMatch').hidden = any || !document.querySelector('.tile-group');
+    }
+    $('serviceSearch').addEventListener('input', filterCatalog);
+    // Enter in the search adds the only (or first) match
+    $('serviceSearch').addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        const first = document.querySelector('.tile:not([hidden])');
+        if (first) { e.preventDefault(); first.click(); }
+    });
+    document.querySelectorAll('[data-cat]').forEach(chip => {
+        if (!chip.classList.contains('chip')) return;
+        chip.addEventListener('click', () => {
+            activeCat = chip.dataset.cat;
+            document.querySelectorAll('.chip[data-cat]').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
             filterCatalog();
-            document.querySelector(".product-catalog")?.scrollTo({ top: 0, behavior: "smooth" });
+            $('tilesScroll').scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
-    refreshItemBadges();
 
-    // Addon search
-    const addonSearchInput = document.getElementById('addonSearchInput');
-    if (addonSearchInput) {
-        addonSearchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            document.querySelectorAll('.addon-item').forEach(item => {
-                const addonName = item.querySelector('.addon-name')?.textContent.toLowerCase() || '';
-                item.style.display = addonName.includes(searchTerm) ? 'flex' : 'none';
-            });
+    // ---------------- Customer ----------------
+    const search = $('customerSearch');
+    const results = $('customerResults');
+    let highlighted = -1;
+
+    function matches(term) {
+        const q = term.trim().toLowerCase();
+        if (!q) return [];
+        const digits = q.replace(/\D/g, '');
+        return customers.filter(c => c.name.toLowerCase().includes(q) || (digits.length >= 3 && (c.contact || '').includes(digits))).slice(0, 8);
+    }
+    function showResults() {
+        const found = matches(search.value);
+        highlighted = found.length ? 0 : -1;
+        results.replaceChildren();
+        if (!search.value.trim()) { results.hidden = true; search.setAttribute('aria-expanded', 'false'); return; }
+        if (!found.length) {
+            const none = document.createElement('li');
+            none.className = 'no-hit';
+            none.textContent = 'No customer found. Add them with New customer.';
+            results.append(none);
+        }
+        found.forEach((c, i) => {
+            const li = document.createElement('li');
+            li.id = 'cust-' + c.id;
+            li.setAttribute('role', 'option');
+            li.setAttribute('aria-selected', String(i === highlighted));
+            li.innerHTML = '<span class="avatar" aria-hidden="true"></span><span><strong></strong><br><span class="muted"></span></span>';
+            li.querySelector('.avatar').textContent = c.name.charAt(0).toUpperCase();
+            li.querySelector('strong').textContent = c.name;
+            li.querySelector('.muted').textContent = c.contact || 'No phone';
+            li.addEventListener('click', () => pickCustomer(c));
+            results.append(li);
         });
+        results.hidden = false;
+        search.setAttribute('aria-expanded', 'true');
+        search.setAttribute('aria-activedescendant', found.length ? 'cust-' + found[0].id : '');
     }
-
-    // Discount amount and type (₱ or %)
-    document.getElementById("discountInput").addEventListener("input", onDiscountChange);
-    document.getElementById("discountType").addEventListener("change", onDiscountChange);
-
-    // Initialize if in edit mode - calculate initial totals
-    if (orderData.isEditMode) {
-        updateTotals();
-        updateAddonDisplay();
-    }
-});
-
-// Close modals on outside click
-window.addEventListener('click', function(e) {
-    const modals = ['addServiceModal', 'addCustomerModal', 'paymentModal', 'addonModal'];
-    modals.forEach(modalId => {
-        const modal = document.getElementById(modalId);
-        if (e.target === modal) {
-            closeModal(modal);
+    search.addEventListener('input', showResults);
+    search.addEventListener('keydown', e => {
+        const options = [...results.querySelectorAll('[role="option"]')];
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            if (!options.length) return;
+            e.preventDefault();
+            highlighted = (highlighted + (e.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+            options.forEach((o, i) => o.setAttribute('aria-selected', String(i === highlighted)));
+            search.setAttribute('aria-activedescendant', options[highlighted].id);
+            options[highlighted].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' && highlighted >= 0 && options[highlighted]) {
+            e.preventDefault();
+            options[highlighted].click();
+        } else if (e.key === 'Escape') {
+            results.hidden = true;
+            search.setAttribute('aria-expanded', 'false');
         }
     });
-});
 
-// Close modals on escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const modals = document.querySelectorAll('.modal.active');
-        modals.forEach(modal => closeModal(modal));
+    function renderRecent() {
+        const box = $('recentCustomers');
+        box.replaceChildren();
+        recentIds.map(id => customers.find(c => c.id === id)).filter(Boolean).forEach(c => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'chip';
+            chip.textContent = c.name;
+            chip.addEventListener('click', () => pickCustomer(c));
+            box.append(chip);
+        });
+        box.hidden = box.children.length === 0;
     }
-});
+
+    async function pickCustomer(customer) {
+        state.customer = customer;
+        state.summary = null;
+        $('customerError').textContent = '';
+        $('customerPicker').hidden = true;
+        $('customerCard').hidden = false;
+        $('customerInitial').textContent = customer.name.charAt(0).toUpperCase();
+        $('customerName').textContent = customer.name;
+        $('customerContact').textContent = customer.contact || 'No phone';
+        $('customerStats').textContent = '';
+        $('repeatLast').hidden = true;
+        results.hidden = true;
+        search.value = '';
+        search.setAttribute('aria-expanded', 'false');
+        saveDraft();
+        try {
+            const summary = await sendJson(appUrl(`pos/customers/${customer.id}/summary`), {}, 'GET');
+            if (state.customer !== customer) return;
+            state.summary = summary;
+            $('customerStats').textContent = summary.orders_count === 1 ? '1 order' : `${summary.orders_count} orders`;
+            if (summary.balance_due > 0) {
+                const due = document.createElement('span');
+                due.className = 'text-danger';
+                due.textContent = ` · ${money(summary.balance_due)} due`;
+                $('customerStats').append(due);
+            }
+            if (!editing && summary.last_order) {
+                $('repeatLast').hidden = false;
+                $('repeatLast').querySelector('span').textContent = `Repeat last order (${summary.last_order.order_date})`;
+            }
+        } catch (e) { /* history is a nice-to-have */ }
+    }
+
+    $('changeCustomer').addEventListener('click', () => {
+        state.customer = null;
+        state.summary = null;
+        $('customerCard').hidden = true;
+        $('customerPicker').hidden = false;
+        $('repeatLast').hidden = true;
+        saveDraft();
+        search.focus();
+    });
+
+    $('repeatLast').addEventListener('click', () => {
+        const last = state.summary?.last_order;
+        if (!last) return;
+        let skipped = 0;
+        last.items.forEach(item => { if (!item.available || !addService(item.service_id, item.qty)) skipped++; });
+        last.addon_ids.forEach(id => { if (addonChoices.has(id)) state.addons.add(id); });
+        render();
+        showToast(skipped ? `Added the last order. ${skipped} service${skipped > 1 ? 's are' : ' is'} no longer offered.` : 'Added the last order.', skipped ? 'warning' : 'success');
+    });
+
+    // New customer (saved right away, then picked)
+    $('newCustomerForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const form = e.target;
+        const button = form.querySelector('[type="submit"]');
+        form.querySelectorAll('.field-error').forEach(el => { el.textContent = ''; });
+        form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
+        if (!form.name.value.trim()) { form.name.setAttribute('aria-invalid', 'true'); form.name.closest('.field').querySelector('.field-error').textContent = 'Enter the customer\'s name.'; form.name.focus(); return; }
+        button.classList.add('is-loading');
+        try {
+            const data = await sendJson(appUrl('customers'), { name: form.name.value.trim(), contact: form.contact.value.trim(), address: form.address.value.trim() });
+            const customer = { id: data.customer.id, name: data.customer.name, contact: data.customer.contact };
+            customers.push(customer);
+            closeDialog('newCustomerDialog');
+            form.reset();
+            pickCustomer(customer);
+            showToast(`${customer.name} added.`, 'success');
+        } catch (err) {
+            Object.entries(err.errors || {}).forEach(([name, messages]) => {
+                const field = form.querySelector(`[name="${name}"]`);
+                if (field) { field.setAttribute('aria-invalid', 'true'); field.closest('.field').querySelector('.field-error').textContent = messages[0]; }
+            });
+            if (!err.errors) showToast(err.message, 'error');
+        } finally {
+            button.classList.remove('is-loading');
+        }
+    });
+    $('newCustomerBtn').addEventListener('click', () => {
+        const typed = search.value.trim();
+        if (typed && /^\d{10,15}$/.test(typed)) $('nc-contact').value = typed;
+        else if (typed) $('nc-name').value = typed;
+    });
+
+    // ---------------- Saving ----------------
+    function problems() {
+        if (!state.items.length) return 'Add at least one service.';
+        if (!state.customer) {
+            $('customerError').textContent = 'Pick or add a customer first.';
+            openSide();
+            search.focus();
+            return 'Pick or add a customer first.';
+        }
+        return null;
+    }
+
+    async function save(paymentAmount = 0, method = 'cash') {
+        const t = totals();
+        const payload = {
+            customer_id: state.customer.id,
+            order_date: $('orderDate').value || today,
+            notes: $('notes').value,
+            discount: t.value,
+            discount_type: discountType(),
+            items: state.items.map(i => ({ service_id: i.id, qty: i.qty })),
+            addons: [...state.addons].map(id => ({ addon_id: id })),
+            payment_amount: paymentAmount,
+            payment_method: method,
+        };
+        return editing
+            ? sendJson(appUrl(`pos/${initial.orderId}`), payload, 'PUT')
+            : sendJson(appUrl('pos/orders'), payload);
+    }
+
+    function finished(data, tendered) {
+        clearDraft();
+        const order = data.order;
+        const due = totals().due;
+        if (editing) {
+            flashToast(tendered > 0 ? `Order updated. Payment of ${money(Math.min(tendered, due))} recorded.` : 'Order updated.');
+            location.href = appUrl(`orders/${order.id}/details`);
+            return;
+        }
+        $('okNumber').textContent = order.order_number;
+        const change = Math.max(0, Math.round((tendered - due) * 100) / 100);
+        $('okChange').hidden = change <= 0;
+        $('okChangeAmount').textContent = money(change);
+        $('okBalance').textContent = order.balance > 0 ? `${money(order.balance)} to collect at pickup.` : 'Paid in full.';
+        $('okPrint').href = appUrl(`orders/${order.id}/details?print=1`);
+        $('okView').href = appUrl(`orders/${order.id}/details`);
+        openDialog('successDialog');
+        $('okNew').focus();
+    }
+
+    $('saveOnly').addEventListener('click', async e => {
+        const problem = problems();
+        if (problem) { showToast(problem, 'warning'); return; }
+        e.currentTarget.classList.add('is-loading');
+        try { finished(await save(0), 0); }
+        catch (err) { showToast(err.message, 'error', 8000); }
+        finally { e.currentTarget.classList.remove('is-loading'); }
+    });
+
+    // ---------------- Payment sheet (keypad, quick cash, method) ----------------
+    const tendered = $('tendered');
+    if (matchMedia('(pointer: coarse)').matches) tendered.inputMode = 'none';   // our keypad is the keyboard
+    function describePayment() {
+        const due = totals().due;
+        const value = parseFloat(tendered.value) || 0;
+        const result = $('payResult');
+        const confirm = $('payConfirm');
+        if (value <= 0) { result.textContent = 'Enter the amount received.'; confirm.textContent = 'Complete'; confirm.disabled = true; return; }
+        confirm.disabled = false;
+        if (value >= due) {
+            result.innerHTML = value > due ? `Change: <span class="text-success">${money(value - due)}</span>` : 'Exact amount.';
+            confirm.textContent = 'Complete ' + money(due);
+        } else {
+            result.innerHTML = `Partial payment · <span class="text-danger">${money(due - value)}</span> due at pickup`;
+            confirm.textContent = 'Record ' + money(value);
+        }
+    }
+    function openPayment() {
+        const problem = problems();
+        if (problem) { showToast(problem, 'warning'); return; }
+        const due = totals().due;
+        if (due <= 0 && editing) { showToast('Nothing left to collect on this order.', 'info'); return; }
+        $('payDue').textContent = money(due);
+        tendered.value = due.toFixed(2);
+        describePayment();
+        openDialog('paymentDialog');
+        tendered.focus();
+        tendered.select();
+    }
+    $('chargeBtn').addEventListener('click', openPayment);
+    tendered.addEventListener('input', () => { tendered.value = tendered.value.replace(/[^\d.]/g, ''); describePayment(); });
+    document.querySelectorAll('[data-cash]').forEach(b => b.addEventListener('click', () => {
+        tendered.value = b.dataset.cash === 'exact' ? totals().due.toFixed(2) : Number(b.dataset.cash).toFixed(2);
+        fresh = true;
+        describePayment();
+    }));
+    let fresh = true;   // the first key replaces the pre-filled amount
+    tendered.addEventListener('focus', () => { fresh = true; });
+    document.querySelectorAll('[data-key]').forEach(b => b.addEventListener('click', () => {
+        let v = fresh ? '' : tendered.value;
+        fresh = false;
+        const key = b.dataset.key;
+        if (key === 'back') v = v.slice(0, -1);
+        else if (key === '.') { if (!v.includes('.')) v = (v || '0') + '.'; }
+        else if (!/\.\d{2}$/.test(v) && v.replace('.', '').length < 9) v = (v === '0' ? '' : v) + key;
+        tendered.value = v;
+        describePayment();
+    }));
+    $('payForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const value = parseFloat(tendered.value) || 0;
+        if (value <= 0) return;
+        const button = $('payConfirm');
+        button.classList.add('is-loading');
+        try {
+            const data = await save(value, document.querySelector('input[name="payMethod"]:checked').value);
+            closeDialog('paymentDialog');
+            finished(data, value);
+        } catch (err) {
+            showToast(err.message, 'error', 8000);
+        } finally {
+            button.classList.remove('is-loading');
+        }
+    });
+
+    // ---------------- Phones: the order slides up ----------------
+    const side = $('posSide');
+    function openSide() { if (matchMedia('(max-width: 1023px)').matches) { side.classList.add('is-open'); $('closeSide').focus(); } }
+    $('openSide').addEventListener('click', openSide);
+    $('closeSide').addEventListener('click', () => { side.classList.remove('is-open'); $('openSide').focus(); });
+
+    // ---------------- Leaving, keyboard shortcuts ----------------
+    $('leavePos').addEventListener('click', async e => {
+        if (!editing) return;   // a new order is kept as a draft on this device
+        e.preventDefault();
+        const ok = await confirmAction({ title: 'Leave without saving?', message: 'Your changes to this order will be lost.', confirmText: 'Leave', cancelText: 'Keep editing' });
+        if (ok) location.href = e.currentTarget.href;
+    });
+    document.addEventListener('keydown', e => {
+        if (document.querySelector('dialog[open]')) return;
+        if (e.key === 'F2') { e.preventDefault(); openSide(); (state.customer ? $('changeCustomer') : search).focus(); }
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); openPayment(); }
+    });
+
+    // ---------------- Draft (a new order survives an accidental refresh) ----------------
+    function saveDraft() {
+        if (editing) return;
+        try {
+            if (!state.items.length && !state.addons.size) { localStorage.removeItem(DRAFT); return; }
+            localStorage.setItem(DRAFT, JSON.stringify({ items: state.items, addons: [...state.addons], customerId: state.customer?.id ?? null, notes: $('notes').value, at: Date.now() }));
+        } catch (e) { /* storage blocked */ }
+    }
+    function clearDraft() { try { localStorage.removeItem(DRAFT); } catch (e) { /* storage blocked */ } }
+    $('notes').addEventListener('input', saveDraft);
+
+    // ---------------- Start ----------------
+    $('orderDate').value = initial.date || today;
+    renderRecent();
+    let customerId = initial.customerId;
+    if (!editing && !customerId) {
+        try {
+            const draft = JSON.parse(localStorage.getItem(DRAFT) || 'null');
+            if (draft && Date.now() - draft.at < 12 * 3600 * 1000) {
+                state.items = draft.items.filter(i => services.has(i.id)).map(i => ({ ...services.get(i.id), qty: i.qty }));
+                draft.addons.filter(id => addonChoices.has(id)).forEach(id => state.addons.add(id));
+                $('notes').value = draft.notes || '';
+                customerId = draft.customerId;
+                if (state.items.length) {
+                    showToast('Picked up your unsaved order.', 'info', 8000, { label: 'Start over', onClick: () => { state.items = []; state.addons.clear(); $('notes').value = ''; $('changeCustomer').click(); render(); } });
+                }
+            }
+        } catch (e) { /* storage blocked */ }
+    }
+    const preset = customers.find(c => c.id === customerId);
+    if (preset) pickCustomer(preset);
+    render();
+})();
 </script>
 </body>
 </html>

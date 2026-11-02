@@ -61,6 +61,7 @@ Route::middleware('auth.staff')->group(function () {
         Route::get('/pos', 'index')->name('pos.index');
         Route::get('/pos/addons/active', 'getActiveAddons')->name('pos.addons.active');
         Route::get('/pos/check-auth', 'checkAuth')->name('pos.check.auth');
+        Route::get('/pos/customers/{customer}/summary', 'customerSummary')->name('pos.customer.summary');
         Route::get('/pos/{order}/edit', 'edit')->name('pos.edit');
         Route::put('/pos/{order}', 'update')->name('pos.update');
         Route::post('/pos/orders', 'createOrder')->name('pos.orders.create');

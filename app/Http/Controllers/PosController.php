@@ -19,10 +19,42 @@ use Illuminate\Validation\ValidationException;
 
 class PosController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return view('pos', $this->formData() + [
             'last_order_number' => (Order::max('id') ?? 0) + 1,
+            // "New order" on the customers page opens the POS with that customer picked
+            'preselectedCustomerId' => Customer::whereKey($request->integer('customer'))->value('id'),
+        ]);
+    }
+
+    /**
+     * What the POS shows once a customer is picked: how often they come, what
+     * they still owe, and their last order so it can be repeated in one tap.
+     */
+    public function customerSummary(Customer $customer)
+    {
+        $orders = Order::where('customer_id', $customer->id);
+        $last = (clone $orders)->with(['items.service:id,name,is_active', 'addons:id,name,is_active'])
+            ->where('status', '!=', 'cancelled')
+            ->latest('order_date')->latest('id')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'orders_count' => (clone $orders)->count(),
+            'balance_due' => round((float) (clone $orders)->unpaid()->sum(DB::raw('total - paid_amount')), 2),
+            'last_order' => $last ? [
+                'order_number' => $last->order_number,
+                'order_date' => $last->order_date?->format('M j, Y'),
+                'items' => $last->items->map(fn ($item) => [
+                    'service_id' => $item->service_id,
+                    'name' => $item->service->name ?? 'Deleted service',
+                    'qty' => $item->qty,
+                    'available' => (bool) ($item->service->is_active ?? false),
+                ])->values(),
+                'addon_ids' => $last->addons->where('is_active', true)->pluck('id')->values(),
+            ] : null,
         ]);
     }
 
@@ -162,10 +194,15 @@ class PosController extends Controller
             $serviceGroups = $serviceGroups->except('Other')->put('Other', $serviceGroups->get('Other'));
         }
 
+        // Customers of the latest orders, newest first: one tap for regulars
+        $recentCustomerIds = Order::whereNotNull('customer_id')->latest('id')->take(40)
+            ->pluck('customer_id')->unique()->take(6)->values();
+
         return [
             'services' => $services,
             'serviceGroups' => $serviceGroups,
-            'customers' => Customer::orderBy('name')->get(['id', 'name']),
+            'customers' => Customer::orderBy('name')->get(['id', 'name', 'contact']),
+            'recentCustomerIds' => $recentCustomerIds,
             'addons' => Addon::where('is_active', 1)->orderBy('name')->get(['id', 'name', 'price']),
         ];
     }

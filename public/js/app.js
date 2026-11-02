@@ -269,7 +269,9 @@
     // Prevent double-submitting regular forms (slow connections)
     document.addEventListener('submit', e => {
         const form = e.target;
-        if (form.method === 'dialog' || form.method.toLowerCase() === 'get' || form.dataset.allowResubmit !== undefined) return;
+        // getAttribute: a field named "method" would shadow form.method
+        const method = (form.getAttribute('method') || 'get').toLowerCase();
+        if (method === 'dialog' || method === 'get' || form.dataset.allowResubmit !== undefined) return;
         setTimeout(() => {
             if (e.defaultPrevented) return;
             form.querySelectorAll('button[type="submit"], button:not([type])').forEach(b => { b.disabled = true; });

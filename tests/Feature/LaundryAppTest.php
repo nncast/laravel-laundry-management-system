@@ -196,7 +196,7 @@ class LaundryAppTest extends TestCase
         $this->assertEquals(32, $order->discount);
         $this->assertEquals(288, $order->total);
         $this->actingAsStaff($this->admin)->get("/pos/{$order->id}/edit")
-            ->assertOk()->assertSee('<option value="percent" selected', false);
+            ->assertOk()->assertSee('name="discountType" value="percent" checked', false);
 
         // Switching back to a peso amount drops the percentage
         $edit(['discount' => 15, 'discount_type' => 'amount']);
@@ -204,6 +204,25 @@ class LaundryAppTest extends TestCase
         $this->assertNull($order->discount_percent);
         $this->assertEquals(15, $order->discount);
         $this->assertEquals(305, $order->total);
+    }
+
+    public function test_pos_customer_summary_offers_the_last_order_again(): void
+    {
+        $this->createOrder();   // Wash x2 + Softener, 210 owed
+        $this->wash->update(['is_active' => false]);
+
+        $this->actingAsStaff($this->cashier)->getJson("/pos/customers/{$this->customer->id}/summary")
+            ->assertOk()
+            ->assertJsonPath('orders_count', 1)
+            ->assertJsonPath('balance_due', 210)
+            ->assertJsonPath('last_order.items.0.service_id', $this->wash->id)
+            ->assertJsonPath('last_order.items.0.qty', 2)
+            ->assertJsonPath('last_order.items.0.available', false)
+            ->assertJsonPath('last_order.addon_ids', [$this->softener->id]);
+
+        // "New order" on the customers page opens the POS with the customer picked
+        $this->actingAsStaff($this->cashier)->get("/pos?customer={$this->customer->id}")
+            ->assertOk()->assertViewHas('preselectedCustomerId', $this->customer->id);
     }
 
     public function test_pos_ignores_prices_sent_by_the_browser(): void
