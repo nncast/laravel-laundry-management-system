@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\SystemSetting;
+use App\Support\Format;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -21,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
                 return new SystemSetting();
             }
         });
+
+        // Money, number and date formats from Settings → Region (money(), fmt_date()… in app/helpers.php)
+        $this->app->singleton(Format::class, fn ($app) => Format::fromSettings($app->make('system.settings')));
+        require_once app_path('helpers.php');
     }
 
     public function boot(): void

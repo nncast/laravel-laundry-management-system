@@ -48,7 +48,7 @@
                         </div>
                     </td>
                     <td data-label="Type"><span class="badge badge-info">{{ $service->serviceType->name ?? 'No type' }}</span></td>
-                    <td data-label="Price" class="num"><strong>₱{{ number_format($service->price, 2) }}</strong></td>
+                    <td data-label="Price" class="num"><strong>{{ money($service->price) }}</strong></td>
                     <td data-label="Status"><span class="badge {{ $service->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $service->is_active ? 'Active' : 'Hidden from POS' }}</span></td>
                     <td class="actions">
                         <div class="cell-actions">
@@ -77,7 +77,7 @@
     <x-field name="name" label="Name" required maxlength="255" placeholder="e.g. Wash & Dry (8 kg)" />
     <div class="form-row">
         <x-field name="service_type_id" label="Type" required :options="['' => 'Choose a type'] + $serviceTypes->pluck('name', 'id')->all()" />
-        <x-field name="price" label="Price" type="number" prefix="₱" required min="0" step="0.01" inputmode="decimal" />
+        <x-field name="price" label="Price" type="number" :prefix="currency_symbol()" required min="0" :step="money_step()" inputmode="decimal" />
     </div>
     <x-field name="is_active" label="Show at the point of sale" type="segmented" :options="['1' => 'Active', '0' => 'Hidden']" data-default="1" />
     <x-field name="icon_file" label="Picture" type="file" accept="image/*" help="Optional. JPG, PNG, GIF or WebP up to 2 MB. Leave empty to keep the current one." />

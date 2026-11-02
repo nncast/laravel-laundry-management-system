@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\Format;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,6 +16,7 @@ class SalesReportController extends Controller
         return view('report-sales', [
             'salesData' => $this->getSalesData($startDate, $endDate),
             'summary' => $this->getSummaryStats($startDate, $endDate),
+            'otherCurrencies' => Order::otherCurrencyTotals($this->billable($startDate, $endDate)),
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
@@ -29,17 +31,19 @@ class SalesReportController extends Controller
         $salesData = $this->getSalesData($startDate, $endDate);
         $summary = $this->getSummaryStats($startDate, $endDate);
         $money = fn ($v) => number_format((float) $v, 2, '.', '');
+        $currency = app(Format::class)->currency;
 
-        $rows = (function () use ($salesData, $summary, $startDate, $endDate, $money) {
+        $rows = (function () use ($salesData, $summary, $startDate, $endDate, $money, $currency) {
             yield ["Sales Report - {$startDate} to {$endDate}"];
             yield [];
-            yield ['Date', 'Order #', 'Customer', 'Services', 'Add-ons', 'Discount', 'Total', 'Paid Amount', 'Outstanding', 'Status'];
+            yield ['Date', 'Order #', 'Customer', 'Currency', 'Services', 'Add-ons', 'Discount', 'Total', 'Paid Amount', 'Outstanding', 'Status'];
 
             foreach ($salesData as $sale) {
                 yield [
                     $sale['date'],
                     $sale['order_number'],
                     $sale['customer_name'],
+                    $sale['order']->currency,
                     $money($sale['items_total']),
                     $money($sale['addon_total']),
                     $money($sale['discount']),
@@ -51,7 +55,7 @@ class SalesReportController extends Controller
             }
 
             yield [];
-            yield ['Summary'];
+            yield ["Summary ({$currency} orders)"];
             yield ['Total Orders', $summary['total_orders']];
             yield ['Total Sales', $money($summary['total_sales'])];
             yield ['Total Discount', $money($summary['total_discount'])];
@@ -130,9 +134,15 @@ class SalesReportController extends Controller
             });
     }
 
+    /** Orders that count as sales: not cancelled. */
+    private function billable(string $startDate, string $endDate)
+    {
+        return Order::betweenDates($startDate, $endDate)->where('status', '!=', 'cancelled');
+    }
+
     private function getSummaryStats(string $startDate, string $endDate): array
     {
-        $base = fn () => Order::betweenDates($startDate, $endDate)->where('status', '!=', 'cancelled');
+        $base = fn () => $this->billable($startDate, $endDate)->inBusinessCurrency();
 
         $row = $base()
             ->selectRaw('COUNT(*) as total_orders')

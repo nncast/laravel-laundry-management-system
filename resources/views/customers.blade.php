@@ -68,10 +68,10 @@
                             <span class="muted">0</span>
                         @endif
                     </td>
-                    <td data-label="Last order">{{ $customer->last_order_date ? \Carbon\Carbon::parse($customer->last_order_date)->format('M j, Y') : '—' }}</td>
+                    <td data-label="Last order">{{ $customer->last_order_date ? fmt_date($customer->last_order_date) : '—' }}</td>
                     <td data-label="Balance due" class="num">
                         @if($customer->balance_due > 0)
-                            <span class="badge badge-unpaid money">₱{{ number_format($customer->balance_due, 2) }}</span>
+                            <span class="badge badge-unpaid money">{{ money($customer->balance_due) }}</span>
                         @else
                             <span class="muted">—</span>
                         @endif

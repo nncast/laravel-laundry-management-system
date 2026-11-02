@@ -167,6 +167,7 @@ Route::middleware('auth.staff')->group(function () {
         Route::prefix('settings')->group(function () {
             Route::get('/system', [SystemSettingController::class, 'edit'])->name('settings.system.edit');
             Route::post('/system', [SystemSettingController::class, 'update'])->name('settings.update');
+            Route::post('/region', [SystemSettingController::class, 'updateRegion'])->name('settings.region');
             Route::get('/mastersettings', [SystemSettingController::class, 'edit'])->name('settings.mastersettings');
         });
     });

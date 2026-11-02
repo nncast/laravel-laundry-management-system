@@ -11,6 +11,10 @@ class SystemSetting extends Model
         'address',
         'contact',
         'favicon',
+        'currency',
+        'number_format',
+        'date_format',
+        'time_format',
     ];
 }
 

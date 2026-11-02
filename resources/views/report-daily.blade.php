@@ -4,7 +4,6 @@
 @section('page-title', 'Daily summary')
 @php
     $day = \Carbon\Carbon::parse($selectedDate);
-    $pesos = fn ($v) => '₱' . number_format((float) $v, 2);
     $labels = ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
 @endphp
 @section('page-subtitle', $day->format('l, F j, Y') . ($day->isToday() ? ' · today' : ''))
@@ -39,11 +38,12 @@
     @unless($day->isToday())<a class="btn btn-ghost" href="{{ route('reports.daily') }}">Today</a>@endunless
 </form>
 
+<x-other-currencies :rows="$stats['other_currencies']" />
 <section class="kpi-grid" aria-label="Totals" style="margin-bottom: var(--s-5)">
     <div class="kpi"><span class="kpi-label">Orders taken</span><span class="kpi-value">{{ $stats['total_orders'] }}</span><span class="kpi-meta">{{ $stats['delivered_orders'] }} completed</span></div>
-    <div class="kpi"><span class="kpi-label">Sales</span><span class="kpi-value">{{ $pesos($stats['total_sales']) }}</span><span class="kpi-meta">Orders dated this day</span></div>
-    <div class="kpi"><span class="kpi-label">Collected</span><span class="kpi-value">{{ $pesos($stats['total_payments']) }}</span><span class="kpi-meta">Payments received this day, for any order</span></div>
-    <div class="kpi {{ $stats['outstanding'] > 0 ? 'is-alert' : '' }}"><span class="kpi-label">Outstanding</span><span class="kpi-value">{{ $pesos($stats['outstanding']) }}</span><span class="kpi-meta">Still owed on this day's orders</span></div>
+    <div class="kpi"><span class="kpi-label">Sales</span><span class="kpi-value">{{ money($stats['total_sales']) }}</span><span class="kpi-meta">Orders dated this day</span></div>
+    <div class="kpi"><span class="kpi-label">Collected</span><span class="kpi-value">{{ money($stats['total_payments']) }}</span><span class="kpi-meta">Payments received this day, for any order</span></div>
+    <div class="kpi {{ $stats['outstanding'] > 0 ? 'is-alert' : '' }}"><span class="kpi-label">Outstanding</span><span class="kpi-value">{{ money($stats['outstanding']) }}</span><span class="kpi-meta">Still owed on this day's orders</span></div>
 </section>
 
 <div class="grid-sidebar">
@@ -66,8 +66,8 @@
                     <tr data-href="{{ route('orders.details', $order) }}">
                         <td class="cell-primary"><a class="cell-title nowrap" href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a></td>
                         <td data-label="Customer">{{ $order->customer->name ?? 'Walk-in customer' }}</td>
-                        <td data-label="Total" class="num"><strong>{{ $pesos($order->total) }}</strong></td>
-                        <td data-label="Paid" class="num {{ $order->balance > 0 && $order->status !== 'cancelled' ? 'text-danger' : '' }}">{{ $pesos($order->paid_amount) }}</td>
+                        <td data-label="Total" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
+                        <td data-label="Paid" class="num {{ $order->balance > 0 && $order->status !== 'cancelled' ? 'text-danger' : '' }}">{{ money($order->paid_amount, $order->currency) }}</td>
                         <td data-label="Status"><span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span></td>
                     </tr>
                     @endforeach
@@ -86,7 +86,7 @@
             <ol class="rank-list">
                 @foreach($stats['top_services'] as $service)
                 <li>
-                    <div class="rank-row"><span>{{ $service->name }}</span><span>×{{ $service->total_qty }} · {{ $pesos($service->total_amount) }}</span></div>
+                    <div class="rank-row"><span>{{ $service->name }}</span><span>×{{ $service->total_qty }} · {{ money($service->total_amount) }}</span></div>
                     <div class="rank-track" aria-hidden="true"><span class="rank-bar" style="width: {{ round($service->total_amount / $most * 100, 1) }}%"></span></div>
                 </li>
                 @endforeach
@@ -110,7 +110,7 @@
             const { data } = await sendJson(appUrl('reports/daily/download?date=' + date), {}, 'GET');
             const rows = [
                 ['Daily report', date], [],
-                ['Particulars', 'Value'],
+                ['Particulars', 'Value (' + window.FMT.currency + ')'],
                 ['Total orders', data.total_orders],
                 ['Completed orders', data.delivered_orders],
                 ['Total sales', data.total_sales],

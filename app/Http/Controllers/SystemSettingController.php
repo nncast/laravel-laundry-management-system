@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\SystemSetting;
+use App\Support\Format;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -15,6 +17,28 @@ class SystemSettingController extends Controller
         $lastBackup = BackupController::lastBackupTime();
 
         return view('settings-mastersettings', compact('settings', 'lastBackup'));
+    }
+
+    /**
+     * Currency and number/date/time formats (Settings → Currency & formats).
+     * Changing the currency does not convert prices; orders keep the currency they were taken in.
+     */
+    public function updateRegion(Request $request)
+    {
+        $validated = $request->validate([
+            'currency' => ['required', Rule::in(array_keys(config('currencies')))],
+            'number_format' => ['required', Rule::in(array_keys(Format::NUMBER_FORMATS))],
+            'date_format' => ['required', Rule::in(array_keys(Format::DATE_FORMATS))],
+            'time_format' => ['required', Rule::in(array_keys(Format::TIME_FORMATS))],
+        ]);
+
+        $settings = SystemSetting::first() ?? new SystemSetting();
+        $currencyChanged = ($settings->currency ?? 'PHP') !== $validated['currency'];
+        $settings->fill($validated)->save();
+
+        return redirect()->to(route('settings.mastersettings') . '#region')->with('success', $currencyChanged
+            ? "Currency changed to {$validated['currency']}. Prices were not converted: check your service, add-on and product prices."
+            : 'Currency and formats saved.');
     }
 
     public function update(Request $request)

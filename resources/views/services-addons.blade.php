@@ -27,7 +27,7 @@
                 @foreach($addons as $addon)
                 <tr>
                     <td class="cell-primary"><span class="cell-title">{{ $addon->name }}</span></td>
-                    <td data-label="Price" class="num"><strong>₱{{ number_format($addon->price, 2) }}</strong></td>
+                    <td data-label="Price" class="num"><strong>{{ money($addon->price) }}</strong></td>
                     <td data-label="Status"><span class="badge {{ $addon->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $addon->is_active ? 'Active' : 'Hidden from POS' }}</span></td>
                     <td class="actions">
                         <div class="cell-actions">
@@ -53,7 +53,7 @@
 
 <x-form-dialog id="addonDialog" title="Add add-on" :action="route('services.addons.store')" submit="Save add-on" success="Add-on saved.">
     <x-field name="name" label="Name" required maxlength="255" placeholder="e.g. Fabric softener" />
-    <x-field name="price" label="Price" type="number" prefix="₱" required min="0" step="0.01" inputmode="decimal" />
+    <x-field name="price" label="Price" type="number" :prefix="currency_symbol()" required min="0" :step="money_step()" inputmode="decimal" />
     <x-field name="is_active" label="Show at the point of sale" type="segmented" :options="['1' => 'Active', '0' => 'Hidden']" data-default="1" />
 </x-form-dialog>
 @endsection

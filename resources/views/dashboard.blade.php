@@ -10,7 +10,7 @@
     $isManager = in_array($role, ['manager', 'admin'], true);
     $isAdmin = $role === 'admin';
     $today = today()->toDateString();
-    $pesos = fn ($value) => '₱' . number_format((float) $value, 0);  // tiles show whole pesos; reports have centavos
+    $whole = fn ($value) => money($value, whole: true);  // tiles show whole units; reports keep the decimals
 
     // [label, icon, tone, value, meta, link (null = not a link), alert]
     $kpis = [
@@ -18,10 +18,10 @@
         ['Active orders', 'fa-spinner', 'tone-sky', $openOrders, $pendingOrders . ' pending · ' . $processingOrders . ' processing', route('orders.index', ['status' => 'open']), false],
         ['Ready for pickup', 'fa-bell', 'tone-violet', $readyCount, 'Waiting for customers', route('orders.index', ['status' => 'ready']), false],
         ['Overdue', 'fa-hourglass-half', 'tone-red', $overdueCount, $stuckRule, route('orders.index', ['status' => 'overdue']), $overdueCount > 0],
-        ['Revenue today', 'fa-sack-dollar', 'tone-green', $pesos($todayRevenue), $todayCompleted . ' completed today', $isAdmin ? route('reports.daily') : null, false],
-        ['Collected today', 'fa-hand-holding-dollar', 'tone-aqua', $pesos($collectedToday), 'Payments taken at the counter', $isAdmin ? route('reports.daily') : null, false],
-        ['Revenue this month', 'fa-chart-line', 'tone-indigo', $pesos($monthRevenue), null, $isAdmin ? route('reports.sales') : null, false],
-        ['Unpaid balance', 'fa-file-invoice', 'tone-amber', $pesos($unpaidBalance), $unpaidCount . ' ' . \Illuminate\Support\Str::plural('order', $unpaidCount) . ' still owe', route('orders.index', ['payment' => 'unpaid']), false],
+        ['Revenue today', 'fa-sack-dollar', 'tone-green', $whole($todayRevenue), $todayCompleted . ' completed today', $isAdmin ? route('reports.daily') : null, false],
+        ['Collected today', 'fa-hand-holding-dollar', 'tone-aqua', $whole($collectedToday), 'Payments taken at the counter', $isAdmin ? route('reports.daily') : null, false],
+        ['Revenue this month', 'fa-chart-line', 'tone-indigo', $whole($monthRevenue), null, $isAdmin ? route('reports.sales') : null, false],
+        ['Unpaid balance', 'fa-file-invoice', 'tone-amber', $whole($unpaidBalance), $unpaidCount . ' ' . \Illuminate\Support\Str::plural('order', $unpaidCount) . ' still owe', route('orders.index', ['payment' => 'unpaid']), false],
     ];
 
     // Action center: [key, tab label, icon, items, "view all" link]
@@ -41,7 +41,7 @@
 <header class="page-header dash-header">
     <x-mascot mood="wave" class="dash-mascot mascot-ink" />
     <div class="page-heading">
-        <p class="eyebrow">{{ now()->format('l, F j') }}</p>
+        <p class="eyebrow">{{ now()->translatedFormat('l, F j') }}</p>
         <h1 class="page-title">{{ $greeting }}, {{ $firstName }}</h1>
         <p class="page-subtitle">
             @if($attentionCount === 1) 1 thing needs you today.
@@ -218,13 +218,13 @@
                                         <span class="bubble-tile {{ $key === 'overdue' ? 'tone-red' : ($key === 'ready' ? 'tone-violet' : 'tone-amber') }}" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
                                         <span class="list-main">
                                             <span class="list-title">{{ $item->customer->name ?? 'Walk-in customer' }}</span>
-                                            <span class="list-sub">{{ $item->order_number }} · {{ $item->order_date?->format('M j') }}{{ $key === 'overdue' ? ' · ' . $item->status_label : '' }}</span>
+                                            <span class="list-sub">{{ $item->order_number }} · {{ fmt_date($item->order_date) }}{{ $key === 'overdue' ? ' · ' . $item->status_label : '' }}</span>
                                         </span>
                                     </a>
                                     @if($key === 'ready' && $item->balance <= 0)
                                         <button type="button" class="btn btn-sm btn-success" data-pickup="{{ $item->id }}"><i class="fas fa-check" aria-hidden="true"></i> Picked up</button>
                                     @elseif($item->balance > 0)
-                                        <span class="badge badge-unpaid money">₱{{ number_format($item->balance, 2) }} due</span>
+                                        <span class="badge badge-unpaid money">{{ money($item->balance, $item->currency) }} due</span>
                                     @else
                                         <span class="cell-sub nowrap">{{ $item->order_date?->diffForHumans(['parts' => 1]) }}</span>
                                     @endif
@@ -282,7 +282,7 @@
                             $step = collect([1, 2, 2.5, 5, 10])->map(fn ($m) => $m * $magnitude)->first(fn ($s) => $s >= $raw);
                             $top = $step * 4;
                             $compact = $top >= 10000;
-                            $tick = fn ($v) => '₱' . ($compact ? rtrim(rtrim(number_format($v / 1000, 1), '0'), '.') . 'K' : number_format($v));
+                            $tick = fn ($v) => currency_symbol() . ($compact ? rtrim(rtrim(fmt_number($v / 1000, 1), '0'), '.,') . 'K' : fmt_number($v));
                             $peak = $max > 0 ? array_search($max, $series['sales']) : null;
                             $unit = ['week' => 'day', 'month' => 'week', 'year' => 'month'][$period];
                         @endphp
@@ -293,7 +293,7 @@
                                 @endfor
                                 <div class="bar-cols" role="group" aria-label="Completed sales per {{ $unit }}">
                                     @foreach($series['sales'] as $i => $value)
-                                        @php $orders = $series['orders'][$i]; $amount = '₱' . number_format($value, 2); @endphp
+                                        @php $orders = $series['orders'][$i]; $amount = money($value); @endphp
                                         <button type="button" class="bar-col"
                                                 data-value="{{ $amount }}" data-label="{{ $series['titles'][$i] }} · {{ $orders }} {{ \Illuminate\Support\Str::plural('order', $orders) }}"
                                                 aria-label="{{ $series['titles'][$i] }}: {{ $amount }} from {{ $orders }} completed {{ \Illuminate\Support\Str::plural('order', $orders) }}">
@@ -340,7 +340,7 @@
                                 <span class="list-sub">{{ $order->order_number }}</span>
                             </span>
                             <span class="list-end col">
-                                <span class="money">₱{{ number_format($order->total, 2) }}</span>
+                                <span class="money">{{ money($order->total, $order->currency) }}</span>
                                 <span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span>
                             </span>
                         </a>
@@ -362,7 +362,7 @@
                     <ol class="rank-list">
                         @foreach($topServices as $service)
                         <li>
-                            <div class="rank-row"><span>{{ $service->name }}</span><span>{{ $service->order_count }} {{ \Illuminate\Support\Str::plural('order', $service->order_count) }} · ₱{{ number_format($service->total_revenue, 0) }}</span></div>
+                            <div class="rank-row"><span>{{ $service->name }}</span><span>{{ $service->order_count }} {{ \Illuminate\Support\Str::plural('order', $service->order_count) }} · {{ money($service->total_revenue, whole: true) }}</span></div>
                             <div class="rank-track" aria-hidden="true"><span class="rank-bar" style="width: {{ round($service->order_count / $mostOrders * 100, 1) }}%"></span></div>
                         </li>
                         @endforeach

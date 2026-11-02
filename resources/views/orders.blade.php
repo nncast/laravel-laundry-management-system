@@ -136,7 +136,7 @@
                     <td class="check-col"><label class="check"><input type="checkbox" class="row-check" value="{{ $order->id }}"><span class="sr-only">Select {{ $order->order_number }}</span></label></td>
                     <td class="cell-primary">
                         <a href="{{ route('orders.details', $order) }}" class="cell-title order-no">{{ $order->order_number }}</a>
-                        <div class="cell-sub">{{ $order->order_date?->format('M j, Y') }}</div>
+                        <div class="cell-sub">{{ fmt_date($order->order_date) }}</div>
                     </td>
                     <td data-label="Customer">
                         <div>
@@ -153,15 +153,15 @@
                                 <span class="badge badge-paid">Paid</span>
                             @else
                                 <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? 'Partly paid' : 'Unpaid' }}</span>
-                                <span class="cell-sub money">₱{{ number_format($order->balance, 2) }} due</span>
+                                <span class="cell-sub money">{{ money($order->balance, $order->currency) }} due</span>
                             @endif
                         </div>
                     </td>
-                    <td data-label="Total" class="num"><strong>₱{{ number_format($order->total, 2) }}</strong></td>
+                    <td data-label="Total" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
                     <td class="actions">
                         <div class="cell-actions">
                             @if($step && $order->status === 'ready' && $order->balance > 0)
-                                <a href="{{ route('orders.details', ['order' => $order, 'pay' => 1]) }}" class="btn btn-sm btn-soft step-btn"><i class="fas fa-peso-sign" aria-hidden="true"></i> Collect</a>
+                                <a href="{{ route('orders.details', ['order' => $order, 'pay' => 1]) }}" class="btn btn-sm btn-soft step-btn"><i class="fas fa-wallet" aria-hidden="true"></i> Collect</a>
                             @elseif($step)
                                 <button type="button" class="btn btn-sm btn-soft step-btn" data-next="{{ $step[0] }}"><i class="fas {{ $step[2] }}" aria-hidden="true"></i> {{ $step[1] }}</button>
                             @endif

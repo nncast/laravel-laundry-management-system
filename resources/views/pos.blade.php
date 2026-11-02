@@ -183,6 +183,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     window.APP_URL = @json(rtrim(url('/'), '/'));
     window.appUrl = (path = '') => window.APP_URL + '/' + String(path).replace(/^\/+/, '');
     window.CSRF_TOKEN = @json(csrf_token());
+    window.FMT = @json(app(\App\Support\Format::class)->forScript());
 </script>
 </head>
 @php
@@ -237,6 +238,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         <span>{{ $editing ? $order->order_number : ($system->business_name ?? 'Soap Opera') }}</span>
     </div>
     <div class="pos-topbar-end">
+        <span class="badge badge-info" title="Business currency">{{ currency_symbol() }} {{ app(\App\Support\Format::class)->currency }}</span>
         <span class="pos-hints"><kbd>/</kbd> services · <kbd>F2</kbd> customer · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> charge</span>
         <span class="pos-staff"><span class="avatar" aria-hidden="true">{{ strtoupper(mb_substr($staffName, 0, 1)) }}</span><span>{{ $staffName }}</span></span>
     </div>
@@ -266,7 +268,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
                     <h2 class="tile-group-title" id="cat-title-{{ $i }}">{{ $category }}</h2>
                     <div class="tiles">
                         @foreach($serviceGroups[$category] as $service)
-                        <button type="button" class="tile" data-service="{{ $service->id }}" data-name="{{ strtolower($service->name) }}" aria-label="Add {{ $service->name }}, ₱{{ number_format($service->price, 2) }}">
+                        <button type="button" class="tile" data-service="{{ $service->id }}" data-name="{{ strtolower($service->name) }}" aria-label="Add {{ $service->name }}, {{ money($service->price) }}">
                             <span class="tile-qty" hidden></span>
                             @if($service->icon && !str_contains($service->icon, 'placeholder'))
                                 <img class="tile-img" src="{{ $service->icon_url }}" alt="" loading="lazy" width="40" height="40">
@@ -274,7 +276,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
                                 <span class="bubble-tile {{ $tones[$i % count($tones)] }}" aria-hidden="true"><i class="fas {{ $typeIcon($category) }}"></i></span>
                             @endif
                             <span class="tile-name">{{ $service->name }}</span>
-                            <span class="tile-price">₱{{ number_format($service->price, 2) }}</span>
+                            <span class="tile-price">{{ money($service->price) }}</span>
                         </button>
                         @endforeach
                     </div>
@@ -315,7 +317,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
                     <h3 class="eyebrow">Add-ons</h3>
                     <div class="chips" id="addonChips">
                         @foreach($addonChoices as $addon)
-                            <button type="button" class="chip addon-chip" aria-pressed="false" data-addon="{{ $addon['id'] }}"><i class="fas fa-plus" aria-hidden="true"></i> {{ $addon['name'] }} <span class="addon-price">₱{{ number_format($addon['price'], 2) }}</span></button>
+                            <button type="button" class="chip addon-chip" aria-pressed="false" data-addon="{{ $addon['id'] }}"><i class="fas fa-plus" aria-hidden="true"></i> {{ $addon['name'] }} <span class="addon-price">{{ money($addon['price']) }}</span></button>
                         @endforeach
                     </div>
                 </div>
@@ -362,39 +364,39 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
 
                 <div class="panel-block">
                     <div class="summary">
-                        <div class="summary-row"><span>Services</span><span id="sumServices">₱0.00</span></div>
-                        <div class="summary-row"><span>Add-ons</span><span id="sumAddons">₱0.00</span></div>
-                        <div class="summary-row"><span id="discountLabel">Discount</span><span id="sumDiscount">₱0.00</span></div>
+                        <div class="summary-row"><span>Services</span><span id="sumServices">{{ money(0) }}</span></div>
+                        <div class="summary-row"><span>Add-ons</span><span id="sumAddons">{{ money(0) }}</span></div>
+                        <div class="summary-row"><span id="discountLabel">Discount</span><span id="sumDiscount">{{ money(0) }}</span></div>
                     </div>
                     <div class="discount-ctl">
                         <div class="segmented" role="radiogroup" aria-label="Discount type">
-                            <label><input type="radio" name="discountType" value="amount" @checked($initial['discountType'] === 'amount')><span>₱</span></label>
+                            <label><input type="radio" name="discountType" value="amount" @checked($initial['discountType'] === 'amount')><span>{{ currency_symbol() }}</span></label>
                             <label><input type="radio" name="discountType" value="percent" @checked($initial['discountType'] === 'percent')><span>%</span></label>
                         </div>
-                        <input class="input" type="number" id="discountValue" min="0" step="0.01" inputmode="decimal" placeholder="No discount" aria-label="Discount" value="{{ $initial['discountValue'] ?: '' }}">
+                        <input class="input" type="number" id="discountValue" min="0" step="{{ money_step() }}" inputmode="decimal" placeholder="No discount" aria-label="Discount" value="{{ $initial['discountValue'] ?: '' }}">
                     </div>
                     <div class="chips" id="percentChips" hidden>
                         @foreach([5, 10, 15, 20] as $pct)<button type="button" class="chip" data-pct="{{ $pct }}">{{ $pct }}%</button>@endforeach
                     </div>
                     <div class="summary" style="margin-top: var(--s-3)">
-                        <div class="summary-row summary-total total-row"><span>Total</span><span id="sumTotal">₱0.00</span></div>
+                        <div class="summary-row summary-total total-row"><span>Total</span><span id="sumTotal">{{ money(0) }}</span></div>
                         @if($editing)
-                            <div class="summary-row"><span>Paid so far</span><span>₱{{ number_format($order->paid_amount, 2) }}</span></div>
-                            <div class="summary-row"><span>Balance</span><span id="sumBalance">₱0.00</span></div>
+                            <div class="summary-row"><span>Paid so far</span><span>{{ money($order->paid_amount) }}</span></div>
+                            <div class="summary-row"><span>Balance</span><span id="sumBalance">{{ money(0) }}</span></div>
                         @endif
                     </div>
                 </div>
             </div>
             <footer class="checkout-actions">
                 <button type="button" class="btn btn-secondary btn-lg" id="saveOnly">{{ $editing ? 'Save changes' : 'Pay later' }}</button>
-                <button type="button" class="btn btn-primary btn-lg" id="chargeBtn"><span id="chargeLabel">{{ $editing ? 'Collect' : 'Charge' }}</span>&nbsp;<span id="chargeAmount">₱0.00</span></button>
+                <button type="button" class="btn btn-primary btn-lg" id="chargeBtn"><span id="chargeLabel">{{ $editing ? 'Collect' : 'Charge' }}</span>&nbsp;<span id="chargeAmount">{{ money(0) }}</span></button>
             </footer>
         </section>
     </div>
 </main>
 
 <div class="pos-bar">
-    <button type="button" class="btn btn-primary btn-block" id="openSide"><span id="barCount">0 items</span><span>Review order <i class="fas fa-chevron-up" aria-hidden="true"></i></span><span id="barTotal">₱0.00</span></button>
+    <button type="button" class="btn btn-primary btn-block" id="openSide"><span id="barCount">0 items</span><span>Review order <i class="fas fa-chevron-up" aria-hidden="true"></i></span><span id="barTotal">{{ money(0) }}</span></button>
 </div>
 
 <div class="sr-only" aria-live="polite" id="announcer"></div>
@@ -408,7 +410,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         </div>
         <div class="dialog-body pay-grid">
             <div class="stack-sm">
-            <div class="pay-due"><span class="muted">Amount due</span><strong id="payDue">₱0.00</strong></div>
+            <div class="pay-due"><span class="muted">Amount due</span><strong id="payDue">{{ money(0) }}</strong></div>
             <div class="segmented block" role="radiogroup" aria-label="Payment method">
                 @foreach(['cash' => ['Cash', 'fa-money-bill-wave'], 'card' => ['Card', 'fa-credit-card'], 'transfer' => ['Transfer', 'fa-building-columns'], 'other' => ['Other', 'fa-ellipsis']] as $value => [$label, $icon])
                     <label><input type="radio" name="payMethod" value="{{ $value }}" @checked($value === 'cash')><span><i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }}</span></label>
@@ -416,16 +418,17 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
             </div>
             <div class="field">
                 <label class="label" for="tendered">Amount received</label>
-                <div class="input-affix"><span class="affix" aria-hidden="true">₱</span><input class="input tendered" type="text" id="tendered" inputmode="decimal" autocomplete="off" aria-describedby="payResult"></div>
+                <div class="input-affix"><span class="affix" aria-hidden="true">{{ currency_symbol() }}</span><input class="input tendered" type="text" id="tendered" inputmode="decimal" autocomplete="off" aria-describedby="payResult"></div>
             </div>
             <div class="quick-cash" aria-label="Quick amounts">
                 <button type="button" class="btn btn-secondary" data-cash="exact">Exact</button>
-                @foreach([100, 200, 500, 1000] as $bill)<button type="button" class="btn btn-secondary" data-cash="{{ $bill }}">₱{{ number_format($bill) }}</button>@endforeach
+                @foreach(array_slice(app(\App\Support\Format::class)->currencyInfo()['bills'], -4) as $bill)<button type="button" class="btn btn-secondary" data-cash="{{ $bill }}">{{ money($bill, whole: true) }}</button>@endforeach
             </div>
             <p class="pay-result" id="payResult" aria-live="polite"></p>
             </div>
             <div class="keypad" aria-label="Number pad">
-                @foreach(['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'] as $key)<button type="button" data-key="{{ $key }}">{{ $key }}</button>@endforeach
+                {{-- Currencies without decimals (yen, rupiah) get a 00 key instead of the point --}}
+                @foreach(['1', '2', '3', '4', '5', '6', '7', '8', '9', app(\App\Support\Format::class)->decimals() > 0 ? '.' : '00', '0'] as $key)<button type="button" data-key="{{ $key }}">{{ $key }}</button>@endforeach
                 <button type="button" data-key="back" aria-label="Delete last digit"><i class="fas fa-delete-left" aria-hidden="true"></i></button>
             </div>
         </div>
@@ -506,18 +509,18 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         customer: null,
         summary: null,                                   // the picked customer's history (repeat last order)
     };
-    const money = n => peso(Math.round(n * 100) / 100);
+    const FMT = window.FMT;
 
     // ---------------- Totals (same rules as the server) ----------------
     function totals() {
         const servicesTotal = state.items.reduce((s, i) => s + i.price * i.qty, 0);
         const addonsTotal = [...state.addons].reduce((s, id) => s + (addonChoices.get(id)?.price || 0), 0);
-        const gross = Math.round((servicesTotal + addonsTotal) * 100) / 100;
+        const gross = roundMoney(servicesTotal + addonsTotal);
         const value = Math.max(0, parseFloat($('discountValue').value) || 0);
         const percent = discountType() === 'percent';
-        const discount = Math.min(percent ? Math.round(gross * Math.min(value, 100)) / 100 : value, gross);
-        const total = Math.round((gross - discount) * 100) / 100;
-        return { services: servicesTotal, addons: addonsTotal, gross, discount, total, due: Math.max(0, Math.round((total - initial.paid) * 100) / 100), percent, value };
+        const discount = Math.min(percent ? roundMoney(gross * Math.min(value, 100) / 100) : value, gross);
+        const total = roundMoney(gross - discount);
+        return { services: servicesTotal, addons: addonsTotal, gross, discount, total, due: Math.max(0, roundMoney(total - initial.paid)), percent, value };
     }
     const discountType = () => document.querySelector('input[name="discountType"]:checked').value;
     const itemCount = () => state.items.reduce((s, i) => s + i.qty, 0);
@@ -871,7 +874,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
             return;
         }
         $('okNumber').textContent = order.order_number;
-        const change = Math.max(0, Math.round((tendered - due) * 100) / 100);
+        const change = Math.max(0, roundMoney(tendered - due));
         $('okChange').hidden = change <= 0;
         $('okChangeAmount').textContent = money(change);
         $('okBalance').textContent = order.balance > 0 ? `${money(order.balance)} to collect at pickup.` : 'Paid in full.';
@@ -914,7 +917,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         const due = totals().due;
         if (due <= 0 && editing) { showToast('Nothing left to collect on this order.', 'info'); return; }
         $('payDue').textContent = money(due);
-        tendered.value = due.toFixed(2);
+        tendered.value = due.toFixed(FMT.decimals);
         describePayment();
         openDialog('paymentDialog');
         tendered.focus();
@@ -923,7 +926,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     $('chargeBtn').addEventListener('click', openPayment);
     tendered.addEventListener('input', () => { tendered.value = tendered.value.replace(/[^\d.]/g, ''); describePayment(); });
     document.querySelectorAll('[data-cash]').forEach(b => b.addEventListener('click', () => {
-        tendered.value = b.dataset.cash === 'exact' ? totals().due.toFixed(2) : Number(b.dataset.cash).toFixed(2);
+        tendered.value = (b.dataset.cash === 'exact' ? totals().due : Number(b.dataset.cash)).toFixed(FMT.decimals);
         fresh = true;
         describePayment();
     }));
@@ -935,7 +938,8 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         const key = b.dataset.key;
         if (key === 'back') v = v.slice(0, -1);
         else if (key === '.') { if (!v.includes('.')) v = (v || '0') + '.'; }
-        else if (!/\.\d{2}$/.test(v) && v.replace('.', '').length < 9) v = (v === '0' ? '' : v) + key;
+        else if (key === '00') { if (v && v !== '0' && v.length < 8) v += '00'; }
+        else if (!new RegExp('\\.\\d{' + FMT.decimals + '}$').test(v) && v.replace('.', '').length < 9) v = (v === '0' ? '' : v) + key;
         tendered.value = v;
         describePayment();
     }));

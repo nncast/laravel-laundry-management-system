@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Format;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,7 @@ class Order extends Model
         'discount',
         'discount_percent',
         'total',
+        'currency',
         'paid_amount',
         'status',
         'notes',
@@ -82,6 +84,11 @@ class Order extends Model
             // Set order date to today if not set
             if (empty($order->order_date)) {
                 $order->order_date = now()->toDateString();
+            }
+
+            // An order keeps the currency it was taken in
+            if (empty($order->currency)) {
+                $order->currency = app(Format::class)->currency;
             }
         });
     }
@@ -159,16 +166,18 @@ class Order extends Model
             return;
         }
 
+        // Round to the currency's smallest unit (whole yen and rupiah, centavos/cents elsewhere)
+        $d = app(Format::class)->decimals($this->currency);
         $itemsTotal = (float) $this->items()->sum('total');
         $addonsTotal = (float) $this->addons()->sum('order_addons.price');
-        $gross = round($itemsTotal + $addonsTotal, 2);
+        $gross = round($itemsTotal + $addonsTotal, $d);
 
-        $this->subtotal = round($itemsTotal, 2);
+        $this->subtotal = round($itemsTotal, $d);
         if ($this->discount_percent !== null) {
-            $this->discount = round($gross * (float) $this->discount_percent / 100, 2);
+            $this->discount = round($gross * (float) $this->discount_percent / 100, $d);
         }
-        $this->discount = min(max(0, round((float) $this->discount, 2)), $gross);
-        $this->total = round($gross - (float) $this->discount, 2);
+        $this->discount = min(max(0, round((float) $this->discount, $d)), $gross);
+        $this->total = round($gross - (float) $this->discount, $d);
     }
 
     /**
@@ -287,11 +296,13 @@ class Order extends Model
     }
 
     /**
-     * Check if order can be edited.
+     * Check if order can be edited: still open, and in the business currency
+     * (an order taken before a currency change can't get today's prices).
      */
     public function getCanEditAttribute(): bool
     {
-        return in_array($this->status, ['pending', 'processing', 'ready']);
+        return in_array($this->status, ['pending', 'processing', 'ready'])
+            && $this->getAttribute('currency') === app(Format::class)->currency;
     }
 
     /**
@@ -355,6 +366,28 @@ class Order extends Model
     public function scopeUnpaid($query)
     {
         return $query->where('status', '!=', 'cancelled')->whereColumn('paid_amount', '<', 'total');
+    }
+
+    /**
+     * Scope: orders in the business currency. Money totals only ever add up one
+     * currency; orders taken before a currency change are reported separately.
+     */
+    public function scopeInBusinessCurrency($query)
+    {
+        return $query->where($query->qualifyColumn('currency'), app(Format::class)->currency);
+    }
+
+    /**
+     * Orders of $query in other currencies, per currency: [currency, orders, total].
+     * Shown as a note under totals that leave them out.
+     */
+    public static function otherCurrencyTotals($query)
+    {
+        return (clone $query)
+            ->where($query->qualifyColumn('currency'), '!=', app(Format::class)->currency)
+            ->selectRaw('currency, COUNT(*) as orders, COALESCE(SUM(total), 0) as total')
+            ->groupBy('currency')
+            ->get();
     }
 
     /**

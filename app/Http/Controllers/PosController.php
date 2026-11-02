@@ -11,6 +11,7 @@ use App\Models\{
     OrderItem,
     Staff
 };
+use App\Support\Format;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -43,10 +44,10 @@ class PosController extends Controller
         return response()->json([
             'success' => true,
             'orders_count' => (clone $orders)->count(),
-            'balance_due' => round((float) (clone $orders)->unpaid()->sum(DB::raw('total - paid_amount')), 2),
+            'balance_due' => round((float) (clone $orders)->unpaid()->inBusinessCurrency()->sum(DB::raw('total - paid_amount')), 2),
             'last_order' => $last ? [
                 'order_number' => $last->order_number,
-                'order_date' => $last->order_date?->format('M j, Y'),
+                'order_date' => fmt_date($last->order_date),
                 'items' => $last->items->map(fn ($item) => [
                     'service_id' => $item->service_id,
                     'name' => $item->service->name ?? 'Deleted service',
@@ -65,7 +66,7 @@ class PosController extends Controller
     {
         if (!$order->can_edit) {
             return redirect()->route('orders.details', $order)
-                ->with('error', 'This order cannot be edited because it is already ' . $order->status . '.');
+                ->with('error', $this->notEditableReason($order));
         }
 
         $order->load([
@@ -89,7 +90,7 @@ class PosController extends Controller
         if (!$order->can_edit) {
             return response()->json([
                 'success' => false,
-                'message' => 'This order cannot be edited because it is already ' . $order->status . '.',
+                'message' => $this->notEditableReason($order),
             ], 403);
         }
 
@@ -351,6 +352,13 @@ class PosController extends Controller
         return $order->fresh();
     }
 
+    private function notEditableReason(Order $order): string
+    {
+        return $order->currency !== app(Format::class)->currency
+            ? "This order was taken in {$order->currency}. Switch the business currency back to {$order->currency} to edit it."
+            : 'This order cannot be edited because it is already ' . $order->status . '.';
+    }
+
     private function orderSummary(Order $order): array
     {
         return [
@@ -361,6 +369,7 @@ class PosController extends Controller
             'balance' => $order->balance,
             'status' => $order->status,
             'status_label' => $order->status_label,
+            'currency' => $order->currency,
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Format;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -64,14 +65,22 @@ class DailyReportController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Cancelled orders are not sales
-        $billable = $orders->where('status', '!=', 'cancelled');
+        // Cancelled orders are not sales; money adds up the business currency only
+        $currency = app(Format::class)->currency;
+        $billable = $orders->where('status', '!=', 'cancelled')->where('currency', $currency);
+        $otherCurrencies = $orders->where('status', '!=', 'cancelled')->where('currency', '!=', $currency)
+            ->groupBy('currency')
+            ->map(fn ($group, $code) => (object) ['currency' => $code, 'orders' => $group->count(), 'total' => (float) $group->sum('total')])
+            ->values();
 
         $totalSales = (float) $billable->sum('total');
         $paidAmount = (float) $billable->sum('paid_amount');
 
         // Money actually received on this day (for any order)
-        $totalPayments = (float) Payment::whereDate('created_at', $date)->sum('amount');
+        $totalPayments = (float) Payment::join('orders', 'orders.id', '=', 'payments.order_id')
+            ->whereDate('payments.created_at', $date)
+            ->where('orders.currency', $currency)
+            ->sum('payments.amount');
 
         $topServices = DB::table('order_items')
             ->join('services', 'order_items.service_id', '=', 'services.id')
@@ -79,6 +88,7 @@ class DailyReportController extends Controller
             ->where('orders.order_date', '>=', $date)
             ->where('orders.order_date', '<', date('Y-m-d', strtotime($date . ' +1 day')))
             ->where('orders.status', '!=', 'cancelled')
+            ->where('orders.currency', $currency)
             ->select(
                 'services.name',
                 DB::raw('SUM(order_items.qty) as total_qty'),
@@ -100,6 +110,7 @@ class DailyReportController extends Controller
             'status_breakdown' => $orders->groupBy('status')->map->count(),
             'top_services' => $topServices,
             'orders' => $orders,
+            'other_currencies' => $otherCurrencies,
         ];
     }
 
@@ -116,6 +127,7 @@ class DailyReportController extends Controller
             'status_breakdown' => collect(),
             'top_services' => collect(),
             'orders' => collect(),
+            'other_currencies' => collect(),
         ];
     }
 }

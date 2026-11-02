@@ -2,8 +2,12 @@
 
 @section('title', 'Products')
 @section('page-title', 'Products')
-@php $lowCount = $products->filter(fn ($p) => $p->status === 'active' && $p->available_stock <= $p->minimum_stock_level)->count(); @endphp
-@section('page-subtitle', 'Supplies you use and restock' . ($lowCount ? " · {$lowCount} running low" : ''))
+@php
+    $lowCount = $products->filter(fn ($p) => $p->status === 'active' && $p->available_stock <= $p->minimum_stock_level)->count();
+    // Inventory valuation: what the active stock cost to buy
+    $stockValue = $products->where('status', 'active')->sum(fn ($p) => $p->available_stock * $p->purchase_price);
+@endphp
+@section('page-subtitle', 'Stock value ' . money($stockValue) . ($lowCount ? " · {$lowCount} running low" : ''))
 
 @section('page-actions')
     <button type="button" class="btn btn-primary" data-form-dialog="productDialog" data-title="Add product" data-submit="Save product"
@@ -47,7 +51,7 @@
                         <div class="cell-sub">{{ $product->category->name ?? 'No category' }}</div>
                     </td>
                     <td data-label="Unit">{{ $product->unit->name ?? '—' }}</td>
-                    <td data-label="Purchase price" class="num">₱{{ number_format($product->purchase_price, 2) }}</td>
+                    <td data-label="Purchase price" class="num">{{ money($product->purchase_price) }}</td>
                     <td data-label="In stock">
                         <div>
                             <strong class="{{ $low ? 'text-danger' : '' }}">{{ $product->available_stock }}</strong>
@@ -87,7 +91,7 @@
         <x-field name="category_id" label="Category" required :options="['' => 'Choose'] + $categories->pluck('name', 'id')->all()" />
         <x-field name="unit_id" label="Unit" required :options="['' => 'Choose'] + $units->pluck('name', 'id')->all()" />
     </div>
-    <x-field name="purchase_price" label="Purchase price" type="number" prefix="₱" required min="0" step="0.01" inputmode="decimal" />
+    <x-field name="purchase_price" label="Purchase price" type="number" :prefix="currency_symbol()" required min="0" :step="money_step()" inputmode="decimal" />
     <div class="form-row">
         <x-field name="available_stock" label="In stock" type="number" required min="0" step="1" inputmode="numeric" />
         <x-field name="minimum_stock_level" label="Low-stock level" type="number" required min="0" step="1" inputmode="numeric" help="Warn when stock is at or below this" />
