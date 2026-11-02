@@ -393,6 +393,31 @@
         if (none) none.hidden = shown > 0;
     });
 
+    // ---------------- Printing ----------------
+    // <a href="…/print/ticket" data-print> prints in one click without leaving the page: the
+    // document loads in a hidden frame and prints itself (?autoprint=1). Phones and tablets
+    // can't print a frame on its own, so there the document page opens and prints instead.
+    function printDocument(href, trigger = null) {
+        const url = href + (href.includes('?') ? '&' : '?') + 'autoprint=1';
+        if (navigator.userAgentData?.mobile ?? /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            window.location.href = url;
+            return;
+        }
+        document.getElementById('printFrame')?.remove();
+        const frame = Object.assign(document.createElement('iframe'), { id: 'printFrame', src: url, title: 'Print', tabIndex: -1 });
+        frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+        trigger?.classList.add('is-loading');
+        frame.addEventListener('load', () => trigger?.classList.remove('is-loading'), { once: true });
+        document.body.append(frame);
+    }
+    window.printDocument = printDocument;
+    document.addEventListener('click', e => {
+        const link = e.target.closest('a[data-print]');
+        if (!link || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        e.preventDefault();
+        printDocument(link.href, link);
+    });
+
     // Close open dropdown menus when tapping elsewhere
     document.addEventListener('click', e => {
         $$('details.menu[open]').forEach(menu => { if (!menu.contains(e.target)) menu.open = false; });

@@ -34,6 +34,8 @@ class Order extends Model
         'customer_id',
         'staff_id',
         'order_date',
+        'ready_by',
+        'weight',
         'subtotal',
         'discount',
         'discount_percent',
@@ -51,6 +53,8 @@ class Order extends Model
      */
     protected $casts = [
         'order_date' => 'date',
+        'ready_by' => 'date',
+        'weight' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'discount_percent' => 'decimal:2',
@@ -100,6 +104,12 @@ class Order extends Model
     public function setOrderDateAttribute($value): void
     {
         $this->attributes['order_date'] = $value ? Carbon::parse($value)->toDateString() : null;
+    }
+
+    /** When the order will be ready for pickup; stored like order_date. */
+    public function setReadyByAttribute($value): void
+    {
+        $this->attributes['ready_by'] = $value ? Carbon::parse($value)->toDateString() : null;
     }
 
     /**

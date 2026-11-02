@@ -15,7 +15,8 @@ This document covers:
 5. [Design system](#5-design-system)
 6. [Accessibility](#6-accessibility)
 7. [Touch and mobile](#7-touch-and-mobile)
-8. [Not built yet](#8-not-built-yet)
+8. [Printed documents](#8-printed-documents-v230)
+9. [Not built yet](#9-not-built-yet)
 
 Code: tokens in `public/css/theme.css`, components and layout in `public/css/app.css`,
 shared behaviour in `public/js/app.js`, Blade components in `resources/views/components/`.
@@ -199,8 +200,10 @@ Header: back to Orders, order number, status and payment badges, date; actions: 
 step (Start processing / Mark ready for pickup / Mark picked up), Add payment, Edit, Print.
 Left: progress steps; items with add-ons and totals; payments history; notes.
 Right: balance card with **Collect payment**; customer (tap-to-call phone, their other
-orders); details (taken by, created, updated, change status, cancel order).
-Printing gives a receipt with the business header.
+orders); details (taken by, ready by, weight, created, updated, change status, cancel
+order). **Print** opens the print page (the receipt once something is paid, the claim
+ticket before); every payment row has its own reprint button, and the toast after a
+payment offers **Print receipt**. See section 8.
 
 ### Customers
 
@@ -223,8 +226,11 @@ month, Last month) and a custom range; KPI tiles; the table; Download CSV and Pr
 
 ### Settings
 
-Two cards side by side: Business profile (name, address, phone, browser icon) saved in
-place, and Backups (last backup, Download a backup, guarded Restore).
+Left: Business profile (name, address, phone, browser icon) and Currency & formats (with
+a live preview). Right: Receipts & printing (paper, usual turnaround, logo, header,
+thank-you and promo messages, pickup instructions, terms, QR code and barcode on or off,
+and a Preview of the latest order's receipt) and Backups (last backup, Download a backup,
+guarded Restore).
 
 ### Sign-in
 
@@ -344,7 +350,44 @@ table), and browser date pickers vary in how well they work with screen readers.
 
 ---
 
-## 8. Not built yet
+## 8. Printed documents (v2.3.0)
+
+| Document | For | Printed from |
+|---|---|---|
+| Receipt | The customer, for one payment (`R-000123` = payment id); an invoice before any payment | POS success sheet, payment toast, each payment row, the print page |
+| Claim ticket | The customer, to collect the laundry | POS success sheet, the print page |
+| Job order | The shop: services to tick off, notes, a stains-or-damage box, a processing checklist | POS success sheet, the print page |
+
+**One page, two outputs.** `print/document.blade.php` with one partial per document
+renders the browser preview and the PDF (dompdf). So the documents use what dompdf
+understands: CSS 2 with tables, no flexbox, no CSS variables, no auto margins on images
+(codes sit in a centered block), and DejaVu Sans in PDFs for the peso sign. The print
+toolbar is screen-only and uses the app's buttons and chips.
+
+**Paper.** 58 and 80 mm rolls print a 48 or 72 mm column with no page margins, so the
+roll's driver decides the length; a roll PDF is laid out once on a very long page to
+measure the body, then again exactly that long. A4 and Letter use their page sizes with
+14 mm and 0.5 in margins. The default comes from Settings; any print can switch.
+
+**Codes.** The QR code (error correction M, 28 mm) holds the order's address: a phone
+camera opens it, and a 2D scanner types it into the top search, whose lookup recognises
+`/orders/{id}`. The barcode is Code 128 (set B) of the order number, drawn by
+`App\Support\Barcode` at 0.25 mm per module (2 dots on a 203 dpi receipt printer, the
+narrowest bar receipt printers use), so an order number is about 60 mm wide: it prints
+on 80 mm paper and up, and 58 mm documents rely on the QR code. Both codes were checked
+by decoding them from screenshots and from the PDFs rendered at 203 dpi.
+
+**One click.** A link with `data-print` loads the document in a hidden frame with
+`?autoprint=1`, so the print dialog opens over the POS or order without leaving it. Phones
+and tablets open the document page instead (they print whole pages only). Chrome or
+Edge started with `--kiosk-printing` skip the dialog.
+
+**Later.** Email, SMS and WhatsApp can send the same PDF the download gives (Share already
+hands it to those apps on phones). Self-service pickup would put a signed token in the QR
+code instead of the plain address. Cloud and network printers would take the PDF; raw
+ESC/POS printing would need a small local print service.
+
+## 9. Not built yet
 
 From the redesign brief, these need new business logic or data and were left out of v2.0.0:
 
@@ -357,6 +400,8 @@ From the redesign brief, these need new business logic or data and were left out
 | Inline table editing | Dialogs cover the needs with less risk | Per-field save endpoints |
 | Customer profile page | The list and the order filters cover lookups | A page with history, notes and balance |
 | SMS when an order is ready | Needs an SMS provider and consent | An integration and a setting |
-| Thermal receipt layout (58/80 mm) | Receipts print on A4/Letter | A narrow print stylesheet |
+| Cash tendered and change on receipts | Only the amount owed is recorded | The amount tendered on each payment |
+| Loyalty points on receipts | There is no loyalty program | Points per order and a balance per customer |
+| Sending receipts by email or SMS | Needs a mail or SMS provider; Share covers phones | A mailer, customer email addresses, a Send button |
 | Offline fonts and icons | Fonts and icons load from Google Fonts and cdnjs | Bundle Plus Jakarta Sans and Font Awesome in `public/` |
 | Dark mode | Not needed at a bright counter | Dark values for the tokens |

@@ -216,6 +216,8 @@ class PosController extends Controller
         return $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'order_date' => 'required|date',
+            'ready_by' => 'nullable|date|after_or_equal:order_date',
+            'weight' => 'nullable|numeric|min:0|max:9999',
             'notes' => 'nullable|string|max:500',
             'discount' => ['nullable', 'numeric', 'min:0', Rule::when($request->input('discount_type') === 'percent', 'max:100')],
             'discount_type' => 'nullable|in:amount,percent',
@@ -231,6 +233,7 @@ class PosController extends Controller
             'items.required' => 'Please add at least one service.',
             'items.min' => 'Please add at least one service.',
             'discount.max' => 'A percentage discount can be at most 100%.',
+            'ready_by.after_or_equal' => 'The ready-by date cannot be before the order date.',
         ]);
     }
 
@@ -251,6 +254,8 @@ class PosController extends Controller
         $order->fill([
             'customer_id' => $data['customer_id'],
             'order_date' => $data['order_date'],
+            'ready_by' => $data['ready_by'] ?? null,
+            'weight' => $data['weight'] ?? null,
             'notes' => $data['notes'] ?? null,
             'discount' => $percent ? 0 : $discount,
             'discount_percent' => $percent ? $discount : null,

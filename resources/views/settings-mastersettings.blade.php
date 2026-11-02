@@ -2,12 +2,13 @@
 
 @section('title', 'Settings')
 @section('page-title', 'Settings')
-@section('page-subtitle', 'Your business details, currency and formats, and data backups')
+@section('page-subtitle', 'Your business details, receipts, currency and formats, and data backups')
 
 @push('styles')
 <style>
-.logo-preview { display: flex; align-items: center; gap: var(--s-3); }
+.logo-preview { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .logo-preview img { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
+.logo-preview img.receipt-logo { width: auto; max-width: 160px; height: 56px; object-fit: contain; background: #fff; }
 .backup-status { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4); border-radius: var(--radius); background: var(--surface-muted); border: 1px solid var(--border); }
 .backup-status .bubble-tile { width: 44px; height: 44px; }
 .region-preview { display: grid; gap: 4px; padding: var(--s-3) var(--s-4); border-radius: var(--radius); background: var(--accent-soft); }
@@ -45,6 +46,45 @@
         </form>
     </section>
 
+    <section class="card" id="receipts" aria-labelledby="receipts-title">
+        <header class="card-header">
+            <div>
+                <h2 class="card-title" id="receipts-title"><i class="fas fa-receipt" aria-hidden="true"></i> Receipts &amp; printing</h2>
+                <p class="card-subtitle">What receipts, claim tickets and job orders show</p>
+            </div>
+            @if($latestOrderId)
+                <a class="btn btn-sm btn-secondary" href="{{ route('orders.document', [$latestOrderId, 'receipt']) }}" target="_blank" rel="noopener"><i class="fas fa-eye" aria-hidden="true"></i> Preview</a>
+            @endif
+        </header>
+        <form method="POST" action="{{ route('settings.receipts') }}" enctype="multipart/form-data">
+            @csrf
+            <div class="card-body form-grid">
+                <x-field name="receipt_paper" label="Paper" type="segmented" :options="\App\Http\Controllers\OrderDocumentController::PAPERS" :value="$settings->receipt_paper" help="Receipt printers take 58 or 80 mm rolls. Any other size can still be picked when printing." />
+                <x-field name="turnaround_days" label="Orders are usually ready after (days)" type="number" min="0" max="30" inputmode="numeric" required :value="$settings->turnaround_days" help="The POS fills in the ready-by date with this. 0 means the same day." />
+                <div class="stack-sm">
+                    <x-field name="receipt_logo" label="Logo" type="file" accept="image/png,image/jpeg" help="PNG or JPG up to 300 KB. Black on white prints best on receipt printers." />
+                    @if($receiptLogo = $settings->receiptLogoUri())
+                        <div class="logo-preview"><img class="receipt-logo" src="{{ $receiptLogo }}" alt="Current logo"><label class="check"><input type="checkbox" name="remove_logo" value="1"> Remove logo</label></div>
+                    @endif
+                </div>
+                <x-field name="receipt_header" label="Header" type="textarea" rows="2" maxlength="500" :value="$settings->receipt_header" help="Under your business name, e.g. tax number or opening hours." />
+                <x-field name="receipt_thank_you" label="Thank-you message" maxlength="255" placeholder="Thank you for choosing us!" :value="$settings->receipt_thank_you" />
+                <x-field name="receipt_footer" label="Promo message" type="textarea" rows="2" maxlength="500" :value="$settings->receipt_footer" help="At the bottom of receipts." />
+                <x-field name="receipt_pickup_instructions" label="Pickup instructions" type="textarea" rows="2" maxlength="1000" :value="$settings->receipt_pickup_instructions" help="On claim tickets, and on receipts until the order is picked up." />
+                <x-field name="receipt_terms" label="Terms" type="textarea" rows="3" maxlength="2000" :value="$settings->receipt_terms" />
+                <div class="stack-sm">
+                    <label class="check"><input type="checkbox" name="receipt_show_qr" value="1" @checked($settings->receipt_show_qr)> Print a QR code: a phone camera opens the order</label>
+                    <label class="check"><input type="checkbox" name="receipt_show_barcode" value="1" @checked($settings->receipt_show_barcode)> Print a barcode for USB scanners (80 mm and up)</label>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk" aria-hidden="true"></i> Save receipt settings</button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<div class="stack">
     @php
         $fmt = app(\App\Support\Format::class);
         $currencyOptions = collect(config('currencies'))->mapWithKeys(fn ($c, $code) => [$code => "{$c['symbol']}  {$c['name']} ({$code})"])->all();
@@ -93,8 +133,6 @@
         </form>
     </section>
 
-</div>
-
     <section class="card" id="backups" aria-labelledby="backup-title">
         <header class="card-header">
             <div>
@@ -128,6 +166,7 @@
             </form>
         </div>
     </section>
+</div>
 </div>
 @endsection
 

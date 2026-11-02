@@ -14,6 +14,7 @@ use App\Http\Controllers\{
     SystemSettingController,
     AddonController,
     OrderController,
+    OrderDocumentController,
     DashboardController,
     BackupController,
     DailyReportController,
@@ -48,13 +49,19 @@ Route::middleware('auth.staff')->group(function () {
         Route::get('/orders/lookup', 'lookup')->name('orders.lookup');
         Route::get('/orders/{order}', 'show')->name('orders.show');
         Route::get('/orders/{order}/details', 'details')->name('orders.details');
-        Route::get('/orders/{order}/print', 'print')->name('orders.print');
         Route::post('/orders/{order}/update-status', 'updateStatus')->name('orders.update.status');
         Route::post('/orders/{order}/add-payment', 'addPayment')->name('orders.add.payment');
         Route::post('/orders/{order}/add-notes', 'addNotes')->name('orders.add.notes');
         Route::delete('/orders/{order}', 'destroy')
             ->middleware('role:manager,admin')
             ->name('orders.destroy');
+    });
+
+    // ---------- RECEIPTS, CLAIM TICKETS, JOB ORDERS ----------
+    Route::controller(OrderDocumentController::class)->group(function () {
+        $documents = array_keys(OrderDocumentController::DOCUMENTS);
+        Route::get('/orders/{order}/print/{document}', 'show')->whereIn('document', $documents)->name('orders.document');
+        Route::get('/orders/{order}/print/{document}/pdf', 'pdf')->whereIn('document', $documents)->name('orders.document.pdf');
     });
 
     // ---------- POS ----------
@@ -169,6 +176,7 @@ Route::middleware('auth.staff')->group(function () {
             Route::get('/system', [SystemSettingController::class, 'edit'])->name('settings.system.edit');
             Route::post('/system', [SystemSettingController::class, 'update'])->name('settings.update');
             Route::post('/region', [SystemSettingController::class, 'updateRegion'])->name('settings.region');
+            Route::post('/receipts', [SystemSettingController::class, 'updateReceipts'])->name('settings.receipts');
             Route::get('/mastersettings', [SystemSettingController::class, 'edit'])->name('settings.mastersettings');
         });
     });

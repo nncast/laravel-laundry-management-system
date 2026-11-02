@@ -35,6 +35,9 @@
                 @endif
             @endif
             <span class="muted">{{ fmt_date($order->order_date) }}</span>
+            @if($order->ready_by && in_array($order->status, \App\Models\Order::OPEN_STATUSES, true))
+                <span class="muted">· Ready by <strong>{{ fmt_date($order->ready_by) }}</strong></span>
+            @endif
         </div>
     </div>
     <div class="page-actions">
@@ -47,7 +50,8 @@
         @if($order->can_edit)
             <a href="{{ route('pos.edit', $order) }}" class="btn btn-secondary"><i class="fas fa-pen" aria-hidden="true"></i> Edit</a>
         @endif
-        <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print" aria-hidden="true"></i> Print</button>
+        {{-- Receipt once paid, claim ticket before; the print page switches documents and paper --}}
+        <a href="{{ route('orders.document', [$order, $order->payments->isNotEmpty() ? 'receipt' : 'ticket']) }}" class="btn btn-secondary"><i class="fas fa-print" aria-hidden="true"></i> Print</a>
     </div>
 </header>
 @endsection
@@ -87,35 +91,14 @@
 .quick-cash .btn { padding: 0 var(--s-2); }
 .pay-result { min-height: 24px; font-weight: 700; text-align: center; }
 
-.print-only { display: none; }
 @media (max-width: 767px) {
     .progress { padding: var(--s-3) var(--s-4); }
     .progress li span { font-size: 11px; }
-}
-@media print {
-    .print-only { display: block; }
-    .detail-header, .balance-card, .no-print, .progress { display: none !important; }
-    .grid-sidebar { grid-template-columns: 1fr; }
-    .print-head { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #0b1b34; }
-    .print-head h2 { font-size: 20px; }
 }
 </style>
 @endpush
 
 @section('content')
-<div class="print-only print-head">
-    <div>
-        <h2>{{ $settings->business_name ?? 'Soap Opera' }}</h2>
-        @if($settings->address)<div>{{ $settings->address }}</div>@endif
-        @if($settings->contact)<div>{{ $settings->contact }}</div>@endif
-    </div>
-    <div class="text-right">
-        <strong>Receipt</strong>
-        <div>{{ $order->order_number }}</div>
-        <div>{{ fmt_date($order->order_date) }}</div>
-    </div>
-</div>
-
 <div class="grid-sidebar">
     <div class="stack">
         <div id="orderProgress" data-refresh>
@@ -181,9 +164,10 @@
                     <span class="bubble-tile tone-green" aria-hidden="true"><i class="fas {{ $methods[$payment->payment_method][1] ?? 'fa-wallet' }}"></i></span>
                     <span class="list-main">
                         <span class="list-title">{{ $methods[$payment->payment_method][0] ?? ucfirst($payment->payment_method) }}</span>
-                        <span class="list-sub">{{ fmt_date($payment->created_at) }} · {{ fmt_time($payment->created_at) }}</span>
+                        <span class="list-sub">{{ $payment->receipt_number }} · {{ fmt_date($payment->created_at) }} · {{ fmt_time($payment->created_at) }}@if($payment->receiver) · {{ $payment->receiver->name }}@endif</span>
                     </span>
                     <strong class="money">{{ money($payment->amount, $order->currency) }}</strong>
+                    <a class="icon-btn" href="{{ route('orders.document', [$order, 'receipt', 'payment' => $payment->id]) }}" data-print aria-label="Print receipt {{ $payment->receipt_number }}"><i class="fas fa-print" aria-hidden="true"></i></a>
                 </div>
             @empty
                 <p class="empty">No payments yet.</p>
@@ -193,7 +177,6 @@
         <section class="card" aria-labelledby="notes-title">
             <header class="card-header"><h2 class="card-title" id="notes-title"><i class="fas fa-note-sticky" aria-hidden="true"></i> Notes</h2></header>
             <div class="card-body">
-                <p class="print-only">{{ $order->notes ?: 'No notes.' }}</p>
                 <form class="notes-form stack-sm no-print" id="notesForm">
                     <label class="sr-only" for="notes">Notes for this order</label>
                     <textarea class="textarea" id="notes" maxlength="1000" placeholder="Stains, special care, pickup instructions…">{{ $order->notes }}</textarea>
@@ -238,6 +221,8 @@
             <div class="card-body stack-sm">
                 <dl class="dl">
                     <dt>Taken by</dt><dd>{{ $order->staff->name ?? '—' }}</dd>
+                    <dt>Ready by</dt><dd>{{ $order->ready_by ? fmt_date($order->ready_by) : '—' }}</dd>
+                    @if($order->weight)<dt>Weight</dt><dd>{{ fmt_weight($order->weight) }}</dd>@endif
                     <dt>Created</dt><dd>{{ fmt_datetime($order->created_at) }}</dd>
                     <dt>Updated</dt><dd>{{ fmt_datetime($order->updated_at) }}</dd>
                 </dl>
@@ -381,7 +366,8 @@
                 });
                 closeDialog(dialog);
                 await refreshRegions();
-                showToast(data.change > 0 ? `Payment recorded. Give back ${money(data.change)} change.` : 'Payment recorded.', 'success', 8000);
+                showToast(data.change > 0 ? `Payment recorded. Give back ${money(data.change)} change.` : 'Payment recorded.', 'success', 8000,
+                    { label: 'Print receipt', onClick: () => printDocument(appUrl(`orders/${orderId}/print/receipt`)) });
             } catch (err) {
                 payButton.classList.remove('is-loading');
                 error.textContent = err.message;
@@ -393,9 +379,6 @@
 
     @if($canPay && request()->boolean('pay'))
     openDialog('paymentDialog');
-    @endif
-    @if(request()->boolean('print'))
-    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
     @endif
 })();
 </script>

@@ -196,7 +196,7 @@
 <script type="speculationrules">
 {"prerender": [{"where": {"and": [
     {"href_matches": "/*"},
-    {"not": {"href_matches": "/*\\?*print=*"}},
+    {"not": {"href_matches": "*/print/*"}},
     {"not": {"href_matches": "*/download*"}},
     {"not": {"selector_matches": "[data-no-prerender], [target=_blank]"}}
 ]}, "eagerness": "moderate"}]}
