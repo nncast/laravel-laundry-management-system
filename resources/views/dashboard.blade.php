@@ -639,7 +639,9 @@ hr {
 @media (max-width: 640px) {
     .welcome-banner { padding: 22px 20px; min-height: 0; }
     .welcome-banner h1 { font-size: 23px; }
-    .welcome-art { position: absolute; right: -36px; top: -22px; width: 150px; opacity: 0.55; margin: 0; }
+    /* Small and in the corner, with room kept beside the greeting so they don't overlap */
+    .welcome-art { position: absolute; right: 10px; top: 12px; width: 96px; margin: 0; }
+    .welcome-banner h1 { margin-right: 92px; }
     .welcome-copy { max-width: none; }
 }
 /* Needs attention: problems found automatically on each load */
