@@ -146,6 +146,15 @@ class LaundryAppTest extends TestCase
         $this->assertSame('cash', $order->payments()->first()->payment_method);
     }
 
+    public function test_discount_is_never_more_than_the_order(): void
+    {
+        // 2 x 100 + 20 addon = 220, so a 1000 discount only takes off 220
+        $order = $this->createOrder(['discount' => 1000]);
+
+        $this->assertEquals(220, $order->discount);
+        $this->assertEquals(0, $order->total);
+    }
+
     public function test_pos_ignores_prices_sent_by_the_browser(): void
     {
         $order = $this->createOrder([

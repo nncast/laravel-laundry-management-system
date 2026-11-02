@@ -139,7 +139,8 @@ class Order extends Model
      * Recalculate subtotal/total from the items and add-ons stored in the database.
      *
      * subtotal = sum of item totals (services only)
-     * total    = subtotal + add-ons - discount (never negative)
+     * discount = at most subtotal + add-ons, so reports never count more discount than was given
+     * total    = subtotal + add-ons - discount
      */
     public function calculateTotals(): void
     {
@@ -149,9 +150,11 @@ class Order extends Model
 
         $itemsTotal = (float) $this->items()->sum('total');
         $addonsTotal = (float) $this->addons()->sum('order_addons.price');
+        $gross = round($itemsTotal + $addonsTotal, 2);
 
         $this->subtotal = round($itemsTotal, 2);
-        $this->total = max(0, round($itemsTotal + $addonsTotal - (float) $this->discount, 2));
+        $this->discount = min(max(0, round((float) $this->discount, 2)), $gross);
+        $this->total = round($gross - (float) $this->discount, 2);
     }
 
     /**
