@@ -68,6 +68,14 @@ if (!function_exists('fmt_datetime')) {
     }
 }
 
+if (!function_exists('fmt_weight')) {
+    /** A weight in kg, without trailing zeros: 5.5 kg. */
+    function fmt_weight($kg): string
+    {
+        return rtrim(rtrim(fmt_number($kg, 2), '0'), '.,') . ' kg';
+    }
+}
+
 if (!function_exists('asset_v')) {
     /**
      * URL of a file in public/ with its modification time as the version, so browsers

@@ -1,7 +1,7 @@
 <div align="center"><img src="docs/logo.png" width="100" alt="Soap Opera logo"></div>
 <h1 align="center">Soap Opera</h1>
 <div align="center">
-<img src="https://img.shields.io/badge/version-2.0.0-1766DC?style=flat-square" alt="version">
+<img src="https://img.shields.io/badge/version-2.3.0-1766DC?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-complete-1766DC?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
@@ -13,7 +13,7 @@
 **Soap Opera** is a web-based **Laravel** laundry management system for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone. It is built for touch screens at the counter: every control is sized for a finger, in a blue-and-white design with the bubble mascot.
 
-> **Current version: v2.0.0** — a touch-first redesign of every screen except the sign-in page: a new point of sale (one tap per item, customer type-ahead, Repeat last order, a payment sheet with keypad, quick cash and change due), a dashboard of KPI tiles and a Needs attention center, order status tabs with bulk updates and saved views, a new **Ready for pickup** status, and one accessible design system (WCAG AA contrast, 44 px+ touch targets). See [docs/DESIGN.md](docs/DESIGN.md) for the UX audit, page blueprints and design system. Built on v1.3.0: discounts as a peso amount or a percentage, and restored backups brought up to the current database automatically. Built on v1.2.0: a flatter look around the bubble mascot (with arms, legs and facial expressions), a **Needs attention** panel on the dashboard and a daily automatic backup. Built on v1.1.0: the app is now **Soap Opera**, with a new blue-and-white bubble look on every page, a redesigned login page and dashboard, and a POS that groups services into sections by service type. Built on v1.0.0, the first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
+> **Current version: v2.3.0** — printed documents: a numbered **receipt** for every payment, a **claim ticket** for the customer and a **job order** that travels with the laundry, on 58 or 80 mm receipt rolls, A4 or Letter. One click prints them from the POS or the order, they download as PDFs, and their QR code and barcode open the order when scanned. Orders now have a ready-by date and an optional weight. Built on v2.2.0: fast with 50,000 customers and 100,000 orders (the dashboard opens in about 0.3 s instead of 3.6 s, the POS in 20 ms, and a year of sales reports and CSV exports that used to run out of memory), with pages that update in place instead of reloading. Built on v2.1.0: ten currencies (PHP, USD, EUR, JPY, GBP, CAD, AUD, SGD, MYR, IDR) and the number, date and time formats chosen in Settings; every order keeps the currency it was taken in. Built on v2.0.0: a touch-first redesign of every screen except the sign-in page: a new point of sale (one tap per item, customer type-ahead, Repeat last order, a payment sheet with keypad, quick cash and change due), a dashboard of KPI tiles and a Needs attention center, order status tabs with bulk updates and saved views, a new **Ready for pickup** status, and one accessible design system (WCAG AA contrast, 44 px+ touch targets). See [docs/DESIGN.md](docs/DESIGN.md) for the UX audit, page blueprints and design system. Built on v1.3.0: discounts as a peso amount or a percentage, and restored backups brought up to the current database automatically. Built on v1.2.0: a flatter look around the bubble mascot (with arms, legs and facial expressions), a **Needs attention** panel on the dashboard and a daily automatic backup. Built on v1.1.0: the app is now **Soap Opera**, with a new blue-and-white bubble look on every page, a redesigned login page and dashboard, and a POS that groups services into sections by service type. Built on v1.0.0, the first stable release: real database backup and restore, correct order totals and payments, role-based access, faster pages and a mobile-friendly layout. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for the release notes.
 
 <p align="center">
   <img width="400" alt="Login" src="docs/screenshots/login.png" />
@@ -22,6 +22,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
   <img width="400" alt="Payment with keypad and quick cash" src="docs/screenshots/pos-payment.png" />
   <img width="400" alt="Orders" src="docs/screenshots/orders.png" />
   <img width="400" alt="Order details" src="docs/screenshots/order-details.png" />
+  <img width="400" alt="Printing a receipt on an 80 mm roll" src="docs/screenshots/print-receipt.png" />
   <img width="400" alt="Sales report" src="docs/screenshots/sales-report.png" />
 </p>
 
@@ -39,14 +40,26 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 - One tap adds a service; big steppers change amounts; add-ons are one-tap chips; Undo when removing
 - Services grouped by type, with type chips and search (Enter adds the first match)
 - Customer type-ahead by name or phone, recent customers, new customer without leaving the order, and **Repeat last order**
-- Discounts as a peso amount or a percentage, with 5/10/15/20% shortcuts (the order keeps its percentage when edited)
+- Discounts as a fixed amount or a percentage, with 5/10/15/20% shortcuts (the order keeps its percentage when edited)
+- Ready-by date filled in from the shop's usual turnaround, with **Same day** and **Next day** one tap away, and an optional weight in kg
 - Payment sheet with cash, card, transfer or other, quick cash amounts, an on-screen keypad and the change due; **Pay later** for payment at pickup; only the amount owed is recorded
 - Three panels on desktops, two on landscape tablets, and a slide-up order on phones; an unsaved order survives a page refresh
+- Once saved: print the claim ticket, the job order and the receipt in one click each, without leaving the POS
 
 **Orders**
 - Status flow: **Pending → Processing → Ready for pickup → Completed** (or Cancelled)
 - Status tabs with counts, payment and date filters, saved views, one-tap next step and bulk status updates, all with Undo
-- Order details with progress, payment history, a payment dialog with change due, notes, editing and a receipt printout
+- Order details with progress, ready-by date, payment history (each payment with its receipt number and cashier), a payment dialog with change due, notes and editing
+- The search box opens an order from its number, or from a scanned ticket: a USB scanner reads the barcode, a 2D scanner or phone the QR code
+
+**Printing**
+- **Receipt** for a payment: receipt number, order number, customer, date and time, services with quantity and unit price, weight, discount, total, payments, balance, method and cashier. Before any payment it prints as an invoice
+- **Claim ticket** for the customer: order number in large type, ready-by date, services, total quantity, weight and the amount to pay at pickup
+- **Job order** for the shop: services to tick off, instructions and notes, a box for stains or damage found, and a processing checklist (counted, sorted, washed, dried, folded, packed, checked)
+- 58 mm and 80 mm receipt rolls (a receipt PDF is as long as the receipt), A4 and Letter; the print page shows the document as it will print
+- PDF download, and **Share** on phones and tablets (email, chat apps)
+- A QR code of the order on every document, and a Code 128 barcode of the order number on 80 mm paper and up
+- Logo, header (e.g. tax number), thank-you and promo messages, pickup instructions and terms, set in Settings without code; documents use the order's currency and the shop's date format
 
 **Records**
 - Customers with contact number and address, their number of orders, last visit and balance due
@@ -58,7 +71,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 - Dashboard KPI tiles (today's, active, ready and overdue orders; revenue today and this month; money collected today; unpaid balance), each opening the matching order list
 - Weekly / monthly / yearly sales chart and top services
 - Daily, Sales and Order reports with date presets and status filters
-- CSV export (opens in Excel) and print
+- CSV export (opens in Excel) and print; long ranges load page by page and stream to the file
 
 **Automations**
 - **Needs attention** on the dashboard, checked on every visit: overdue orders (Pending 1+ day or Processing 3+ days), orders ready for pickup (with a one-tap **Picked up**), completed orders that are not fully paid, products at or below their minimum stock, and, for admins, whether backups are still being made
@@ -66,6 +79,8 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 
 **Settings & Backup**
 - Business name, address, contact number and logo (favicon)
+- Currency (10 currencies) and number, date and time formats, with a live preview
+- Receipts & printing: logo, texts, default paper, the usual turnaround in days, QR code and barcode on or off
 - One-click database backup (`.sql` file with all data)
 - Restore from a backup, with an automatic safety backup taken first
 
@@ -87,6 +102,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 | Framework | Laravel 12 |
 | Front end | Blade templates, plain CSS and JavaScript (one design system: `public/css/app.css`, `public/js/app.js`), Font Awesome |
 | Database | MySQL / MariaDB (XAMPP or Laragon) or SQLite |
+| Documents | [dompdf](https://github.com/dompdf/dompdf) (PDFs, LGPL-2.1) and [php-qrcode](https://github.com/chillerlan/php-qrcode) (QR codes, MIT); the Code 128 barcode is drawn by the app |
 | Tests | PHPUnit (`php artisan test`) |
 
 ## Requirements
@@ -111,7 +127,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 git clone https://github.com/nncast/laravel-laundry-management-system.git
 cd laravel-laundry-management-system
 ```
-Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v2.0.0.zip) and extract it.
+Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v2.3.0.zip) and extract it.
 
 ### 3. Install dependencies
 ```bash
@@ -217,6 +233,10 @@ Go to **Settings → Backups**.
 - **Restore backup** replaces all current data with a backup made by this system. A safety backup of the current data is saved to `storage/app/backups` first, and you are logged out afterwards.
 
 ## Upgrading
+
+**From v2.x to v2.3.0:** pull or download the latest version, then run `composer install` (it adds the PDF and QR code libraries) and `php artisan migrate` (ready-by dates, weights, the cashier on each payment and the receipt settings). Then set up your receipts under **Settings → Receipts & printing**. Orders taken before the upgrade have no ready-by date or weight; their documents show a dash instead.
+
+**Printing tips:** a receipt printer prints the 58 or 80 mm documents through its Windows or Android driver; pick the roll as the paper size and set the margins to none in the print dialog. For printing without the dialog, start Chrome or Edge with `--kiosk-printing`. QR codes link to the address the app was opened from, so open the app by the computer's network address (not `localhost`) if phones should open scanned orders.
 
 **From v1.x to v2.0.0:** pull or download the latest version, replace the files, then run `php artisan migrate`. It adds the **Ready for pickup** order status (and, coming from v1.2 or older, a column so a discount can be a percentage; existing orders keep their peso discounts). Your data, business name, address and logo are kept. If a page still looks like the old version, refresh it once more so the browser loads the new styles.
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
@@ -13,12 +14,8 @@ class Payment extends Model
         'order_id',
         'amount',
         'payment_method',
+        'received_by',
     ];
-
-    public function order()
-    {
-        return $this->belongsTo(Order::class);
-    }
 
     /**
      * The attributes that should be cast.
@@ -29,27 +26,28 @@ class Payment extends Model
         'amount' => 'decimal:2',
     ];
 
-    /**
-     * Get formatted amount attribute
-     */
-    public function getFormattedAmountAttribute()
+    /** Every payment remembers who took it: the cashier on its receipt. */
+    protected static function booted(): void
     {
-        return '₱' . number_format($this->amount, 2);
+        static::creating(function (Payment $payment) {
+            $payment->received_by ??= session('staff.id');
+        });
     }
 
-    /**
-     * Get payment date from created_at
-     */
-    public function getPaymentDateAttribute()
+    public function order(): BelongsTo
     {
-        return $this->created_at->format('Y-m-d H:i:s');
+        return $this->belongsTo(Order::class);
     }
 
-    /**
-     * Get payment date in human readable format
-     */
-    public function getPaymentDateFormattedAttribute()
+    /** The staff member who took the payment. */
+    public function receiver(): BelongsTo
     {
-        return $this->created_at->format('M d, Y h:i A');
+        return $this->belongsTo(Staff::class, 'received_by');
+    }
+
+    /** The number on its receipt, e.g. R-000123. */
+    public function getReceiptNumberAttribute(): string
+    {
+        return 'R-' . str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
     }
 }

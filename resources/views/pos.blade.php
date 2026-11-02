@@ -130,6 +130,8 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
 .success-body .mascot { width: 120px; }
 .ok-change { display: grid; gap: 2px; padding: var(--s-3) var(--s-5); border-radius: var(--radius); background: var(--success-soft); color: var(--success-text); }
 .ok-change strong { font-size: 30px; }
+.ok-print { display: grid; gap: var(--s-2); width: 100%; margin-top: var(--s-2); }
+.ok-print .cluster .btn { flex: 1 1 auto; }
 .success-actions { flex-wrap: wrap; }
 .success-actions .btn-primary { flex-basis: 100%; min-height: 56px; }
 
@@ -218,6 +220,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     $posAddons = $addonChoices->map(fn ($a) => [$a['id'], $a])->values();
     $customerJson = fn ($c) => $c ? ['id' => $c->id, 'name' => $c->name, 'contact' => $c->contact] : null;
     $posRecent = $recentCustomers->map($customerJson)->values();
+    $turnaround = (int) $system->turnaround_days;   // days until the order is ready, by default
 
     $initial = [
         'orderId' => $editing ? $order->id : null,
@@ -225,6 +228,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         'addons' => $editing ? $order->addons->pluck('id')->values() : [],
         'customer' => $customerJson($editing ? $order->customer : ($preselectedCustomer ?? null)),
         'date' => $editing ? $order->order_date?->toDateString() : null,
+        'readyBy' => $editing ? $order->ready_by?->toDateString() : null,
         'discountType' => $editing && $order->discount_percent !== null ? 'percent' : 'amount',
         'discountValue' => $editing ? (float) ($order->discount_percent ?? $order->discount) : 0,
         'paid' => $editing ? (float) $order->paid_amount : 0,
@@ -325,13 +329,28 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
                 </div>
                 @endif
                 <div class="panel-block form-grid">
+                    <div class="form-row">
+                        <div class="field">
+                            <label class="label" for="orderDate">Order date</label>
+                            <input class="input" type="date" id="orderDate">
+                        </div>
+                        <div class="field">
+                            <label class="label" for="readyBy">Ready by</label>
+                            <input class="input" type="date" id="readyBy">
+                        </div>
+                    </div>
+                    <div class="chips" id="readyChips" role="group" aria-label="Ready by">
+                        <button type="button" class="chip" data-days="0" aria-pressed="false">Same day</button>
+                        <button type="button" class="chip" data-days="1" aria-pressed="false">Next day</button>
+                        @if($turnaround > 1)<button type="button" class="chip" data-days="{{ $turnaround }}" aria-pressed="false">In {{ $turnaround }} days</button>@endif
+                    </div>
                     <div class="field">
-                        <label class="label" for="orderDate">Order date</label>
-                        <input class="input" type="date" id="orderDate">
+                        <label class="label" for="weight">Weight in kg <span class="muted">(optional)</span></label>
+                        <input class="input" type="number" id="weight" min="0" max="9999" step="any" inputmode="decimal" value="{{ $editing && $order->weight !== null ? (float) $order->weight : '' }}">
                     </div>
                     <div class="field">
                         <label class="label" for="notes">Notes</label>
-                        <textarea class="textarea" id="notes" rows="2" maxlength="500" placeholder="Stains, special care, pickup time…">{{ $editing ? $order->notes : '' }}</textarea>
+                        <textarea class="textarea" id="notes" rows="2" maxlength="500" placeholder="Stains, special care…">{{ $editing ? $order->notes : '' }}</textarea>
                     </div>
                 </div>
             </div>
@@ -466,10 +485,17 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         <p class="muted" id="okNumber"></p>
         <div class="ok-change" id="okChange" hidden><span>Change to give back</span><strong id="okChangeAmount"></strong></div>
         <p id="okBalance"></p>
+        <div class="ok-print">
+            <span class="eyebrow"><i class="fas fa-print" aria-hidden="true"></i> Print</span>
+            <div class="cluster">
+                <a class="btn btn-secondary" id="okTicket" href="#" data-print><i class="fas fa-ticket" aria-hidden="true"></i> Claim ticket</a>
+                <a class="btn btn-secondary" id="okJob" href="#" data-print><i class="fas fa-clipboard-list" aria-hidden="true"></i> Job order</a>
+                <a class="btn btn-secondary" id="okReceipt" href="#" data-print><i class="fas fa-receipt" aria-hidden="true"></i> Receipt</a>
+            </div>
+        </div>
     </div>
     <div class="dialog-footer success-actions">
-        <a class="btn btn-secondary" id="okPrint" href="#"><i class="fas fa-print" aria-hidden="true"></i> Print receipt</a>
-        <a class="btn btn-secondary" id="okView" href="#"><i class="fas fa-receipt" aria-hidden="true"></i> View order</a>
+        <a class="btn btn-secondary" id="okView" href="#"><i class="fas fa-eye" aria-hidden="true"></i> View order</a>
         <a class="btn btn-primary" href="{{ route('pos.index') }}" id="okNew"><i class="fas fa-plus" aria-hidden="true"></i> Next order</a>
     </div>
 </dialog>
@@ -500,7 +526,9 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     const recent = @json($posRecent);
     const initial = @json($initial);
     const editing = initial.orderId !== null;
-    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+    const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = ymd(new Date());
+    const TURNAROUND = @json($turnaround);
     const DRAFT = 'soapOpera.posDraft';
 
     // ---------------- State ----------------
@@ -880,6 +908,8 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         const payload = {
             customer_id: state.customer.id,
             order_date: $('orderDate').value || today,
+            ready_by: $('readyBy').value || null,
+            weight: $('weight').value || null,
             notes: $('notes').value,
             discount: t.value,
             discount_type: discountType(),
@@ -907,7 +937,10 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         $('okChange').hidden = change <= 0;
         $('okChangeAmount').textContent = money(change);
         $('okBalance').textContent = order.balance > 0 ? `${money(order.balance)} to collect at pickup.` : 'Paid in full.';
-        $('okPrint').href = appUrl(`orders/${order.id}/details?print=1`);
+        $('okTicket').href = appUrl(`orders/${order.id}/print/ticket`);
+        $('okJob').href = appUrl(`orders/${order.id}/print/job`);
+        $('okReceipt').href = appUrl(`orders/${order.id}/print/receipt`);
+        $('okReceipt').hidden = !(order.paid_amount > 0);   // a receipt is for a payment
         $('okView').href = appUrl(`orders/${order.id}/details`);
         openDialog('successDialog');
         $('okNew').focus();
@@ -1019,8 +1052,30 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     function clearDraft() { try { localStorage.removeItem(DRAFT); } catch (e) { /* storage blocked */ } }
     $('notes').addEventListener('input', saveDraft);
 
+    // ---------------- Ready by: the shop's usual turnaround, or a tap for rush jobs ----------------
+    // Kept as days after the order date, so changing the order date moves it along
+    const shiftDate = (date, days) => { const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + days); return ymd(d); };
+    const daysBetween = (from, to) => Math.round((new Date(`${to}T12:00:00`) - new Date(`${from}T12:00:00`)) / 864e5);
+    let readyDays = initial.readyBy ? daysBetween(initial.date, initial.readyBy) : TURNAROUND;
+    function showReadyBy() {
+        const start = $('orderDate').value || today;
+        $('readyBy').min = start;
+        $('readyBy').value = shiftDate(start, readyDays);
+        document.querySelectorAll('#readyChips [data-days]').forEach(chip => chip.setAttribute('aria-pressed', String(Number(chip.dataset.days) === readyDays)));
+    }
+    $('readyChips').addEventListener('click', e => {
+        const chip = e.target.closest('[data-days]');
+        if (chip) { readyDays = Number(chip.dataset.days); showReadyBy(); }
+    });
+    $('readyBy').addEventListener('change', () => {
+        if ($('readyBy').value) readyDays = Math.max(0, daysBetween($('orderDate').value || today, $('readyBy').value));
+        showReadyBy();
+    });
+    $('orderDate').addEventListener('change', showReadyBy);
+
     // ---------------- Start ----------------
     $('orderDate').value = initial.date || today;
+    showReadyBy();
     renderRecent();
     let preset = initial.customer;
     if (!editing && !preset) {

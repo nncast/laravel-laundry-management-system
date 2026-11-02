@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Staff;
-use App\Models\SystemSetting;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -98,6 +97,11 @@ class OrderController extends Controller
             return response()->json(['exact' => null, 'orders' => []]);
         }
 
+        // A 2D scanner reading the QR code on a ticket types the order's address
+        if (preg_match('~/orders/(\d+)~', $term, $match) && ($id = Order::whereKey($match[1])->value('id'))) {
+            return response()->json(['exact' => route('orders.details', $id), 'orders' => []]);
+        }
+
         $exact = Order::where('order_number', $term)->value('id');
         $orders = $this->search(Order::query(), $term)
             ->with('customer:id,name')
@@ -153,14 +157,6 @@ class OrderController extends Controller
     }
 
     /**
-     * Printing is done from the details page (it has print styles).
-     */
-    public function print(Order $order)
-    {
-        return redirect()->route('orders.details', ['order' => $order, 'print' => 1]);
-    }
-
-    /**
      * Order details page.
      */
     public function details(Order $order)
@@ -170,12 +166,10 @@ class OrderController extends Controller
             'staff:id,name',
             'items.service:id,name',
             'addons',
-            'payments',
+            'payments.receiver:id,name',
         ]);
 
-        $settings = SystemSetting::first() ?? new SystemSetting();
-
-        return view('order-details', compact('order', 'settings'));
+        return view('order-details', compact('order'));
     }
 
     /**
