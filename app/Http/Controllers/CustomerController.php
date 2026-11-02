@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Order;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -29,6 +30,14 @@ class CustomerController extends Controller
                       ->orWhere('address', 'like', "%{$search}%");
                 });
             })
+            // What the counter wants to know at a glance: how often they come and what they owe
+            ->withCount('orders')
+            ->addSelect([
+                'balance_due' => Order::selectRaw('COALESCE(SUM(total - paid_amount), 0)')
+                    ->whereColumn('customer_id', 'customers.id')->unpaid(),
+                'last_order_date' => Order::select('order_date')
+                    ->whereColumn('customer_id', 'customers.id')->orderByDesc('order_date')->limit(1),
+            ])
             ->orderBy('id', 'desc')
             ->paginate(15)
             ->withQueryString();

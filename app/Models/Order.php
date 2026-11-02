@@ -16,6 +16,13 @@ class Order extends Model
     /** In workflow order. "ready" = washed and waiting for pickup. */
     public const STATUSES = ['pending', 'processing', 'ready', 'completed', 'cancelled'];
 
+    /** Statuses of orders still in the shop. */
+    public const OPEN_STATUSES = ['pending', 'processing', 'ready'];
+
+    /** An order is overdue once it has been pending/processing this many days. */
+    public const OVERDUE_PENDING_DAYS = 1;
+    public const OVERDUE_PROCESSING_DAYS = 3;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -324,6 +331,30 @@ class Order extends Model
     public function scopeByStaff($query, $staffId)
     {
         return $query->where('staff_id', $staffId);
+    }
+
+    /**
+     * Scope: orders waiting too long (see OVERDUE_* above). order_date is stored
+     * as Y-m-d text, so string comparison works on SQLite and MySQL.
+     */
+    public function scopeOverdue($query)
+    {
+        $today = Carbon::today();
+
+        return $query->where(function ($q) use ($today) {
+            $q->where(fn ($q) => $q->where('status', 'pending')
+                    ->where('order_date', '<=', $today->copy()->subDays(self::OVERDUE_PENDING_DAYS)->toDateString()))
+              ->orWhere(fn ($q) => $q->where('status', 'processing')
+                    ->where('order_date', '<=', $today->copy()->subDays(self::OVERDUE_PROCESSING_DAYS)->toDateString()));
+        });
+    }
+
+    /**
+     * Scope: orders with money still owed (cancelled orders owe nothing).
+     */
+    public function scopeUnpaid($query)
+    {
+        return $query->where('status', '!=', 'cancelled')->whereColumn('paid_amount', '<', 'total');
     }
 
     /**

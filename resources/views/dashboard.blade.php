@@ -1,1159 +1,474 @@
 @extends('layouts.app')
 
 @section('title', 'Dashboard')
-@section('page-title', 'Dashboard')
-@section('active-dashboard', 'active')
 
-@section('content')
+@php
+    $hour = now()->hour;
+    $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+    $firstName = strtok(session('staff.name') ?? 'there', ' ');
+    $role = session('staff.role');
+    $isManager = in_array($role, ['manager', 'admin'], true);
+    $isAdmin = $role === 'admin';
+    $today = today()->toDateString();
+    $pesos = fn ($value) => '₱' . number_format((float) $value, 0);  // tiles show whole pesos; reports have centavos
 
+    // [label, icon, tone, value, meta, link (null = not a link), alert]
+    $kpis = [
+        ["Today's orders", 'fa-basket-shopping', 'tone-blue', $todayOrders, $todayPending . ' not started yet', route('orders.index', ['from' => $today, 'to' => $today]), false],
+        ['Active orders', 'fa-spinner', 'tone-sky', $openOrders, $pendingOrders . ' pending · ' . $processingOrders . ' processing', route('orders.index', ['status' => 'open']), false],
+        ['Ready for pickup', 'fa-bell', 'tone-violet', $readyCount, 'Waiting for customers', route('orders.index', ['status' => 'ready']), false],
+        ['Overdue', 'fa-hourglass-half', 'tone-red', $overdueCount, $stuckRule, route('orders.index', ['status' => 'overdue']), $overdueCount > 0],
+        ['Revenue today', 'fa-sack-dollar', 'tone-green', $pesos($todayRevenue), $todayCompleted . ' completed today', $isAdmin ? route('reports.daily') : null, false],
+        ['Collected today', 'fa-hand-holding-dollar', 'tone-aqua', $pesos($collectedToday), 'Payments taken at the counter', $isAdmin ? route('reports.daily') : null, false],
+        ['Revenue this month', 'fa-chart-line', 'tone-indigo', $pesos($monthRevenue), null, $isAdmin ? route('reports.sales') : null, false],
+        ['Unpaid balance', 'fa-file-invoice', 'tone-amber', $pesos($unpaidBalance), $unpaidCount . ' ' . \Illuminate\Support\Str::plural('order', $unpaidCount) . ' still owe', route('orders.index', ['payment' => 'unpaid']), false],
+    ];
+
+    // Action center: [key, tab label, icon, items, "view all" link]
+    $groups = [
+        ['overdue', 'Overdue', 'fa-hourglass-half', $stuckOrders, route('orders.index', ['status' => 'overdue'])],
+        ['ready', 'Ready for pickup', 'fa-bell', $readyOrders, route('orders.index', ['status' => 'ready'])],
+        ['unpaid', 'Picked up, unpaid', 'fa-file-invoice', $unpaidOrders, route('orders.index', ['status' => 'completed', 'payment' => 'unpaid'])],
+    ];
+    if ($isManager) {
+        $groups[] = ['stock', 'Low stock', 'fa-box-open', $lowStock, route('products.index')];
+    }
+    $attentionCount = collect($groups)->sum(fn ($g) => $g[3]->count());
+    $firstGroup = collect($groups)->first(fn ($g) => $g[3]->isNotEmpty())[0] ?? null;
+@endphp
+
+@section('page-header')
+<header class="page-header dash-header">
+    <x-mascot mood="wave" class="dash-mascot mascot-ink" />
+    <div class="page-heading">
+        <p class="eyebrow">{{ now()->format('l, F j') }}</p>
+        <h1 class="page-title">{{ $greeting }}, {{ $firstName }}</h1>
+        <p class="page-subtitle">
+            @if($attentionCount === 1) 1 thing needs you today.
+            @elseif($attentionCount) {{ $attentionCount }} things need you today.
+            @else Everything is on track. Fresh loads, zero drama.
+            @endif
+        </p>
+    </div>
+</header>
+@endsection
+
+@push('styles')
 <style>
-/* Dashboard CSS - Modern & Responsive */
-:root {
-    --primary-color: var(--accent);
-    --primary-dark: var(--accent-hover);
-    --secondary-color: var(--text-muted);
-    --success-color: var(--success);
-    --danger-color: var(--danger);
-    --warning-color: var(--warning);
-    --info-color: var(--info);
-    --light-color: var(--surface-muted);
-    --dark-color: var(--text);
-    --white: #ffffff;
-    --gray-light: var(--surface-sunken);
-    --border-color: var(--border);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --transition: all 0.3s ease;
-}
-
-/* Dashboard Container */
-.dashboard-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 40px;
-}
-
-.stat-card {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 25px;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-    border-left: 4px solid var(--primary-color);
-    position: relative;
-    overflow: hidden;
-}
-
-.stat-card:hover {
-    box-shadow: var(--shadow-md);
-}
-
-.stat-card:nth-child(2) {
-    border-left-color: var(--warning-color);
-}
-
-.stat-card:nth-child(3) {
-    border-left-color: var(--success-color);
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: var(--primary-color);
-    opacity: 0.3;
-}
-
-.stat-card h2 {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--secondary-color);
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.stat-value {
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--dark-color);
-    margin-bottom: 5px;
-    line-height: 1.2;
-}
-
-.stat-trend {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--secondary-color);
-}
-
-.stat-trend.positive {
-    color: var(--success-color);
-}
-
-.stat-trend.negative {
-    color: var(--danger-color);
-}
-
-.stat-icon {
-    position: absolute;
-    top: 25px;
-    right: 25px;
-    font-size: 40px;
-    color: rgba(37, 99, 235, 0.1);
-}
-
-/* Main Content Grid */
-.main-content-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-/* Chart Section */
-.chart-section {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 30px;
-    box-shadow: var(--shadow-sm);
-}
-
-.chart-section h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--dark-color);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.chart-section h2 i {
-    color: var(--primary-color);
-}
-
-.chart-container {
-    height: 300px;
-    position: relative;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-
-.chart-legend {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 15px;
-    flex-wrap: wrap;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--secondary-color);
-}
-
-.legend-color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-
-.chart-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.chart-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--border-color);
-    background: var(--white);
-    border-radius: 4px;
-    font-size: 12px;
-    color: var(--secondary-color);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.chart-btn:hover, .chart-btn.active {
-    background: var(--primary-color);
-    color: var(--white);
-    border-color: var(--primary-color);
-}
-
-/* Recent Orders Section */
-.recent-orders {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 30px;
-    box-shadow: var(--shadow-sm);
-}
-
-.recent-orders h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--dark-color);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.recent-orders h2 i {
-    color: var(--warning-color);
-}
-
-/* Tables */
-.dashboard-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-.dashboard-table thead {
-    background: var(--light-color);
-}
-
-.dashboard-table th {
-    padding: 15px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--dark-color);
-    border-bottom: 2px solid var(--border-color);
-    white-space: nowrap;
-}
-
-.dashboard-table td {
-    padding: 15px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--dark-color);
-}
-
-.dashboard-table tbody tr {
-    transition: var(--transition);
-}
-
-.dashboard-table tbody tr:hover {
-    background: var(--light-color);
-}
-
-/* Status Badges */
-.status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.status-pending {
-    background: rgba(255, 193, 7, 0.1);
-    color: var(--warning-color);
-}
-
-.status-processing {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--primary-color);
-}
-
-.status-completed {
-    background: rgba(22, 163, 74, 0.1);
-    color: var(--success-color);
-}
-
-.status-cancelled {
-    background: rgba(220, 38, 38, 0.1);
-    color: var(--danger-color);
-}
-
-/* Bottom Grid */
-.bottom-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 30px;
-    margin-bottom: 40px;
-}
-
-/* Services Section */
-.services-section {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 30px;
-    box-shadow: var(--shadow-sm);
-}
-
-.services-section h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--dark-color);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.services-section h2 i {
-    color: var(--info-color);
-}
-
-/* Income Card */
-.income-card {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 30px;
-    box-shadow: var(--shadow-sm);
-    text-align: center;
-    background: var(--primary-color);
-    color: var(--white);
-}
-
-.income-card h2 {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 20px;
-    opacity: 0.9;
-}
-
-.income-card .income-value {
-    font-size: 48px;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.income-card .income-subtitle {
-    font-size: 14px;
-    opacity: 0.8;
-    margin-bottom: 20px;
-}
-
-.income-stats {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.income-stat {
-    text-align: center;
-}
-
-.income-stat .stat-label {
-    font-size: 12px;
-    opacity: 0.8;
-    margin-bottom: 5px;
-}
-
-.income-stat .stat-value {
-    font-size: 18px;
-    font-weight: 600;
-}
-
-/* Divider */
-hr {
-    border: none;
-    height: 1px;
-    background: var(--border-color);
-    margin: 30px 0;
-    opacity: 0.5;
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-    .main-content-grid,
-    .bottom-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-}
-
-@media (max-width: 768px) {
-    .dashboard-container {
-        padding: 15px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stat-card {
-        padding: 20px;
-    }
-    
-    .stat-value {
-        font-size: 32px;
-    }
-    
-    .chart-container {
-        height: 250px;
-    }
-    
-    .chart-section,
-    .recent-orders,
-    .services-section,
-    .income-card {
-        padding: 20px;
-    }
-    
-    .dashboard-table th,
-    .dashboard-table td {
-        padding: 12px 10px;
-    }
-    
-    .income-card .income-value {
-        font-size: 40px;
-    }
-}
-
-@media (max-width: 576px) {
-    .stat-value {
-        font-size: 28px;
-    }
-
-    .dashboard-container {
-        padding: 0;
-    }
-
-    .chart-section {
-        padding: 16px 12px;
-    }
-
-    .chart-section h2 {
-        font-size: 18px;
-    }
-
-    .chart-legend {
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
-        font-size: 12px;
-    }
-
-    .chart-actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 6px;
-    }
-
-    .chart-actions .chart-btn {
-        flex: 1 1 0;
-        min-width: 0;
-        padding: 8px 6px;
-        font-size: 12px;
-    }
-    
-    .stat-icon {
-        font-size: 32px;
-        top: 20px;
-        right: 20px;
-    }
-    
-    .chart-container {
-        height: 200px;
-    }
-    
-    .income-card .income-value {
-        font-size: 32px;
-    }
-    
-    .income-stats {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .dashboard-table {
-        font-size: 13px;
-    }
-    
-    .dashboard-table th,
-    .dashboard-table td {
-        padding: 10px 8px;
-    }
-}
-
-/* Recent orders: keep the order number on one line */
-.recent-orders .dashboard-table th,
-.recent-orders .dashboard-table td {
-    padding: 12px 10px;
-    font-size: 13px;
-}
-.recent-orders .dashboard-table .order-no,
-.recent-orders .dashboard-table td:last-child {
-    white-space: nowrap;
-    font-weight: 600;
-}
-.recent-orders .status-badge {
-    padding: 4px 8px;
-    font-size: 10px;
-}
-
-/* Wide tables scroll inside their card instead of stretching the page */
-.recent-orders,
-.services-section {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    min-width: 0;
-}
-.main-content-grid > *,
-.bottom-grid > * {
-    min-width: 0;
-}
-
-/* Print Styles */
-@media print {
-    .dashboard-container {
-        padding: 10px;
-        max-width: 100%;
-    }
-    
-    .stat-card,
-    .chart-section,
-    .recent-orders,
-    .services-section,
-    .income-card {
-        box-shadow: none;
-        border: 1px solid var(--border-color);
-        page-break-inside: avoid;
-    }
-    
-    .stat-card:hover {
-        transform: none;
-    }
-}
-
-/* ---- Soap Opera dashboard ---- */
-.welcome-banner {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 20px;
-    padding: 28px 32px;
-    min-height: 220px;
-    border-radius: var(--radius-lg);
-    background: var(--grad-brand);
-    color: #fff;
-    overflow: hidden;
-    box-shadow: none;
-}
-.welcome-banner::before, .welcome-banner::after {
-    content: ""; position: absolute; border-radius: 50%; pointer-events: none;
-    background: rgba(255,255,255,0.08);
-}
-.welcome-banner::before { width: 340px; height: 340px; right: -60px; top: -150px; }
-.welcome-banner::after { width: 220px; height: 220px; left: 38%; bottom: -150px; }
-.welcome-copy { position: relative; z-index: 1; max-width: 560px; }
-.welcome-eyebrow {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 12px; border-radius: var(--radius-pill);
-    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
-    font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
-}
-.welcome-banner h1 { margin: 12px 0 4px; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
-.welcome-banner p { font-size: 14.5px; opacity: 0.9; }
-.welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.welcome-chip {
-    padding: 6px 12px; border-radius: var(--radius-pill);
-    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.28);
-    font-size: 13px;
-}
-.welcome-chip b { font-weight: 800; margin-right: 2px; }
-.welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-.welcome-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    height: 42px; padding: 0 20px; border-radius: var(--radius-pill);
-    font-size: 14px; font-weight: 700; text-decoration: none; transition: var(--transition);
-}
-.welcome-btn-light { background: #fff; color: var(--accent); box-shadow: none; }
-.welcome-btn-light:hover { background: #f4f9ff; }
-.welcome-btn-glass { color: #fff; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35); }
-.welcome-btn-glass:hover { background: rgba(255,255,255,0.24); }
-.welcome-art {
-    position: relative; z-index: 1; flex-shrink: 0;
-    width: 260px; height: auto; margin: -16px 8px -20px 0;
-    animation: bubble-float 6s ease-in-out infinite;
-}
-@keyframes bubble-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@media (prefers-reduced-motion: reduce) { .welcome-art { animation: none; } }
-
-.stats-grid { gap: 16px; margin-bottom: 20px; }
-.stat-card {
-    border: 1px solid var(--border); border-left: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
-    box-shadow: var(--shadow); padding: 22px 24px;
-}
-.stat-card:hover { box-shadow: none; border-color: var(--accent); }
-.stat-card::before { display: none; }
-.stat-card h2 { font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-muted); margin-bottom: 6px; }
-.stat-value { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text) !important; }
-.stat-trend { font-size: 12.5px; gap: 6px; }
-.stat-icon.bubble-tile { position: absolute; top: 20px; right: 20px; width: 46px; height: 46px; border-radius: 12px; font-size: 18px; color: var(--tile); }
-
-.main-content-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
-.chart-section, .recent-orders, .services-section, .income-card {
-    border: 1px solid var(--border); border-radius: var(--radius-lg) !important; box-shadow: var(--shadow); padding: 24px;
-}
-.chart-section h2, .recent-orders h2, .services-section h2 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
-.chart-section h2 i, .recent-orders h2 i, .services-section h2 i { color: var(--accent-light); }
-
-.chart-actions { gap: 4px; padding: 4px; border: 0; border-radius: var(--radius-pill); background: var(--surface-sunken); width: fit-content; margin-left: auto; margin-right: auto; }
-.chart-btn { border: 0 !important; border-radius: var(--radius-pill) !important; background: transparent !important; color: var(--text-muted) !important; padding: 7px 16px !important; font-size: 13px; font-weight: 600; }
-.chart-btn.active { background: var(--surface) !important; color: var(--accent) !important; box-shadow: none; }
-
-.recent-orders .dashboard-table th, .recent-orders .dashboard-table td { padding: 10px 8px; }
-.recent-orders .dashboard-table td { font-size: 13px; }
-.recent-orders .dashboard-table .order-no { font-size: 12.5px; }
-.recent-orders .status-badge { font-size: 11px; padding: 2px 8px; }
-
-@media (max-width: 900px) {
-    .welcome-art { width: 200px; margin: -10px -10px -20px 0; }
-}
-@media (max-width: 640px) {
-    .welcome-banner { padding: 22px 20px; min-height: 0; }
-    .welcome-banner h1 { font-size: 23px; }
-    /* Small and in the corner, with room kept beside the greeting so they don't overlap */
-    .welcome-art { position: absolute; right: 10px; top: 12px; width: 96px; margin: 0; }
-    .welcome-banner h1 { margin-right: 92px; }
-    .welcome-copy { max-width: none; }
-}
-/* Needs attention: problems found automatically on each load */
-.attention-panel { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; padding: 18px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
-.attention-mascot { width: 120px; flex-shrink: 0; }
-.attention-body { flex: 1; min-width: 0; }
-.attention-body h3 { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
-.attention-empty { color: var(--text-muted); margin-top: -4px; }
-.attention-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.attention-group { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
-.attention-head { display: flex; gap: 10px; align-items: center; }
-.attention-head .bubble-tile { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }
-.attention-head b { display: block; font-size: 14px; color: var(--text); }
-.attention-head small { color: var(--text-muted); font-size: 12px; }
-.attention-group ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--text-secondary); }
-.attention-group a { color: var(--accent); font-weight: 600; text-decoration: none; }
-.attention-group a:hover { text-decoration: underline; }
-.attention-more { display: inline-block; margin-top: 6px; font-size: 12.5px; }
-@media (max-width: 640px) {
-    .attention-panel { flex-direction: column; align-items: stretch; padding: 16px; }
-    .attention-mascot { width: 84px; align-self: center; }
+.dash-header { align-items: center; justify-content: flex-start; flex-direction: row; flex-wrap: nowrap; }
+.dash-mascot { width: 76px; flex-shrink: 0; margin: -6px 0 -10px -6px; }
+
+.quick-actions { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--s-3); }
+.quick-action {
+    display: flex; align-items: center; gap: var(--s-3);
+    min-height: 60px; padding: 0 var(--s-4);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text);
+    font-weight: 700; text-align: left; text-decoration: none;
+}
+.quick-action > i { flex-shrink: 0; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.quick-action.is-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.quick-action.is-primary > i { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.quick-action:active { transform: scale(0.98); }
+
+.kpi-grid.kpi-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kpi-value { font-variant-numeric: normal; }
+
+.dash-grid { display: grid; gap: var(--s-5); grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
+
+.attention-tabs { display: flex; gap: var(--s-2); padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.attention-tabs::-webkit-scrollbar { display: none; }
+.attention-tabs .chip[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.attention-tabs .chip[aria-selected="true"] .chip-count { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.attention-tabs .chip:disabled { opacity: 0.55; cursor: default; }
+.attention-item { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-5); border-bottom: 1px solid var(--border); }
+.list > li:last-child > .attention-item { border-bottom: 0; }
+.attention-item > a { display: flex; align-items: center; gap: var(--s-3); flex: 1; min-width: 0; min-height: 56px; color: inherit; text-decoration: none; }
+.attention-item .bubble-tile { width: 40px; height: 40px; font-size: 15px; }
+.card-more { display: block; padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); font-weight: 700; text-decoration: none; }
+.system-status { justify-content: flex-start; gap: var(--s-3); color: var(--text-secondary); font-size: var(--fs-sm); }
+.system-status > span { flex: 1; }
+.system-status .fa-circle-check { color: var(--success); }
+.system-status .fa-triangle-exclamation { color: var(--warning-hover); }
+
+/* Sales: one series, one baseline, value on tap/hover/focus */
+.bar-chart { --plot-h: 220px; }
+.bar-plot { position: relative; height: var(--plot-h); margin: var(--s-2) 0 0 52px; }
+.bar-gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border); }
+.bar-gridline span { position: absolute; right: calc(100% + 10px); top: -9px; font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-cols { position: absolute; inset: 0; display: flex; }
+.bar-col { position: relative; flex: 1; display: flex; align-items: flex-end; justify-content: center; border: 0; background: none; padding: 0; border-radius: 6px; }
+.bar-col:focus-visible { outline-offset: -2px; }
+.bar { position: relative; width: min(24px, 60%); background: var(--accent); border-radius: 4px 4px 0 0; transition: background-color var(--fast); }
+.bar-col.is-active .bar { background: var(--accent-hover); }
+.bar-col.is-active { background: var(--surface-muted); }
+.bar-cap { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); padding-bottom: 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.bar-labels { display: flex; margin-left: 52px; padding-top: var(--s-2); border-top: 1px solid var(--border-strong); }
+.bar-labels span { flex: 1; text-align: center; font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.bar-tip {
+    position: absolute; z-index: 2; transform: translate(-50%, calc(-100% - 8px)); pointer-events: none;
+    padding: 6px 10px; border-radius: var(--radius-sm); background: var(--text); color: #fff;
+    font-size: var(--fs-sm); white-space: nowrap; box-shadow: var(--shadow);
+}
+.bar-tip strong { display: block; font-size: var(--fs-base); }
+.bar-tip span { color: #c5d1e0; }
+
+.rank-list { list-style: none; padding: var(--s-2) var(--s-5) var(--s-4); display: grid; gap: var(--s-3); }
+.rank-row { display: flex; justify-content: space-between; gap: var(--s-3); font-weight: 700; }
+.rank-row span:last-child { color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rank-track { height: 8px; margin-top: 6px; border-radius: 4px; background: var(--accent-soft); overflow: hidden; }
+.rank-bar { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+
+.list-end.col { flex-direction: column; align-items: flex-end; gap: 4px; }
+
+@media (hover: hover) {
+    .quick-action:not(.is-primary):hover { border-color: var(--accent-soft-strong); background: var(--surface-muted); }
+    .quick-action.is-primary:hover { background: var(--accent-hover); }
+    .attention-item > a:hover .list-title { color: var(--accent); }
+}
+@media (max-width: 1279px) { .dash-grid { grid-template-columns: minmax(0, 1fr) 340px; } }
+@media (max-width: 1099px) { .dash-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1023px) { .kpi-grid.kpi-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+    .dash-mascot { width: 60px; }
+    .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .quick-actions > :first-child { grid-column: 1 / -1; }
+    .kpi { min-height: 104px; padding: var(--s-3) var(--s-4); }
+    .kpi-value { font-size: 22px; }
+    .kpi-label .bubble-tile { display: none; }
+    .bar-chart { --plot-h: 180px; }
+    .bar-chart[data-period="year"] .bar-labels span:nth-child(even) { visibility: hidden; }
 }
 </style>
+@endpush
 
-<div class="dashboard-container">
-    @php
-        $hour = now()->hour;
-        $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
-        $firstName = strtok(session('staff.name') ?? 'there', ' ');
-    @endphp
-    <section class="welcome-banner">
-        <div class="welcome-copy">
-            <span class="welcome-eyebrow"><i class="fas fa-soap"></i> Soap Opera</span>
-            <h1>{{ $greeting }}, {{ $firstName }}!</h1>
-            <p>Fresh loads, zero drama. Here's what's bubbling today.</p>
-            <div class="welcome-chips">
-                <span class="welcome-chip"><b>{{ $todayPending }}</b> pending</span>
-                <span class="welcome-chip"><b>{{ $todayProcessing }}</b> in progress</span>
-                <span class="welcome-chip"><b>{{ $todayCompleted }}</b> completed</span>
-            </div>
-            @if(in_array(session('staff.role'), ['cashier', 'manager', 'admin']))
-            <div class="welcome-actions">
-                <a href="{{ route('pos.index') }}" class="welcome-btn welcome-btn-light"><i class="fas fa-plus"></i> New order</a>
-                <a href="{{ route('orders.index') }}" class="welcome-btn welcome-btn-glass">View orders <i class="fas fa-arrow-right"></i></a>
-            </div>
-            @endif
-        </div>
-        <x-mascot mood="happy" class="welcome-art" />
-    </section>
-    <!-- Stats Grid -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon bubble-tile tone-blue">
-                <i class="fas fa-basket-shopping"></i>
-            </div>
-            <h2>Total Orders</h2>
-            <div class="stat-value">{{ number_format($totalOrders) }}</div>
-            <div class="stat-trend {{ $ordersTrend >= 0 ? 'positive' : 'negative' }}">
-                <i class="fas fa-arrow-{{ $ordersTrend >= 0 ? 'up' : 'down' }}"></i>
-                <span>{{ number_format(abs($ordersTrend), 1) }}% {{ $ordersTrend >= 0 ? 'more' : 'fewer' }} orders than last month</span>
-            </div>
-        </div>
+@section('content')
+<div class="stack">
+    <nav class="quick-actions" aria-label="Quick actions" style="--n: {{ 3 + ($isManager ? 1 : 0) + ($isAdmin ? 1 : 0) }}">
+        <a href="{{ route('pos.index') }}" class="quick-action is-primary"><i class="fas fa-plus" aria-hidden="true"></i><span>New order</span></a>
+        <button type="button" class="quick-action" data-focus-search><i class="fas fa-magnifying-glass" aria-hidden="true"></i><span>Find order</span></button>
+        <a href="{{ route('customers.index', ['new' => 1]) }}" class="quick-action"><i class="fas fa-user-plus" aria-hidden="true"></i><span>Add customer</span></a>
+        @if($isManager)
+        <a href="{{ route('products.index') }}" class="quick-action"><i class="fas fa-boxes-stacked" aria-hidden="true"></i><span>Inventory</span></a>
+        @endif
+        @if($isAdmin)
+        <a href="{{ route('reports.daily') }}" class="quick-action"><i class="fas fa-chart-column" aria-hidden="true"></i><span>Reports</span></a>
+        @endif
+    </nav>
 
-        <div class="stat-card">
-            <div class="stat-icon bubble-tile tone-amber">
-                <i class="fas fa-hourglass-half"></i>
-            </div>
-            <h2>Pending Orders</h2>
-            <div class="stat-value">{{ number_format($pendingOrders) }}</div>
-            <div class="stat-trend {{ $pendingTrend >= 0 ? 'positive' : 'negative' }}">
-                <i class="fas fa-arrow-{{ $pendingTrend >= 0 ? 'up' : 'down' }}"></i>
-                <span>{{ number_format(abs($pendingTrend), 1) }}% from yesterday</span>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon bubble-tile tone-aqua">
-                <i class="fas fa-peso-sign"></i>
-            </div>
-            <h2>Total Revenue</h2>
-            <div class="stat-value">₱{{ number_format($totalRevenue, 2) }}</div>
-            <div class="stat-trend {{ $revenueTrend >= 0 ? 'positive' : 'negative' }}">
-                <i class="fas fa-arrow-{{ $revenueTrend >= 0 ? 'up' : 'down' }}"></i>
-                <span>{{ number_format(abs($revenueTrend), 1) }}% {{ $revenueTrend >= 0 ? 'increase' : 'decrease' }} vs. last month</span>
-            </div>
-        </div>
-    </div>
-
-    {{-- Found automatically on each load (DashboardController::attention) --}}
-    @php $attentionCount = $lowStock->count() + $stuckOrders->count() + $unpaidOrders->count(); @endphp
-    <section class="attention-panel" aria-labelledby="attention-title">
-        <x-mascot :mood="$attentionCount ? 'curious' : 'proud'" class="attention-mascot mascot-ink" />
-        <div class="attention-body">
-            <h3 id="attention-title">{{ $attentionCount ? 'Needs attention' : 'All caught up' }}</h3>
-            @if ($attentionCount === 0)
-                <p class="attention-empty">No stuck orders, no unpaid completed orders and nothing low on stock.</p>
-            @else
-                <div class="attention-groups">
-                    @if ($stuckOrders->isNotEmpty())
-                        <div class="attention-group">
-                            <div class="attention-head">
-                                <span class="bubble-tile tone-amber"><i class="fas fa-hourglass-half"></i></span>
-                                <div><b>{{ $stuckOrders->count() }} {{ Str::plural('order', $stuckOrders->count()) }} waiting too long</b><small>{{ $stuckRule }}</small></div>
-                            </div>
-                            <ul>
-                                @foreach ($stuckOrders->take(3) as $order)
-                                    <li><a href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a> · {{ $order->customer?->name ?? 'No customer' }} · {{ $order->status_label }} since {{ $order->order_date->format('M j') }}</li>
-                                @endforeach
-                            </ul>
-                            @if ($stuckOrders->count() > 3)<a class="attention-more" href="{{ route('orders.index') }}">View all orders</a>@endif
-                        </div>
+    <section class="kpi-grid kpi-4" aria-label="At a glance">
+        @foreach($kpis as [$label, $icon, $tone, $value, $meta, $href, $alert])
+            <{{ $href ? 'a' : 'div' }} class="kpi {{ $alert ? 'is-alert' : '' }}" @if($href) href="{{ $href }}" @endif>
+                <span class="kpi-label"><span class="bubble-tile {{ $tone }}" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>{{ $label }}</span>
+                <span class="kpi-value">{{ $value }}</span>
+                <span class="kpi-meta">
+                    @if($label === 'Revenue this month')
+                        @if($revenueTrend > 0)
+                            <span class="trend-up"><i class="fas fa-arrow-trend-up" aria-hidden="true"></i> {{ $revenueTrend }}%</span> vs same days last month
+                        @elseif($revenueTrend < 0)
+                            <span class="trend-down"><i class="fas fa-arrow-trend-down" aria-hidden="true"></i> {{ abs($revenueTrend) }}%</span> vs same days last month
+                        @else
+                            Same as this time last month
+                        @endif
+                    @else
+                        {{ $meta }}
                     @endif
-                    @if ($unpaidOrders->isNotEmpty())
-                        <div class="attention-group">
-                            <div class="attention-head">
-                                <span class="bubble-tile tone-violet"><i class="fas fa-peso-sign"></i></span>
-                                <div><b>{{ $unpaidOrders->count() }} completed {{ Str::plural('order', $unpaidOrders->count()) }} not fully paid</b><small>₱{{ number_format($unpaidOrders->sum('balance'), 2) }} still to collect</small></div>
-                            </div>
-                            <ul>
-                                @foreach ($unpaidOrders->take(3) as $order)
-                                    <li><a href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a> · {{ $order->customer?->name ?? 'No customer' }} · ₱{{ number_format($order->balance, 2) }} due</li>
-                                @endforeach
-                            </ul>
-                            @if ($unpaidOrders->count() > 3)<a class="attention-more" href="{{ route('orders.index') }}">View all orders</a>@endif
-                        </div>
-                    @endif
-                    @if ($lowStock->isNotEmpty())
-                        <div class="attention-group">
-                            <div class="attention-head">
-                                <span class="bubble-tile tone-sky"><i class="fas fa-box-open"></i></span>
-                                <div><b>{{ $lowStock->count() }} {{ Str::plural('product', $lowStock->count()) }} low on stock</b><small>At or below the minimum stock level</small></div>
-                            </div>
-                            <ul>
-                                @foreach ($lowStock->take(3) as $product)
-                                    <li>{{ $product->name }} · {{ $product->available_stock }} left (min {{ $product->minimum_stock_level }})</li>
-                                @endforeach
-                            </ul>
-                            @if (in_array(session('staff.role'), ['manager', 'admin']))<a class="attention-more" href="{{ route('products.index') }}">Open inventory</a>@endif
-                        </div>
-                    @endif
-                </div>
-            @endif
-        </div>
+                </span>
+                @if($href)<i class="fas fa-arrow-right kpi-go" aria-hidden="true"></i>@endif
+            </{{ $href ? 'a' : 'div' }}>
+        @endforeach
     </section>
 
-    <!-- Main Content Grid -->
-    <div class="main-content-grid">
-        <!-- Chart Section -->
-        <div class="chart-section">
-            <h2><i class="fas fa-chart-line"></i> Sales Overview</h2>
-            <div class="chart-container">
-                <canvas id="salesChart"></canvas>
-            </div>
-            <div class="chart-legend">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: var(--accent);"></div>
-                    <span>Total Sales (₱)</span>
+    <div class="dash-grid">
+        <div class="stack">
+            <section class="card" aria-labelledby="attention-title">
+                <header class="card-header">
+                    <h2 class="card-title" id="attention-title"><i class="fas fa-bolt" aria-hidden="true"></i> Needs attention</h2>
+                    <span class="card-subtitle">Checked each time this page opens</span>
+                </header>
+
+                @if($attentionCount)
+                <div class="attention-tabs" role="tablist" aria-label="What needs attention">
+                    @foreach($groups as [$key, $label, $icon, $items])
+                        <button type="button" class="chip" role="tab" id="tab-{{ $key }}" aria-controls="panel-{{ $key }}"
+                                aria-selected="{{ $key === $firstGroup ? 'true' : 'false' }}" tabindex="{{ $key === $firstGroup ? 0 : -1 }}"
+                                @disabled($items->isEmpty())>
+                            <i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }} <span class="chip-count" data-count>{{ $items->count() }}</span>
+                        </button>
+                    @endforeach
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: var(--info);"></div>
-                    <span>Orders Count</span>
+
+                @foreach($groups as [$key, $label, $icon, $items, $allLink])
+                <div role="tabpanel" id="panel-{{ $key }}" aria-labelledby="tab-{{ $key }}" @if($key !== $firstGroup) hidden @endif>
+                    <ul class="list">
+                        @foreach($items->take(6) as $item)
+                        <li>
+                            <div class="attention-item">
+                                @if($key === 'stock')
+                                    <a href="{{ route('products.index') }}">
+                                        <span class="bubble-tile tone-amber" aria-hidden="true"><i class="fas fa-box-open"></i></span>
+                                        <span class="list-main">
+                                            <span class="list-title">{{ $item->name }}</span>
+                                            <span class="list-sub">{{ $item->available_stock }} left · minimum {{ $item->minimum_stock_level }}</span>
+                                        </span>
+                                    </a>
+                                    <span class="badge badge-warning">Restock</span>
+                                @else
+                                    <a href="{{ route('orders.details', $item) }}">
+                                        <span class="bubble-tile {{ $key === 'overdue' ? 'tone-red' : ($key === 'ready' ? 'tone-violet' : 'tone-amber') }}" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
+                                        <span class="list-main">
+                                            <span class="list-title">{{ $item->customer->name ?? 'Walk-in customer' }}</span>
+                                            <span class="list-sub">{{ $item->order_number }} · {{ $item->order_date?->format('M j') }}{{ $key === 'overdue' ? ' · ' . $item->status_label : '' }}</span>
+                                        </span>
+                                    </a>
+                                    @if($key === 'ready' && $item->balance <= 0)
+                                        <button type="button" class="btn btn-sm btn-success" data-pickup="{{ $item->id }}"><i class="fas fa-check" aria-hidden="true"></i> Picked up</button>
+                                    @elseif($item->balance > 0)
+                                        <span class="badge badge-unpaid money">₱{{ number_format($item->balance, 2) }} due</span>
+                                    @else
+                                        <span class="cell-sub nowrap">{{ $item->order_date?->diffForHumans(['parts' => 1]) }}</span>
+                                    @endif
+                                @endif
+                            </div>
+                        </li>
+                        @endforeach
+                    </ul>
+                    @if($items->count() > 6)
+                        <a class="card-more" href="{{ $allLink }}">View all {{ $items->count() }} <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+                    @endif
                 </div>
-            </div>
-            <div class="chart-actions">
-                <button class="chart-btn active" data-period="week">This Week</button>
-                <button class="chart-btn" data-period="month">This Month</button>
-                <button class="chart-btn" data-period="year">This Year</button>
-            </div>
+                @endforeach
+                @else
+                <div class="empty">
+                    <x-mascot mood="proud" class="empty-art mascot-ink" />
+                    <p class="empty-title">All caught up</p>
+                    <p>No overdue, unpaid or waiting orders{{ $isManager ? ', and stock is fine' : '' }}.</p>
+                </div>
+                @endif
+
+                @if($isAdmin)
+                <footer class="card-footer system-status">
+                    @if($backupStale)
+                        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                        <span>{{ $lastBackupAt ? 'Last backup ' . \Carbon\Carbon::createFromTimestamp($lastBackupAt)->diffForHumans() : 'No backup yet' }}. A new one is being made now; if this stays, check Settings.</span>
+                        <a href="{{ route('settings.mastersettings') }}#backups" class="btn btn-sm btn-secondary">Backups</a>
+                    @else
+                        <i class="fas fa-circle-check" aria-hidden="true"></i>
+                        <span>Data backed up {{ \Carbon\Carbon::createFromTimestamp($lastBackupAt)->diffForHumans() }}</span>
+                    @endif
+                </footer>
+                @endif
+            </section>
+
+            <section class="card" aria-labelledby="sales-title">
+                <header class="card-header">
+                    <div>
+                        <h2 class="card-title" id="sales-title"><i class="fas fa-chart-column" aria-hidden="true"></i> Sales</h2>
+                        <p class="card-subtitle">Completed orders, by day</p>
+                    </div>
+                    <div class="segmented" role="radiogroup" aria-label="Sales period">
+                        <label><input type="radio" name="salesPeriod" value="week" checked><span>Week</span></label>
+                        <label><input type="radio" name="salesPeriod" value="month"><span>Month</span></label>
+                        <label><input type="radio" name="salesPeriod" value="year"><span>Year</span></label>
+                    </div>
+                </header>
+                <div class="card-body">
+                    @foreach($chartData as $period => $series)
+                        @php
+                            $max = max($series['sales'] ?: [0]);
+                            // Clean axis: 4 steps of 1, 2, 2.5 or 5 x 10^n
+                            $raw = max($max, 100) / 4;
+                            $magnitude = 10 ** floor(log10($raw));
+                            $step = collect([1, 2, 2.5, 5, 10])->map(fn ($m) => $m * $magnitude)->first(fn ($s) => $s >= $raw);
+                            $top = $step * 4;
+                            $compact = $top >= 10000;
+                            $tick = fn ($v) => '₱' . ($compact ? rtrim(rtrim(number_format($v / 1000, 1), '0'), '.') . 'K' : number_format($v));
+                            $peak = $max > 0 ? array_search($max, $series['sales']) : null;
+                            $unit = ['week' => 'day', 'month' => 'week', 'year' => 'month'][$period];
+                        @endphp
+                        <div class="bar-chart" data-period="{{ $period }}" @if($period !== 'week') hidden @endif>
+                            <div class="bar-plot">
+                                @for($i = 0; $i <= 4; $i++)
+                                    <div class="bar-gridline" style="bottom: {{ $i * 25 }}%" aria-hidden="true"><span>{{ $tick($step * $i) }}</span></div>
+                                @endfor
+                                <div class="bar-cols" role="group" aria-label="Completed sales per {{ $unit }}">
+                                    @foreach($series['sales'] as $i => $value)
+                                        @php $orders = $series['orders'][$i]; $amount = '₱' . number_format($value, 2); @endphp
+                                        <button type="button" class="bar-col"
+                                                data-value="{{ $amount }}" data-label="{{ $series['titles'][$i] }} · {{ $orders }} {{ \Illuminate\Support\Str::plural('order', $orders) }}"
+                                                aria-label="{{ $series['titles'][$i] }}: {{ $amount }} from {{ $orders }} completed {{ \Illuminate\Support\Str::plural('order', $orders) }}">
+                                            @if($value > 0)
+                                                <span class="bar" style="height: {{ round($value / $top * 100, 2) }}%">
+                                                    @if($i === $peak)<span class="bar-cap" aria-hidden="true">{{ $tick($value) }}</span>@endif
+                                                </span>
+                                            @endif
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div class="bar-labels" aria-hidden="true">
+                                @foreach($series['labels'] as $label)<span>{{ $label }}</span>@endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                @if($isAdmin)
+                <div class="card-footer"><a href="{{ route('reports.sales') }}" class="btn btn-sm btn-ghost">Open sales report <i class="fas fa-arrow-right" aria-hidden="true"></i></a></div>
+                @endif
+            </section>
         </div>
 
-        <!-- Recent Orders -->
-        <div class="recent-orders">
-            <h2><i class="fas fa-history"></i> Recent Orders</h2>
-            <table class="dashboard-table">
-                <thead>
-                    <tr>
-                        <th>Order #</th>
-                        <th>Client</th>
-                        <th>Status</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($recentOrders as $order)
-                    <tr>
-                        <td class="order-no">{{ $order->order_number }}</td>
-                        <td>{{ $order->customer->name ?? 'Walk-in Customer' }}</td>
-                        <td><span class="status-badge status-{{ $order->status }}">{{ ucfirst($order->status) }}</span></td>
-                        <td>₱{{ number_format($order->total, 2) }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-faint);">No recent orders</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <div class="stack">
+            <section class="card" aria-labelledby="recent-title">
+                <header class="card-header">
+                    <h2 class="card-title" id="recent-title"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Recent orders</h2>
+                    <a href="{{ route('orders.index') }}" class="btn btn-sm btn-ghost">View all</a>
+                </header>
+                @if($recentOrders->isEmpty())
+                    <div class="empty">
+                        <span class="empty-icon" aria-hidden="true"><i class="fas fa-receipt"></i></span>
+                        <p class="empty-title">No orders yet</p>
+                        <a href="{{ route('pos.index') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> New order</a>
+                    </div>
+                @else
+                <ul class="list">
+                    @foreach($recentOrders as $order)
+                    <li>
+                        <a class="list-item" href="{{ route('orders.details', $order) }}">
+                            <span class="list-main">
+                                <span class="list-title">{{ $order->customer->name ?? 'Walk-in customer' }}</span>
+                                <span class="list-sub">{{ $order->order_number }}</span>
+                            </span>
+                            <span class="list-end col">
+                                <span class="money">₱{{ number_format($order->total, 2) }}</span>
+                                <span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span>
+                            </span>
+                        </a>
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
+            </section>
 
-    <!-- Bottom Grid -->
-    <div class="bottom-grid">
-        <!-- Services Section -->
-        <div class="services-section">
-            <h2><i class="fas fa-concierge-bell"></i> Top Services</h2>
-            <table class="dashboard-table">
-                <thead>
-                    <tr>
-                        <th>Service</th>
-                        <th>Orders</th>
-                        <th>Revenue</th>
-                        <th>Price</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($topServices as $service)
-                    <tr>
-                        <td>{{ $service->name }}</td>
-                        <td>{{ $service->order_count ?? 0 }}</td>
-                        <td>₱{{ number_format($service->total_revenue ?? 0, 2) }}</td>
-                        <td>₱{{ number_format($service->price ?? 0, 2) }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-faint);">No service data available</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Income Card -->
-        <div class="income-card">
-            <h2>Today's Income</h2>
-            <div class="income-value">₱{{ number_format($todayRevenue, 2) }}</div>
-            <div class="income-subtitle">Total revenue generated today</div>
-            
-            <div class="income-stats">
-                <div class="income-stat">
-                    <div class="stat-label">Completed</div>
-                    <div class="stat-value">{{ $todayCompleted }}</div>
-                </div>
-                <div class="income-stat">
-                    <div class="stat-label">In Progress</div>
-                    <div class="stat-value">{{ $todayProcessing }}</div>
-                </div>
-                <div class="income-stat">
-                    <div class="stat-label">Pending</div>
-                    <div class="stat-value">{{ $todayPending }}</div>
-                </div>
-            </div>
+            <section class="card" aria-labelledby="top-title">
+                <header class="card-header">
+                    <h2 class="card-title" id="top-title"><i class="fas fa-star" aria-hidden="true"></i> Top services</h2>
+                    <span class="card-subtitle">Completed orders</span>
+                </header>
+                @if($topServices->isEmpty())
+                    <p class="empty">Shows up once orders are completed.</p>
+                @else
+                    @php $mostOrders = max(1, $topServices->max('order_count')); @endphp
+                    <ol class="rank-list">
+                        @foreach($topServices as $service)
+                        <li>
+                            <div class="rank-row"><span>{{ $service->name }}</span><span>{{ $service->order_count }} {{ \Illuminate\Support\Str::plural('order', $service->order_count) }} · ₱{{ number_format($service->total_revenue, 0) }}</span></div>
+                            <div class="rank-track" aria-hidden="true"><span class="rank-bar" style="width: {{ round($service->order_count / $mostOrders * 100, 1) }}%"></span></div>
+                        </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </section>
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
-<!-- Chart.js (pinned version, deferred so it never blocks page rendering) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 <script>
-window.addEventListener('DOMContentLoaded', function() {
-    if (typeof Chart === 'undefined') {
-        document.querySelector('.chart-container').innerHTML =
-            '<p style="color:var(--text-faint);text-align:center;padding:40px 0;">Chart could not be loaded (offline?).</p>';
-        return;
-    }
-
-    // Initial chart data from PHP
-    const chartData = @json($chartData);
-    
-    // Get canvas context
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    
-    // Format currency
-    const formatCurrency = (value) => {
-        return '₱' + Number(value || 0).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    };
-    
-    const formatCompact = (value) => {
-        const n = Number(value || 0);
-        if (Math.abs(n) >= 1000000) return '₱' + +(n / 1000000).toFixed(1) + 'M';
-        if (Math.abs(n) >= 1000) return '₱' + +(n / 1000).toFixed(1) + 'k';
-        return '₱' + n;
-    };
-
-    // Phones have little room: shorter tick labels, no axis titles, no tilted labels
-    const isSmallScreen = () => window.innerWidth < 576;
-
-    function applyResponsiveOptions(chart) {
-        const small = isSmallScreen();
-        const { x, y, y1 } = chart.options.scales;
-
-        y.title.display = !small;
-        y1.title.display = !small;
-        y.ticks.callback = (value) => small ? formatCompact(value) : formatCurrency(value);
-        y.ticks.maxTicksLimit = small ? 5 : 8;
-        y1.ticks.maxTicksLimit = small ? 5 : 8;
-
-        [x, y, y1].forEach(axis => { axis.ticks.font = { size: small ? 10 : 12 }; });
-        x.ticks.maxRotation = 0;
-        x.ticks.autoSkip = true;
-        x.ticks.autoSkipPadding = small ? 8 : 4;
-
-        chart.data.datasets.forEach(ds => {
-            ds.pointRadius = small ? 2 : 3;
-            ds.borderWidth = small ? 1.5 : 2;
-        });
-    }
-
-    // Create chart
-    const chartConfig = {
-        type: 'line',
-        data: {
-            labels: chartData.week.labels,
-            datasets: [
-                {
-                    label: 'Total Sales (₱)',
-                    data: chartData.week.sales,
-                    borderColor: '#1f74f0',
-                    backgroundColor: 'rgba(31, 116, 240, 0.10)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Orders Count',
-                    data: chartData.week.orders,
-                    borderColor: '#12a6d8',
-                    backgroundColor: 'rgba(18, 166, 216, 0.08)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: '#5f7391'
-                    }
-                },
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Sales (₱)',
-                        color: '#1f74f0'
-                    },
-                    beginAtZero: true,
-                    grid: {
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: '#1f74f0',
-                        callback: function(value) {
-                            return formatCurrency(value);
-                        }
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'Orders',
-                        color: '#12a6d8'
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    beginAtZero: true,
-                    ticks: {
-                        color: '#12a6d8',
-                        precision: 0
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.92)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    borderColor: '#2563eb',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.datasetIndex === 0) {
-                                label += formatCurrency(context.parsed.y);
-                            } else {
-                                label += context.parsed.y;
-                            }
-                            return label;
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    // Apply the phone/desktop settings BEFORE creating the chart: changing them
-    // afterwards is overridden by the chart's opening animation, which left the
-    // points out of line with the day labels on phones.
-    applyResponsiveOptions(chartConfig);
-    let salesChart = new Chart(ctx, chartConfig);
-
-    let resizeTimer;
-    let wasSmall = isSmallScreen();
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            if (isSmallScreen() === wasSmall) return;
-            wasSmall = isSmallScreen();
-            salesChart.stop(); // cancel any running animation first
-            applyResponsiveOptions(salesChart);
-            salesChart.update('none');
-        }, 150);
+(function () {
+    // "Find order" puts the cursor in the search box at the top
+    document.querySelector('[data-focus-search]')?.addEventListener('click', () => {
+        const search = document.querySelector('[data-search-shortcut]');
+        search?.focus();
+        search?.scrollIntoView({ block: 'center' });
     });
 
-    // Chart period buttons
-    const periodButtons = document.querySelectorAll('.chart-btn');
-    periodButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active class from all buttons
-            periodButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class to clicked button
-            this.classList.add('active');
-            
-            const period = this.dataset.period;
-            
-            // Fetch new chart data via AJAX
-            fetch(appUrl(`dashboard/chart-data/${period}`), { headers: { 'Accept': 'application/json' } })
-                .then(response => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
-                .then(data => {
-                    if (data.success) {
-                        // Update chart data
-                        salesChart.data.labels = data.data.labels;
-                        salesChart.data.datasets[0].data = data.data.sales;
-                        salesChart.data.datasets[1].data = data.data.orders;
-                        salesChart.update('none');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching chart data:', error);
+    // Action center tabs (arrow keys move between them, like any tab list)
+    const tabs = Array.from(document.querySelectorAll('.attention-tabs [role="tab"]'));
+    const select = tab => {
+        tabs.forEach(t => {
+            const on = t === tab;
+            t.setAttribute('aria-selected', String(on));
+            t.tabIndex = on ? 0 : -1;
+            document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        });
+    };
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => select(tab));
+        tab.addEventListener('keydown', e => {
+            const usable = tabs.filter(t => !t.disabled);
+            const i = usable.indexOf(tab);
+            const next = e.key === 'ArrowRight' ? usable[(i + 1) % usable.length] : e.key === 'ArrowLeft' ? usable[(i - 1 + usable.length) % usable.length] : null;
+            if (next) { e.preventDefault(); select(next); next.focus(); }
+        });
+    });
+
+    // "Picked up": complete a paid, ready order right here (with Undo)
+    const setStatus = (id, status) => sendJson(appUrl(`orders/${id}/update-status`), { status });
+    document.querySelectorAll('[data-pickup]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const id = button.dataset.pickup;
+            const row = button.closest('li');
+            button.classList.add('is-loading');
+            try {
+                await setStatus(id, 'completed');
+                row.hidden = true;
+                const count = document.querySelector('#tab-ready [data-count]');
+                count.textContent = Math.max(0, Number(count.textContent) - 1);
+                showToast('Order marked as picked up.', 'success', 6000, {
+                    label: 'Undo',
+                    onClick: async () => {
+                        try { await setStatus(id, 'ready'); row.hidden = false; count.textContent = Number(count.textContent) + 1; }
+                        catch (e) { showToast(e.message, 'error'); }
+                    },
                 });
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                button.classList.remove('is-loading');
+            }
         });
     });
-    
-    // Update dashboard stats every 30 seconds
-    function updateDashboardStats() {
-        if (document.hidden) return; // don't poll while the tab is in the background
-        fetch(appUrl('dashboard/stats'), { headers: { 'Accept': 'application/json' } })
-            .then(response => { if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); })
-            .then(data => {
-                if (data.success) {
-                    const stats = data.stats;
-                    
-                    // Update stat cards
-                    document.querySelector('.stat-card:nth-child(1) .stat-value').textContent = 
-                        Number(stats.totalOrders).toLocaleString();
-                    
-                    document.querySelector('.stat-card:nth-child(2) .stat-value').textContent = 
-                        Number(stats.pendingOrders).toLocaleString();
-                    
-                    document.querySelector('.stat-card:nth-child(3) .stat-value').textContent = 
-                        formatCurrency(stats.totalRevenue);
-                    
-                    // Update income card
-                    document.querySelector('.income-card .income-value').textContent = 
-                        formatCurrency(stats.todayRevenue);
-                    
-                    document.querySelector('.income-stat:nth-child(1) .stat-value').textContent = 
-                        stats.todayCompleted;
-                    
-                    document.querySelector('.income-stat:nth-child(2) .stat-value').textContent = 
-                        stats.todayProcessing;
-                    
-                    document.querySelector('.income-stat:nth-child(3) .stat-value').textContent = 
-                        stats.todayPending;
-                }
-            })
-            .catch(error => {
-                console.error('Error updating stats:', error);
-            });
-    }
-    
-    // Update stats every 30 seconds
-    setInterval(updateDashboardStats, 30000);
-});
+
+    // Sales chart: period switch + one tooltip that follows tap, hover and keyboard focus
+    document.querySelectorAll('input[name="salesPeriod"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.bar-chart').forEach(chart => { chart.hidden = chart.dataset.period !== radio.value; });
+            const subtitle = document.querySelector('#sales-title').closest('.card-header').querySelector('.card-subtitle');
+            subtitle.textContent = 'Completed orders, by ' + ({ week: 'day', month: 'week', year: 'month' })[radio.value];
+        });
+    });
+    let tip = null;
+    const showTip = col => {
+        const plot = col.closest('.bar-plot');
+        hideTip();
+        tip = document.createElement('div');
+        tip.className = 'bar-tip';
+        const value = document.createElement('strong');
+        value.textContent = col.dataset.value;
+        const label = document.createElement('span');
+        label.textContent = col.dataset.label;
+        tip.append(value, label);
+        plot.append(tip);
+        const bar = col.querySelector('.bar');
+        const left = col.offsetLeft + col.offsetWidth / 2;
+        tip.style.left = Math.min(Math.max(left, tip.offsetWidth / 2), plot.offsetWidth - tip.offsetWidth / 2) + 'px';
+        tip.style.top = (plot.offsetHeight - (bar ? bar.offsetHeight : 0)) + 'px';
+        col.classList.add('is-active');
+    };
+    const hideTip = () => {
+        tip?.remove();
+        tip = null;
+        document.querySelectorAll('.bar-col.is-active').forEach(c => c.classList.remove('is-active'));
+    };
+    document.querySelectorAll('.bar-col').forEach(col => {
+        col.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') showTip(col); });
+        col.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hideTip(); });
+        col.addEventListener('focus', () => showTip(col));
+        col.addEventListener('blur', hideTip);
+        col.addEventListener('click', () => showTip(col));
+    });
+})();
 </script>
 @endpush
-@endsection

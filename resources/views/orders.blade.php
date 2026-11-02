@@ -2,578 +2,348 @@
 
 @section('title', 'Orders')
 @section('page-title', 'Orders')
-@section('active-orders', 'active')
 
-@section('content')
+@php
+    $isManager = in_array(session('staff.role'), ['manager', 'admin'], true);
+    $tabs = ['' => 'All', 'open' => 'Open', 'overdue' => 'Overdue', 'pending' => 'Pending', 'processing' => 'Processing',
+             'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+    $filtersOn = $search !== '' || $payment !== '' || $from !== '' || $to !== '';
+    // The one tap that moves an open order along: [next status, button text, icon]
+    $nextStep = [
+        'pending' => ['processing', 'Start', 'fa-play'],
+        'processing' => ['ready', 'Ready', 'fa-bell'],
+        'ready' => ['completed', 'Picked up', 'fa-check'],
+    ];
+    $statusLabels = ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+@endphp
+
+@section('page-subtitle')
+    {{ number_format($orders->total()) }} {{ \Illuminate\Support\Str::plural('order', $orders->total()) }}{{ $status !== '' ? ' · ' . strtolower($tabs[$status]) : '' }}{{ $filtersOn ? ' · filtered' : '' }}
+@endsection
+
+@push('styles')
 <style>
-/* --- Orders Page Specific Styling --- */
-.orders-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-}
-
-.orders-header h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-dark);
-    margin: 0;
-}
-
-.search-add-container {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.search-box {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.search-box form {
-    display: flex;
-    align-items: center;
-}
-
-.search-box input {
-    padding: 10px 15px 10px 40px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    width: 250px;
-    transition: all 0.3s;
-}
-
-.search-box input:focus {
-    outline: none;
-    border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
-}
-
-.search-box i {
-    position: absolute;
-    left: 15px;
-    color: var(--text-light);
-}
-
-.add-order-btn {
-    background: var(--blue);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.3s;
-    text-decoration: none;
-}
-
-.add-order-btn:hover {
-    background: var(--accent-hover);
-    color: white;
-}
-
-.orders-table {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: none;
-    border: 1px solid var(--border);
-}
-
-.table-header {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1fr 1.2fr;
-    background: var(--surface-muted);
-    padding: 15px 20px;
-    font-weight: 600;
-    color: var(--text-dark);
-    border-bottom: 1px solid var(--border);
-    gap: 10px;
-    text-align: center;
-    font-size: 14px;
-}
-
-.table-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1fr 1.2fr;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--surface-sunken);
-    align-items: center;
-    gap: 10px;
-    text-align: center;
-    font-size: 14px;
-}
-
-.table-row:last-child {
-    border-bottom: none;
-}
-
-.table-row:hover {
-    background: var(--surface-muted);
-}
-
-.order-info {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    text-align: left;
-}
-
-.order-id {
-    font-weight: 600;
-    color: var(--text-dark);
-}
-
-.order-dates {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.order-date-item {
-    color: var(--text-light);
-    font-size: 13px;
-}
-
-.customer-info {
-    font-weight: 500;
-    color: var(--text-dark);
-}
-
-.order-amount {
-    font-weight: 600;
-    color: var(--text-dark);
-    font-size: 15px;
-}
-
-.status-container {
-    display: flex;
-    justify-content: center;
-}
-
-.status-badge {
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-size: 12px;
-    font-weight: 500;
-    text-align: center;
-    width: fit-content;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    min-width: 100px;
-    justify-content: center;
-}
-
-.status-pending {
-    background: var(--warning-soft);
-    color: var(--warning-text);
-    border: 1px solid var(--warning-soft);
-}
-
-.status-processing {
-    background: var(--accent-soft);
-    color: var(--accent-hover);
-    border: 1px solid var(--accent-soft);
-}
-
-.status-completed {
-    background: var(--success-soft);
-    color: var(--success-text);
-    border: 1px solid var(--success-soft);
-}
-
-.status-cancelled {
-    background: var(--danger-soft);
-    color: var(--danger-text);
-    border: 1px solid var(--danger-soft);
-}
-
-.status-badge i {
-    font-size: 10px;
-}
-
-.payment-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.payment-total {
-    font-weight: 500;
-    color: var(--text-dark);
-}
-
-.payment-paid {
-    color: var(--success);
-    font-weight: 500;
-}
-
-.payment-status {
-    padding: 4px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 500;
-    width: fit-content;
-    margin: 0 auto;
-}
-
-.payment-fully-paid {
-    background: var(--success-soft);
-    color: var(--success-text);
-    border: 1px solid var(--success-soft);
-}
-
-.payment-partial {
-    background: var(--warning-soft);
-    color: var(--warning-text);
-    border: 1px solid var(--warning-soft);
-}
-
-.payment-unpaid {
-    background: var(--danger-soft);
-    color: var(--danger-text);
-    border: 1px solid var(--danger-soft);
-}
-
-.created-by {
-    font-weight: 500;
-    color: var(--text-dark);
-}
-
-.action-buttons {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-}
-
-.action-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-}
-
-.btn-view {
-    color: var(--blue);
-}
-
-.btn-view:hover {
-    color: var(--accent-hover);
-    background: var(--accent-soft);
-}
-
-.btn-edit {
-    color: var(--success);
-}
-
-.btn-edit:hover {
-    color: var(--success-hover);
-    background: var(--success-soft);
-}
-
-.btn-delete {
-    color: var(--danger);
-}
-
-.btn-delete:hover {
-    color: var(--danger-hover);
-    background: var(--danger-soft);
-}
-
-/* Pagination */
-.pagination-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-    padding: 20px 0;
-}
-
-.pagination {
-    display: flex;
-    list-style: none;
-    gap: 5px;
-    padding: 0;
-    margin: 0;
-}
-
-.pagination li {
-    display: inline;
-}
-
-.pagination a,
-.pagination span {
-    padding: 8px 12px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.pagination a {
-    color: var(--blue);
-    border: 1px solid var(--border);
-    background: white;
-}
-
-.pagination a:hover {
-    background: var(--surface-muted);
-    border-color: var(--blue);
-}
-
-.pagination .active span {
-    background: var(--blue);
-    color: white;
-    border: 1px solid var(--blue);
-}
-
-.pagination .disabled span {
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    background: var(--surface-muted);
-}
-
-/* Empty state */
-.empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-muted);
-}
-
-.empty-state i {
-    font-size: 48px;
-    margin-bottom: 15px;
-    color: var(--border);
-}
-
-.empty-state h3 {
-    font-size: 18px;
-    margin-bottom: 10px;
-    color: var(--text-secondary);
-}
-
-.empty-state p {
-    font-size: 14px;
-    margin-bottom: 20px;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .table-header { display: none; }
-    .table-row {
-        grid-template-columns: 1fr;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        margin-bottom: 10px;
-        gap: 10px;
-        padding: 10px;
-        text-align: left;
-    }
-    .order-info, .customer-info, .order-amount, .status-container, .payment-info, .created-by, .action-buttons {
-        text-align: left;
-    }
-    .status-container { justify-content: flex-start; }
-    .action-buttons { justify-content: flex-start; }
-    .search-box input { width: 200px; }
-
-    .status-badge {
-        min-width: auto;
-        justify-content: flex-start;
-    }
-}
-
-/* ---- Refreshed list layout ---- */
-.orders-table { border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
-.order-id { font-weight: 600; letter-spacing: 0.01em; }
-.order-date-item { font-size: 12.5px; color: var(--text-muted); }
-.order-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
-.payment-total { display: none; } /* same figure as the Amount column */
-.payment-info { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
-.payment-paid { color: var(--text-muted); font-weight: 500; font-size: 13px; }
-.payment-status { margin: 0; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 0; }
-.created-by { font-weight: 500; color: var(--text-secondary); }
-@media (min-width: 769px) {
-    .table-header, .table-row { text-align: left; padding: 12px 20px; }
-    .table-header { font-size: 12px; color: var(--text-muted); }
-    .table-row .status-container, .table-row .action-buttons { justify-content: flex-start; }
-    .table-header > :last-child, .table-row > :last-child { justify-self: end; }
+.order-tabs { margin-bottom: var(--s-3); }
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-2); margin-bottom: var(--s-3); }
+.filters .search { flex: 1 1 240px; }
+.filters .field { flex: 0 1 170px; }
+.filter-fields { display: contents; }
+.filter-toggle { display: none; }
+.icon-btn.slot { visibility: hidden; }
+.filters .label { font-size: var(--fs-xs); }
+.saved-views { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-bottom: var(--s-4); }
+.saved-views:empty { display: none; }
+.saved-view { display: inline-flex; align-items: center; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); }
+.saved-view a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 4px 0 14px; color: var(--text-secondary); font-weight: 700; text-decoration: none; }
+.saved-view button { width: 40px; height: 40px; border: 0; background: none; color: var(--text-muted); border-radius: 50%; }
+.order-no { font-weight: 800; white-space: nowrap; }
+.pay-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.step-btn { min-width: 112px; }
+@media (max-width: 767px) {
+    .filter-toggle { display: inline-flex; }
+    .filter-fields { display: none; flex-wrap: wrap; align-items: flex-end; gap: var(--s-2); width: 100%; }
+    .filters.is-open .filter-fields { display: flex; }
+    .filters .field { flex: 1 1 calc(50% - 4px); }
+    .filter-fields > .btn { flex: 1; }
+    .pay-cell { align-items: flex-end; }
+    .step-btn { flex: 1; }
 }
 </style>
+@endpush
 
-<div class="orders-header">
-    <div class="search-add-container">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <form method="GET" action="{{ route('orders.index') }}">
-                <input type="text" name="search" placeholder="Search orders..." value="{{ request('search') }}">
-            </form>
-        </div>
-        <a href="{{ route('pos.index') }}" class="add-order-btn">
-            <i class="fas fa-plus"></i> Add New Order
+@section('content')
+<nav class="chips scroll order-tabs" aria-label="Order status">
+    @foreach($tabs as $key => $label)
+        <a href="{{ route('orders.index', array_filter(['status' => $key, 'search' => $search, 'payment' => $payment, 'from' => $from, 'to' => $to])) }}"
+           class="chip" @if($status === $key) aria-current="page" @endif>
+            {{ $label }} <span class="chip-count">{{ $counts[$key] }}</span>
         </a>
+    @endforeach
+</nav>
+
+<form class="filters" method="GET" action="{{ route('orders.index') }}" id="filterForm" role="search">
+    @if($status !== '')<input type="hidden" name="status" value="{{ $status }}">@endif
+    <div class="search">
+        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+        <input class="input" type="search" name="search" value="{{ $search }}" placeholder="Order number, customer or phone" aria-label="Search orders" autocomplete="off">
     </div>
-</div>
-
-<div class="orders-table">
-    @if($orders->count() > 0)
-        <div class="table-header">
-            <div>Order Info</div>
-            <div>Customer</div>
-            <div>Amount</div>
-            <div>Status</div>
-            <div>Payment</div>
-            <div>Created By</div>
-            <div>Action</div>
-        </div>
-
-        @foreach($orders as $order)
-        <div class="table-row">
-            <div class="order-info">
-                <div class="order-id">{{ $order->order_number }}</div>
-                <div class="order-dates">
-                    <div class="order-date-item">Order Date: {{ \Carbon\Carbon::parse($order->order_date)->format('d/m/Y') }}</div>
-                </div>
-            </div>
-            <div class="customer-info">
-                {{ $order->customer ? $order->customer->name : 'Walk In Customer' }}
-            </div>
-            <div class="order-amount">{{ number_format($order->total, 2) }} PHP</div>
-            <div class="status-container">
-                @php
-                    $statusClasses = [
-                        'pending' => 'status-pending',
-                        'processing' => 'status-processing',
-                        'ready' => 'status-ready',
-                        'completed' => 'status-completed',
-                        'cancelled' => 'status-cancelled'
-                    ];
-                    $statusIcons = [
-                        'pending' => 'fa-clock',
-                        'processing' => 'fa-cog',
-                        'ready' => 'fa-bell',
-                        'completed' => 'fa-check-circle',
-                        'cancelled' => 'fa-times-circle'
-                    ];
-                @endphp
-                <span class="status-badge {{ $statusClasses[$order->status] ?? 'status-pending' }}">
-                    <i class="fas {{ $statusIcons[$order->status] ?? 'fa-clock' }}"></i>
-                    {{ $order->status_label }}
-                </span>
-            </div>
-            <div class="payment-info">
-                <div class="payment-total">Total: {{ number_format($order->total, 2) }} PHP</div>
-                <div class="payment-paid">Paid: {{ number_format($order->paid_amount, 2) }} PHP</div>
-                @php
-                    $paymentStatus = 'unpaid';
-                    $paymentClass = 'payment-unpaid';
-                    if ($order->total > 0 && $order->paid_amount >= $order->total) {
-                        $paymentStatus = 'fully paid';
-                        $paymentClass = 'payment-fully-paid';
-                    } elseif ($order->paid_amount > 0) {
-                        $paymentStatus = 'partial';
-                        $paymentClass = 'payment-partial';
-                    }
-                @endphp
-                <div class="payment-status {{ $paymentClass }}">{{ ucfirst($paymentStatus) }}</div>
-            </div>
-            <div class="created-by">{{ $order->staff->name ?? 'N/A' }}</div>
-            <div class="action-buttons">
-                <a href="{{ route('orders.details', $order) }}" class="action-btn btn-view" title="View">
-                    <i class="fas fa-eye"></i>
-                </a>
-                @if($order->can_edit)
-                <a href="{{ route('pos.edit', $order) }}" class="action-btn btn-edit" title="Edit">
-                    <i class="fas fa-edit"></i>
-                </a>
-                @endif
-                @if(in_array(session('staff.role'), ['manager', 'admin']))
-                <form action="{{ route('orders.destroy', $order) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this order?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="action-btn btn-delete" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </form>
-                @endif
-            </div>
-        </div>
-        @endforeach
-    @else
-        <div class="empty-state">
-            <i class="fas fa-clipboard-list"></i>
-            <h3>No orders found</h3>
-            <p>{{ request('search') ? 'No orders match your search criteria.' : 'Start by creating your first order.' }}</p>
-            <a href="{{ route('pos.index') }}" class="add-order-btn">
-                <i class="fas fa-plus"></i> Create Order
-            </a>
-        </div>
+    <button type="button" class="btn btn-secondary filter-toggle" aria-expanded="false" aria-controls="filterFields">
+        <i class="fas fa-sliders" aria-hidden="true"></i> Filters @if($payment !== '' || $from !== '' || $to !== '')<span class="chip-count">{{ ($payment !== '') + ($from !== '') + ($to !== '') }}</span>@endif
+    </button>
+    <div class="filter-fields" id="filterFields">
+    <div class="field">
+        <label class="label" for="payment">Payment</label>
+        <select class="select" id="payment" name="payment">
+            <option value="">Any</option>
+            <option value="unpaid" @selected($payment === 'unpaid')>Has a balance</option>
+            <option value="partial" @selected($payment === 'partial')>Partly paid</option>
+            <option value="paid" @selected($payment === 'paid')>Fully paid</option>
+        </select>
+    </div>
+    <div class="field">
+        <label class="label" for="from">From</label>
+        <input class="input" type="date" id="from" name="from" value="{{ $from }}">
+    </div>
+    <div class="field">
+        <label class="label" for="to">To</label>
+        <input class="input" type="date" id="to" name="to" value="{{ $to }}">
+    </div>
+    <button type="submit" class="btn btn-secondary"><i class="fas fa-filter" aria-hidden="true"></i> Apply</button>
+    </div>
+    @if($filtersOn || $status !== '')
+        <a href="{{ route('orders.index') }}" class="btn btn-ghost">Clear</a>
+        <button type="button" class="btn btn-ghost" id="saveViewBtn"><i class="fas fa-bookmark" aria-hidden="true"></i> Save view</button>
     @endif
-</div>
+</form>
 
-@if($orders->count() > 0)
-<div class="pagination-container">
+<div class="saved-views" id="savedViews" aria-label="Saved views"></div>
+
+@if($orders->isEmpty())
+    <div class="card">
+        <div class="empty">
+            @if($filtersOn || $status !== '')
+                <span class="empty-icon" aria-hidden="true"><i class="fas fa-filter-circle-xmark"></i></span>
+                <p class="empty-title">No orders match</p>
+                <p>Try another tab, or clear the filters.</p>
+                <a href="{{ route('orders.index') }}" class="btn btn-secondary">Clear filters</a>
+            @else
+                <x-mascot mood="curious" class="empty-art mascot-ink" />
+                <p class="empty-title">No orders yet</p>
+                <p>New orders from the point of sale show up here.</p>
+                <a href="{{ route('pos.index') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> New order</a>
+            @endif
+        </div>
+    </div>
+@else
+<div class="card card-flush">
+    <div class="table-wrap">
+        <table class="table table-stack" id="ordersTable">
+            <thead>
+                <tr>
+                    <th class="check-col"><label class="check" title="Select all"><input type="checkbox" id="selectAll"><span class="sr-only">Select all orders on this page</span></label></th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th class="num">Total</th>
+                    <th class="actions"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($orders as $order)
+                @php $step = $nextStep[$order->status] ?? null; @endphp
+                <tr data-href="{{ route('orders.details', $order) }}" data-id="{{ $order->id }}" data-status="{{ $order->status }}">
+                    <td class="check-col"><label class="check"><input type="checkbox" class="row-check" value="{{ $order->id }}"><span class="sr-only">Select {{ $order->order_number }}</span></label></td>
+                    <td class="cell-primary">
+                        <a href="{{ route('orders.details', $order) }}" class="cell-title order-no">{{ $order->order_number }}</a>
+                        <div class="cell-sub">{{ $order->order_date?->format('M j, Y') }}</div>
+                    </td>
+                    <td data-label="Customer">
+                        <div>
+                            <div class="cell-title">{{ $order->customer->name ?? 'Walk-in customer' }}</div>
+                            @if($order->customer?->contact)<div class="cell-sub">{{ $order->customer->contact }}</div>@endif
+                        </div>
+                    </td>
+                    <td data-label="Status"><span class="badge badge-{{ $order->status }}" data-status-badge>{{ $order->status_label }}</span></td>
+                    <td data-label="Payment">
+                        <div class="pay-cell">
+                            @if($order->status === 'cancelled')
+                                <span class="cell-sub">—</span>
+                            @elseif($order->balance <= 0)
+                                <span class="badge badge-paid">Paid</span>
+                            @else
+                                <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? 'Partly paid' : 'Unpaid' }}</span>
+                                <span class="cell-sub money">₱{{ number_format($order->balance, 2) }} due</span>
+                            @endif
+                        </div>
+                    </td>
+                    <td data-label="Total" class="num"><strong>₱{{ number_format($order->total, 2) }}</strong></td>
+                    <td class="actions">
+                        <div class="cell-actions">
+                            @if($step && $order->status === 'ready' && $order->balance > 0)
+                                <a href="{{ route('orders.details', ['order' => $order, 'pay' => 1]) }}" class="btn btn-sm btn-soft step-btn"><i class="fas fa-peso-sign" aria-hidden="true"></i> Collect</a>
+                            @elseif($step)
+                                <button type="button" class="btn btn-sm btn-soft step-btn" data-next="{{ $step[0] }}"><i class="fas {{ $step[2] }}" aria-hidden="true"></i> {{ $step[1] }}</button>
+                            @endif
+                            @if($order->can_edit)
+                                <a href="{{ route('pos.edit', $order) }}" class="icon-btn" aria-label="Edit {{ $order->order_number }}" title="Edit"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                            @else
+                                <span class="icon-btn slot" aria-hidden="true"></span>
+                            @endif
+                            @if($isManager && $order->paid_amount <= 0)
+                                <form action="{{ route('orders.destroy', $order) }}" method="POST" data-confirm="{{ $order->order_number }} will be removed for good." data-confirm-title="Delete this order?">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="icon-btn danger" aria-label="Delete {{ $order->order_number }}" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                                </form>
+                            @elseif($isManager)
+                                <span class="icon-btn slot" aria-hidden="true"></span>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
     {{ $orders->links() }}
 </div>
 @endif
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto submit search on typing with debounce
-    let searchTimer;
-    const searchInput = document.querySelector('input[name="search"]');
+<div class="bulk-bar" id="bulkBar" hidden role="region" aria-label="Bulk actions">
+    <span class="bulk-count" id="bulkCount">0 selected</span>
+    <button type="button" class="btn btn-sm btn-ghost" data-bulk="processing"><i class="fas fa-play" aria-hidden="true"></i> Processing</button>
+    <button type="button" class="btn btn-sm btn-ghost" data-bulk="ready"><i class="fas fa-bell" aria-hidden="true"></i> Ready</button>
+    <button type="button" class="btn btn-sm btn-ghost" data-bulk="completed"><i class="fas fa-check" aria-hidden="true"></i> Completed</button>
+    <button type="button" class="icon-btn bulk-clear" id="bulkClear" aria-label="Clear selection"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+</div>
 
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => {
-                this.form.submit();
-            }, 500);
-        });
-
-        // Clear search button
-        if (searchInput.value) {
-            const clearBtn = document.createElement('button');
-            clearBtn.type = 'button';
-            clearBtn.innerHTML = '&times;';
-            clearBtn.style.cssText = `
-                position: absolute;
-                right: 10px;
-                background: none;
-                border: none;
-                color: #999;
-                font-size: 16px;
-                cursor: pointer;
-                padding: 0;
-                width: 20px;
-                height: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
-            clearBtn.addEventListener('click', function() {
-                searchInput.value = '';
-                searchInput.form.submit();
-            });
-            searchInput.parentNode.appendChild(clearBtn);
-        }
-    }
-});
-</script>
+<dialog id="saveViewDialog" class="dialog dialog-sm" aria-labelledby="saveViewTitle">
+    <form method="dialog" id="saveViewForm">
+        <div class="dialog-header">
+            <h2 class="dialog-title" id="saveViewTitle">Save this view</h2>
+            <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+        </div>
+        <div class="dialog-body">
+            <div class="field">
+                <label class="label" for="viewName">Name</label>
+                <input class="input" id="viewName" maxlength="30" required placeholder="e.g. Unpaid this week">
+                <p class="help">Saved on this device. Tap it later to get these filters back.</p>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button>
+            <button type="submit" class="btn btn-primary" value="save">Save view</button>
+        </div>
+    </form>
+</dialog>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const statusLabels = @json($statusLabels);
+    const steps = @json($nextStep);
+
+    // Search as you type (after a short pause); dates and payment apply on change
+    const form = document.getElementById('filterForm');
+    let timer;
+    form.search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => form.submit(), 600); });
+    ['payment', 'from', 'to'].forEach(name => form[name].addEventListener('change', () => form.submit()));
+    form.querySelector('.filter-toggle').addEventListener('click', e => {
+        const open = form.classList.toggle('is-open');
+        e.currentTarget.setAttribute('aria-expanded', String(open));
+    });
+
+    // ---- Status changes (one row or many), with Undo ----
+    const setStatus = (ids, status) => sendJson(appUrl('orders/bulk-status'), { ids, status });
+    const paint = (row, status) => {
+        row.dataset.status = status;
+        const badge = row.querySelector('[data-status-badge]');
+        badge.className = 'badge badge-' + status;
+        badge.textContent = statusLabels[status];
+        const button = row.querySelector('[data-next]');
+        const step = steps[status];
+        if (!button) return;
+        if (step) {
+            button.dataset.next = step[0];
+            button.innerHTML = `<i class="fas ${step[2]}" aria-hidden="true"></i> ${step[1]}`;
+            button.hidden = false;
+        } else {
+            button.hidden = true;
+        }
+    };
+    const change = async (rows, status) => {
+        const before = rows.map(r => [r, r.dataset.status]);
+        try {
+            const data = await setStatus(rows.map(r => Number(r.dataset.id)), status);
+            rows.forEach(r => paint(r, status));
+            showToast(rows.length === 1 ? `Order marked ${statusLabels[status].toLowerCase()}.` : data.message, 'success', 6000, {
+                label: 'Undo',
+                onClick: async () => {
+                    try {
+                        for (const [row, old] of before) { await setStatus([Number(row.dataset.id)], old); paint(row, old); }
+                    } catch (e) { showToast(e.message, 'error'); }
+                },
+            });
+        } catch (e) {
+            showToast(e.message, 'error');
+        }
+    };
+    document.querySelectorAll('[data-next]').forEach(button => {
+        button.addEventListener('click', async () => {
+            button.classList.add('is-loading');
+            await change([button.closest('tr')], button.dataset.next);
+            button.classList.remove('is-loading');
+        });
+    });
+
+    // ---- Selection + bulk bar ----
+    const checks = Array.from(document.querySelectorAll('.row-check'));
+    const all = document.getElementById('selectAll');
+    const bar = document.getElementById('bulkBar');
+    const selectedRows = () => checks.filter(c => c.checked).map(c => c.closest('tr'));
+    const refresh = () => {
+        const n = selectedRows().length;
+        checks.forEach(c => c.closest('tr').classList.toggle('is-selected', c.checked));
+        bar.hidden = n === 0;
+        document.getElementById('bulkCount').textContent = n + ' selected';
+        if (all) { all.checked = n > 0 && n === checks.length; all.indeterminate = n > 0 && n < checks.length; }
+    };
+    checks.forEach(c => c.addEventListener('change', refresh));
+    all?.addEventListener('change', () => { checks.forEach(c => { c.checked = all.checked; }); refresh(); });
+    document.getElementById('bulkClear').addEventListener('click', () => { checks.forEach(c => { c.checked = false; }); refresh(); });
+    document.querySelectorAll('[data-bulk]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const rows = selectedRows();
+            const status = button.dataset.bulk;
+            const ok = await confirmAction({
+                title: `Mark ${rows.length} ${rows.length === 1 ? 'order' : 'orders'} as ${statusLabels[status].toLowerCase()}?`,
+                message: 'You can undo this right after.',
+                confirmText: 'Update', tone: 'neutral',
+            });
+            if (!ok) return;
+            await change(rows, status);
+            checks.forEach(c => { c.checked = false; });
+            refresh();
+        });
+    });
+
+    // ---- Saved views (kept on this device) ----
+    const KEY = 'soapOpera.orderViews';
+    const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+    const store = views => { try { localStorage.setItem(KEY, JSON.stringify(views)); } catch (e) { /* storage blocked */ } };
+    const renderViews = () => {
+        const box = document.getElementById('savedViews');
+        box.replaceChildren();
+        load().forEach((view, i) => {
+            const chip = document.createElement('span');
+            chip.className = 'saved-view';
+            const link = document.createElement('a');
+            link.href = appUrl('orders') + view.query;
+            link.innerHTML = '<i class="fas fa-bookmark" aria-hidden="true"></i>';
+            link.append(document.createTextNode(' ' + view.name));
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.setAttribute('aria-label', 'Remove saved view ' + view.name);
+            remove.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i>';
+            remove.addEventListener('click', () => { const views = load(); views.splice(i, 1); store(views); renderViews(); });
+            chip.append(link, remove);
+            box.append(chip);
+        });
+    };
+    renderViews();
+    document.getElementById('saveViewBtn')?.addEventListener('click', () => {
+        document.getElementById('viewName').value = '';
+        openDialog('saveViewDialog');
+    });
+    document.getElementById('saveViewForm').addEventListener('submit', () => {
+        const name = document.getElementById('viewName').value.trim();
+        if (!name) return;
+        store([...load().filter(v => v.name !== name), { name, query: location.search }].slice(-8));
+        renderViews();
+        showToast(`Saved "${name}".`, 'success');
+    });
+})();
+</script>
+@endpush

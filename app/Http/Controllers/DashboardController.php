@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
 use Carbon\Carbon;
@@ -10,9 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    /** An order counts as stuck when it has been pending/processing this many days. */
-    private const STUCK_PENDING_DAYS = 1;
-    private const STUCK_PROCESSING_DAYS = 3;
+    /** Automatic backups run every 24 hours; one older than this means they are failing. */
+    private const BACKUP_STALE_HOURS = 26;
 
     /**
      * Display the dashboard.
@@ -20,7 +20,6 @@ class DashboardController extends Controller
     public function index()
     {
         $today = Carbon::today();
-        $yesterday = Carbon::yesterday();
         $startOfMonth = $today->copy()->startOfMonth();
         $startOfLastMonth = $startOfMonth->copy()->subMonthNoOverflow();
 
@@ -31,39 +30,33 @@ class DashboardController extends Controller
             ->addDays($today->day - 1)
             ->min($startOfLastMonth->copy()->endOfMonth()->startOfDay());
 
-        $stats = $this->stats();
-
         $thisMonth = $this->periodTotals($startOfMonth, $today);
         $lastMonth = $this->periodTotals($startOfLastMonth, $sameDayLastMonth);
-
+        $monthRevenue = $thisMonth->revenue;
         $revenueTrend = $this->percentChange($thisMonth->revenue, $lastMonth->revenue);
-        $ordersTrend = $this->percentChange($thisMonth->orders, $lastMonth->orders);
 
-        // Pending orders created today vs. yesterday
-        $yesterdayPending = Order::onDate($yesterday)->where('status', 'pending')->count();
-        $pendingTrend = $this->percentChange($stats['todayPending'], $yesterdayPending);
+        // Money taken at the counter today, whatever day the order is from
+        $collectedToday = (float) Payment::where('created_at', '>=', $today)->sum('amount');
 
-        // Recent Orders (last 10)
         $recentOrders = Order::with('customer:id,name')
             ->latest('id')
-            ->take(10)
+            ->take(8)
             ->get();
 
-        // Top Services by number of completed orders
+        // Top services by number of completed orders
         $topServices = Service::query()
             ->select(
                 'services.id',
                 'services.name',
-                'services.price',
                 DB::raw('COUNT(order_items.id) as order_count'),
                 DB::raw('COALESCE(SUM(order_items.total), 0) as total_revenue')
             )
             ->join('order_items', 'services.id', '=', 'order_items.service_id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed')
-            ->groupBy('services.id', 'services.name', 'services.price')
+            ->groupBy('services.id', 'services.name')
             ->orderByDesc('order_count')
-            ->take(10)
+            ->take(5)
             ->get();
 
         $chartData = [
@@ -75,40 +68,32 @@ class DashboardController extends Controller
         // Automatic daily backup, made after this page has been sent so nobody waits for it
         app()->terminating(fn () => BackupController::backupIfDue());
 
-        return view('dashboard', array_merge($stats, $this->attention(), compact(
+        return view('dashboard', array_merge($this->stats(), $this->attention(), compact(
+            'monthRevenue',
+            'revenueTrend',
+            'collectedToday',
             'recentOrders',
             'topServices',
-            'chartData',
-            'revenueTrend',
-            'ordersTrend',
-            'pendingTrend'
+            'chartData'
         )));
     }
 
     /**
      * Things staff should act on, found automatically on every dashboard load:
-     * products at or below their minimum stock, orders stuck in pending or
-     * processing, and completed orders that still have a balance.
+     * overdue orders, orders ready for pickup, completed orders that still have
+     * a balance, products at or below their minimum stock and, for admins,
+     * backups that have stopped happening.
      */
     private function attention(): array
     {
-        $today = Carbon::today();
-
         $lowStock = Product::where('status', 'active')
             ->whereColumn('available_stock', '<=', 'minimum_stock_level')
             ->orderBy('available_stock')
             ->get(['id', 'name', 'available_stock', 'minimum_stock_level']);
 
-        // order_date is stored as Y-m-d text, so string comparison works on SQLite and MySQL
-        $stuckOrders = Order::with('customer:id,name')
-            ->where(function ($q) use ($today) {
-                $q->where(fn ($q) => $q->where('status', 'pending')
-                        ->where('order_date', '<=', $today->copy()->subDays(self::STUCK_PENDING_DAYS)->toDateString()))
-                  ->orWhere(fn ($q) => $q->where('status', 'processing')
-                        ->where('order_date', '<=', $today->copy()->subDays(self::STUCK_PROCESSING_DAYS)->toDateString()));
-            })
-            ->orderBy('order_date')
-            ->get();
+        $stuckOrders = Order::with('customer:id,name')->overdue()->orderBy('order_date')->get();
+
+        $readyOrders = Order::with('customer:id,name')->where('status', 'ready')->orderBy('order_date')->get();
 
         $unpaidOrders = Order::with('customer:id,name')
             ->where('status', 'completed')
@@ -116,9 +101,13 @@ class DashboardController extends Controller
             ->orderBy('order_date')
             ->get();
 
-        $stuckRule = 'Pending ' . self::STUCK_PENDING_DAYS . '+ day or processing ' . self::STUCK_PROCESSING_DAYS . '+ days';
+        $stuckRule = 'Pending ' . Order::OVERDUE_PENDING_DAYS . '+ day or processing ' . Order::OVERDUE_PROCESSING_DAYS . '+ days';
 
-        return compact('lowStock', 'stuckOrders', 'unpaidOrders', 'stuckRule');
+        $isAdmin = session('staff.role') === 'admin';
+        $lastBackupAt = $isAdmin ? BackupController::lastBackupTime() : null;
+        $backupStale = $isAdmin && ($lastBackupAt === null || $lastBackupAt < time() - self::BACKUP_STALE_HOURS * 3600);
+
+        return compact('lowStock', 'stuckOrders', 'readyOrders', 'unpaidOrders', 'stuckRule', 'lastBackupAt', 'backupStale');
     }
 
     /**
@@ -144,17 +133,22 @@ class DashboardController extends Controller
     }
 
     /**
-     * Headline numbers, computed with two aggregate queries.
+     * Headline numbers, computed with a few aggregate queries.
      */
     private function stats(): array
     {
         $overall = Order::query()
             ->selectRaw('COUNT(*) as total_orders')
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders")
+            ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_orders")
+            ->selectRaw("SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) as ready_orders")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as total_revenue")
+            ->selectRaw("SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total THEN 1 ELSE 0 END) as unpaid_count")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total THEN total - paid_amount ELSE 0 END), 0) as unpaid_balance")
             ->first();
 
         $today = Order::today()
+            ->selectRaw("SUM(CASE WHEN status <> 'cancelled' THEN 1 ELSE 0 END) as orders")
             ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' THEN total ELSE 0 END), 0) as revenue")
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed")
             ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing")
@@ -164,7 +158,14 @@ class DashboardController extends Controller
         return [
             'totalOrders' => (int) $overall->total_orders,
             'pendingOrders' => (int) $overall->pending_orders,
+            'processingOrders' => (int) $overall->processing_orders,
+            'readyCount' => (int) $overall->ready_orders,
+            'openOrders' => (int) $overall->pending_orders + (int) $overall->processing_orders + (int) $overall->ready_orders,
+            'overdueCount' => Order::overdue()->count(),
+            'unpaidCount' => (int) $overall->unpaid_count,
+            'unpaidBalance' => round((float) $overall->unpaid_balance, 2),
             'totalRevenue' => (float) $overall->total_revenue,
+            'todayOrders' => (int) $today->orders,
             'todayRevenue' => (float) $today->revenue,
             'todayCompleted' => (int) $today->completed,
             'todayProcessing' => (int) $today->processing,
@@ -206,16 +207,16 @@ class DashboardController extends Controller
             ->get()
             ->keyBy('day');
 
-        // Bucket the daily figures into the period's labels
+        // Bucket the daily figures into the period's labels; "titles" name each bucket in full
         $buckets = [];
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
-            $label = match ($period) {
-                'month' => 'Week ' . (intdiv($date->day - 1, 7) + 1),
-                'year' => $date->format('M'),
-                default => $date->format('D'),
+            [$label, $title] = match ($period) {
+                'month' => ['Week ' . (intdiv($date->day - 1, 7) + 1), 'Week ' . (intdiv($date->day - 1, 7) + 1) . ' of ' . $date->format('F')],
+                'year' => [$date->format('M'), $date->format('F Y')],
+                default => [$date->format('D'), $date->format('l, M j')],
             };
 
-            $buckets[$label] ??= ['sales' => 0.0, 'orders' => 0];
+            $buckets[$label] ??= ['title' => $title, 'sales' => 0.0, 'orders' => 0];
 
             if ($row = $daily->get($date->toDateString())) {
                 $buckets[$label]['sales'] += (float) $row->sales;
@@ -225,6 +226,7 @@ class DashboardController extends Controller
 
         return [
             'labels' => array_keys($buckets),
+            'titles' => array_column($buckets, 'title'),
             'sales' => array_map(fn ($b) => round($b['sales'], 2), array_values($buckets)),
             'orders' => array_column($buckets, 'orders'),
         ];

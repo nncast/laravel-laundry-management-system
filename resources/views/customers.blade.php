@@ -2,611 +2,124 @@
 
 @section('title', 'Customers')
 @section('page-title', 'Customers')
+@section('page-subtitle', number_format($customers->total()) . ' ' . \Illuminate\Support\Str::plural('customer', $customers->total()) . ($search ? ' matching "' . $search . '"' : ''))
+
+@php $isManager = in_array(session('staff.role'), ['manager', 'admin'], true); @endphp
+
+@section('page-actions')
+    <button type="button" class="btn btn-primary" data-form-dialog="customerDialog" data-title="Add customer" data-submit="Save customer"
+            data-action="{{ route('customers.store') }}" data-method="POST"><i class="fas fa-user-plus" aria-hidden="true"></i> Add customer</button>
+@endsection
 
 @section('content')
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/modal.css') }}?v={{ @filemtime(public_path('css/modal.css')) }}">
-@endpush
-
-<style>
-/* ================================
-   Customers Page – FINAL FIX
-   ================================ */
-
-.customers-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    width: 100%;
-}
-
-/* Search + Add */
-.search-add-container {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.search-box {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.search-box input {
-    width: 250px;
-    min-width: 200px;
-    padding: 10px 15px 10px 40px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    font-family: var(--font);
-    transition: 0.3s;
-}
-
-.search-box input:focus {
-    outline: none;
-    border-color: var(--blue);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
-}
-
-.search-box i {
-    position: absolute;
-    left: 15px;
-    color: var(--text-light);
-}
-
-.add-customer-btn {
-    background: var(--blue);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-}
-
-.add-customer-btn:hover {
-    background: var(--accent-hover);
-}
-
-/* ================================
-   TABLE (FULL WIDTH FIX)
-   ================================ */
-
-.customers-table {
-    width: 100%;
-    background: #fff;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: none;
-    border: 1px solid var(--border);
-}
-
-/* Header */
-.table-header {
-    display: grid;
-    grid-template-columns: 60px 2fr 1.5fr 2fr 1fr;
-    width: 100%;
-    padding: 15px 20px;
-    background: var(--surface-muted);
-    font-weight: 600;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-    text-align: left;
-}
-
-/* Rows */
-.table-row {
-    display: grid;
-    grid-template-columns: 60px 2fr 1.5fr 2fr 1fr;
-    width: 100%;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--surface-sunken);
-    align-items: center;
-    font-size: 14px;
-}
-
-.table-row:last-child {
-    border-bottom: none;
-}
-
-.table-row.no-results {
-    grid-template-columns: 1fr;
-    text-align: center;
-    color: var(--text-faint);
-    font-style: italic;
-    padding: 30px 20px;
-}
-
-.customer-name {
-    font-weight: 600;
-    color: var(--text);
-}
-
-.customer-contact {
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-.customer-address {
-    color: var(--text-muted);
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-/* Actions */
-.action-buttons {
-    display: flex;
-    gap: 6px;
-}
-
-.action-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: none;
-    border: none;
-    color: var(--blue);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--accent-hover);
-}
-
-.action-btn.delete:hover {
-    background: rgba(220, 38, 38, 0.1);
-    color: var(--danger);
-}
-
-/* ================================
-   MOBILE
-   ================================ */
-@media (max-width: 768px) {
-    .customers-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-    }
-
-    .search-add-container {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .search-box input {
-        width: 100%;
-        min-width: unset;
-    }
-
-    .add-customer-btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .table-header {
-        display: none;
-    }
-
-    .table-row {
-        grid-template-columns: 1fr;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        margin-bottom: 10px;
-        padding: 12px;
-        gap: 10px;
-    }
-
-    .action-buttons {
-        justify-content: flex-start;
-        margin-top: 10px;
-    }
-}
-
-@media (max-width: 576px) {
-    .table-row {
-        font-size: 13px;
-    }
-
-    .action-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
-    }
-}
-</style>
-
-<div class="customers-header">
-    <div class="search-add-container">
-        <form class="search-box" method="GET" action="{{ route('customers.index') }}" role="search">
-            <i class="fas fa-search"></i>
-            <input type="search" id="searchInput" name="search" value="{{ $search ?? '' }}" placeholder="Search customers..." autocomplete="off">
-        </form>
-        <button class="add-customer-btn" id="addCustomerBtn"><i class="fas fa-plus"></i> Add New Customer</button>
+<form class="toolbar" method="GET" action="{{ route('customers.index') }}" role="search">
+    <div class="search">
+        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+        <input class="input" type="search" name="search" value="{{ $search }}" placeholder="Name, phone or address" aria-label="Search customers" autocomplete="off" id="customerSearch">
     </div>
-</div>
+    @if($search)<a href="{{ route('customers.index') }}" class="btn btn-ghost">Clear</a>@endif
+</form>
 
-<div class="customers-table">
-    <div class="table-header">
-        <div>#</div><div>Customer Name</div><div>Contact</div><div>Address</div><div>Action</div>
-    </div>
-
-    @forelse($customers as $index => $customer)
-    <div class="table-row" data-id="{{ $customer->id }}" data-update-url="{{ route('customers.update', $customer) }}" data-delete-url="{{ route('customers.destroy', $customer) }}">
-        <div>{{ $customers->firstItem() + $index }}</div>
-        <div class="customer-name">{{ $customer->name }}</div>
-        <div class="customer-contact">{{ $customer->contact }}</div>
-        <div class="customer-address">{{ $customer->address }}</div>
-        <div class="action-buttons">
-            <button type="button" class="action-btn edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
-            @if(in_array(session('staff.role'), ['manager', 'admin']))
-            <button type="button" class="action-btn delete" title="Delete"><i class="fas fa-trash"></i></button>
+<div class="card card-flush">
+    @if($customers->isEmpty())
+        <div class="empty">
+            @if($search)
+                <span class="empty-icon" aria-hidden="true"><i class="fas fa-user-slash"></i></span>
+                <p class="empty-title">No customers match "{{ $search }}"</p>
+                <a href="{{ route('customers.index') }}" class="btn btn-secondary">Clear search</a>
+            @else
+                <x-mascot mood="curious" class="empty-art mascot-ink" />
+                <p class="empty-title">No customers yet</p>
+                <p>Add them here, or right from the point of sale.</p>
             @endif
         </div>
+    @else
+    <div class="table-wrap">
+        <table class="table table-stack">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th class="num">Orders</th>
+                    <th>Last order</th>
+                    <th class="num">Balance due</th>
+                    <th class="actions"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($customers as $customer)
+                <tr>
+                    <td class="cell-primary">
+                        <div class="cluster" style="flex-wrap:nowrap">
+                            <span class="avatar" aria-hidden="true">{{ strtoupper(mb_substr($customer->name, 0, 1)) }}</span>
+                            <div style="min-width:0">
+                                <div class="cell-title">{{ $customer->name }}</div>
+                                @if($customer->address)<div class="cell-sub truncate">{{ $customer->address }}</div>@endif
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Phone">
+                        @if($customer->contact)<a href="tel:{{ $customer->contact }}" class="nowrap">{{ $customer->contact }}</a>@else<span class="muted">—</span>@endif
+                    </td>
+                    <td data-label="Orders" class="num">
+                        @if($customer->orders_count)
+                            <a href="{{ route('orders.index', ['search' => $customer->contact ?: $customer->name]) }}">{{ $customer->orders_count }}</a>
+                        @else
+                            <span class="muted">0</span>
+                        @endif
+                    </td>
+                    <td data-label="Last order">{{ $customer->last_order_date ? \Carbon\Carbon::parse($customer->last_order_date)->format('M j, Y') : '—' }}</td>
+                    <td data-label="Balance due" class="num">
+                        @if($customer->balance_due > 0)
+                            <span class="badge badge-unpaid money">₱{{ number_format($customer->balance_due, 2) }}</span>
+                        @else
+                            <span class="muted">—</span>
+                        @endif
+                    </td>
+                    <td class="actions">
+                        <div class="cell-actions">
+                            <a href="{{ route('pos.index', ['customer' => $customer->id]) }}" class="btn btn-sm btn-soft"><i class="fas fa-plus" aria-hidden="true"></i> New order</a>
+                            <button type="button" class="icon-btn" aria-label="Edit {{ $customer->name }}" title="Edit"
+                                    data-form-dialog="customerDialog" data-title="Edit customer" data-submit="Save changes"
+                                    data-action="{{ route('customers.update', $customer) }}" data-method="PUT"
+                                    data-values="{{ json_encode($customer->only('name', 'contact', 'address')) }}"><i class="fas fa-pen" aria-hidden="true"></i></button>
+                            @if($isManager)
+                            <form method="POST" action="{{ route('customers.destroy', $customer) }}" data-confirm="{{ $customer->name }} will be removed. Their past orders stay, marked as a walk-in customer." data-confirm-title="Delete this customer?">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="icon-btn danger" aria-label="Delete {{ $customer->name }}" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                            </form>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
-    @empty
-    <div class="table-row no-results">
-        <div>{{ !empty($search) ? 'No customers match your search.' : 'No customers found.' }}</div>
-    </div>
-    @endforelse
+    {{ $customers->links() }}
+    @endif
 </div>
 
-{{ $customers->links() }}
-
-<!-- Add Customer Modal -->
-<div id="addCustomerModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add Customer</h3>
-            <button type="button" class="close-btn" id="closeAddModal">&times;</button>
-        </div>
-
-        <form method="POST" action="{{ route('customers.store') }}" id="addCustomerForm">
-            @csrf
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="name">
-                        Customer Name <span class="required-star">*</span>
-                    </label>
-                    <input type="text" name="name" id="name" placeholder="Enter customer name" required>
-                    <div class="error-message" id="name_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="contact">
-                        Contact Number
-                    </label>
-                    <input type="text" name="contact" id="contact" placeholder="e.g., 09123456789">
-                    <div class="error-message" id="contact_error"></div>
-                    <div class="helper-text">Optional - 10 to 15 digits only</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="address">
-                        Address
-                    </label>
-                    <textarea name="address" id="address" rows="3" placeholder="Enter customer address"></textarea>
-                    <div class="error-message" id="address_error"></div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="cancelAdd">Cancel</button>
-                <button type="submit" class="btn-primary">Save Customer</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Edit Customer Modal -->
-<div id="editCustomerModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Customer</h3>
-            <button type="button" class="close-btn" id="closeEditModal">&times;</button>
-        </div>
-
-        <form method="POST" id="editCustomerForm">
-            @csrf
-            @method('PUT')
-
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="edit_name">
-                        Customer Name <span class="required-star">*</span>
-                    </label>
-                    <input type="text" name="name" id="edit_name" placeholder="Enter customer name" required>
-                    <div class="error-message" id="edit_name_error"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_contact">
-                        Contact Number
-                    </label>
-                    <input type="text" name="contact" id="edit_contact" placeholder="e.g., 09123456789">
-                    <div class="error-message" id="edit_contact_error"></div>
-                    <div class="helper-text">Optional - 10 to 15 digits only</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit_address">
-                        Address
-                    </label>
-                    <textarea name="address" id="edit_address" rows="3" placeholder="Enter customer address"></textarea>
-                    <div class="error-message" id="edit_address_error"></div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" id="cancelEdit">Cancel</button>
-                <button type="submit" class="btn-primary">Update Customer</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-// Modal Utility Functions
-function openModal(modal) {
-    modal.classList.add('active');
-    document.body.classList.add('modal-open');
-}
-
-function closeModal(modal) {
-    modal.classList.remove('active');
-    document.body.classList.remove('modal-open');
-    clearAllErrors();
-}
-
-function clearAllErrors() {
-    document.querySelectorAll('.error-message').forEach(error => {
-        error.style.display = 'none';
-        error.textContent = '';
-    });
-    document.querySelectorAll('input, textarea').forEach(field => {
-        field.style.borderColor = '#ddd';
-    });
-}
-
-function showError(fieldId, message) {
-    const errorElement = document.getElementById(fieldId);
-    const inputElement = document.querySelector(`[name="${fieldId.replace('_error', '')}"]`);
-    if (errorElement && inputElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        inputElement.style.borderColor = '#dc3545';
-    }
-}
-
-function validatePhone(phone) {
-    if (!phone) return true; // Optional field
-    return /^[0-9]{10,15}$/.test(phone.replace(/\s/g, ''));
-}
-
-function validateForm(form) {
-    let valid = true;
-    clearAllErrors();
-
-    const nameField = form.querySelector('[name="name"]');
-    const contactField = form.querySelector('[name="contact"]');
-    const isEdit = form.id === 'editCustomerForm';
-
-    if (!nameField || !nameField.value.trim()) {
-        showError(isEdit ? 'edit_name_error' : 'name_error', 'Customer name is required');
-        valid = false;
-    }
-
-    if (contactField && contactField.value && !validatePhone(contactField.value)) {
-        showError(isEdit ? 'edit_contact_error' : 'contact_error', 'Contact number must be 10-15 digits');
-        valid = false;
-    }
-
-    return valid;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    const addModal = document.getElementById("addCustomerModal");
-    const editModal = document.getElementById("editCustomerModal");
-    const addBtn = document.getElementById("addCustomerBtn");
-    const cancelAddBtn = document.getElementById("cancelAdd");
-    const cancelEditBtn = document.getElementById("cancelEdit");
-    const closeAddModal = document.getElementById("closeAddModal");
-    const closeEditModal = document.getElementById("closeEditModal");
-    const addForm = document.getElementById("addCustomerForm");
-    const editForm = document.getElementById("editCustomerForm");
-    const searchInput = document.getElementById("searchInput");
-    const tableRows = document.querySelectorAll(".table-row:not(.no-results)");
-
-    // ----------------------------
-    // Open Add Modal
-    // ----------------------------
-    addBtn.addEventListener('click', () => {
-        openModal(addModal);
-        addForm.reset();
-
-        // Auto-focus on name field
-        setTimeout(() => {
-            document.getElementById('name')?.focus();
-        }, 300);
-    });
-
-    // ----------------------------
-    // Close Modals
-    // ----------------------------
-    cancelAddBtn.addEventListener('click', () => closeModal(addModal));
-    closeAddModal.addEventListener('click', () => closeModal(addModal));
-
-    cancelEditBtn.addEventListener('click', () => closeModal(editModal));
-    closeEditModal.addEventListener('click', () => closeModal(editModal));
-
-    // ----------------------------
-    // Edit buttons
-    // ----------------------------
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const row = e.target.closest('.table-row');
-            const customerId = row.dataset.id;
-
-            editForm.action = row.dataset.updateUrl;
-            document.getElementById('edit_name').value = row.querySelector('.customer-name').innerText;
-            document.getElementById('edit_contact').value = row.querySelector('.customer-contact').innerText;
-            document.getElementById('edit_address').value = row.querySelector('.customer-address').innerText;
-
-            openModal(editModal);
-
-            // Auto-focus on name field
-            setTimeout(() => {
-                document.getElementById('edit_name')?.focus();
-            }, 300);
-        });
-    });
-
-    // ----------------------------
-    // Close modals on outside click & escape
-    // ----------------------------
-    window.addEventListener('click', e => {
-        if(e.target === addModal) closeModal(addModal);
-        if(e.target === editModal) closeModal(editModal);
-    });
-
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') {
-            closeModal(addModal);
-            closeModal(editModal);
-        }
-    });
-
-    // ----------------------------
-    // Form Validation
-    // ----------------------------
-    addForm.addEventListener('submit', function(e) {
-        if (!validateForm(this)) {
-            e.preventDefault();
-        }
-    });
-
-    editForm.addEventListener('submit', function(e) {
-        if (!validateForm(this)) {
-            e.preventDefault();
-        }
-    });
-
-    // Real-time phone validation
-    document.getElementById('contact')?.addEventListener('blur', function() {
-        if (this.value && !validatePhone(this.value)) {
-            showError('contact_error', 'Contact number must be 10-15 digits');
-        }
-    });
-
-    document.getElementById('edit_contact')?.addEventListener('blur', function() {
-        if (this.value && !validatePhone(this.value)) {
-            showError('edit_contact_error', 'Contact number must be 10-15 digits');
-        }
-    });
-
-    // Clear errors on input
-    document.querySelectorAll('#addCustomerForm input, #addCustomerForm textarea').forEach(field => {
-        field.addEventListener('input', function() {
-            this.style.borderColor = '#ddd';
-            const errorElement = document.getElementById(this.name + '_error');
-            if (errorElement) errorElement.style.display = 'none';
-        });
-    });
-
-    document.querySelectorAll('#editCustomerForm input, #editCustomerForm textarea').forEach(field => {
-        field.addEventListener('input', function() {
-            this.style.borderColor = '#ddd';
-            const errorElement = document.getElementById('edit_' + this.name + '_error');
-            if (errorElement) errorElement.style.display = 'none';
-        });
-    });
-
-    // ----------------------------
-    // Live search filter
-    // ----------------------------
-    let searchTimer;
-    searchInput.addEventListener('input', () => {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => searchInput.form.submit(), 600);
-        const query = searchInput.value.toLowerCase().trim();
-        let anyVisible = false;
-
-        tableRows.forEach(row => {
-            const name = row.querySelector('.customer-name').innerText.toLowerCase();
-            const contact = row.querySelector('.customer-contact').innerText.toLowerCase();
-            const address = row.querySelector('.customer-address').innerText.toLowerCase();
-
-            if(name.includes(query) || contact.includes(query) || address.includes(query)){
-                row.style.display = 'grid';
-                anyVisible = true;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        // Handle "No customers found" message
-        let noResultsRow = document.querySelector('.table-row.no-results');
-
-        if (!anyVisible && !noResultsRow) {
-            noResultsRow = document.createElement('div');
-            noResultsRow.classList.add('table-row', 'no-results');
-            noResultsRow.innerHTML = `<div>No customers found.</div>`;
-            document.querySelector('.customers-table').appendChild(noResultsRow);
-        }
-
-        if (noResultsRow) {
-            noResultsRow.style.display = anyVisible ? 'none' : 'grid';
-        }
-    });
-
-    // ----------------------------
-    // Delete functionality (if needed)
-    // ----------------------------
-    document.querySelectorAll('.action-btn.delete').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            const row = e.target.closest('.table-row');
-            const customerId = row.dataset.id;
-            const customerName = row.querySelector('.customer-name').innerText.trim();
-
-            if (!confirm(`Are you sure you want to delete "${customerName}"?`)) {
-                return;
-            }
-
-            // Create a form to submit the DELETE request
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = row.dataset.deleteUrl;
-            form.style.display = 'none';
-
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = '_token';
-            csrfToken.value = '{{ csrf_token() }}';
-
-            const methodField = document.createElement('input');
-            methodField.type = 'hidden';
-            methodField.name = '_method';
-            methodField.value = 'DELETE';
-
-            form.appendChild(csrfToken);
-            form.appendChild(methodField);
-            document.body.appendChild(form);
-            form.submit();
-        });
-    });
-});
-</script>
+<x-form-dialog id="customerDialog" title="Add customer" :action="route('customers.store')" submit="Save customer">
+    <x-field name="name" label="Name" required maxlength="255" autocomplete="off" />
+    <x-field name="contact" label="Phone" type="tel" inputmode="numeric" pattern="[0-9]{10,15}" maxlength="15" placeholder="09123456789" help="Optional. 10 to 15 digits, no spaces." />
+    <x-field name="address" label="Address" type="textarea" rows="3" maxlength="500" />
+</x-form-dialog>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    // Search as you type, after a short pause
+    const search = document.getElementById('customerSearch');
+    let timer;
+    search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => search.form.submit(), 500); });
+
+    // Dashboard's "Add customer" lands here with ?new=1
+    @if(request()->boolean('new') && !$errors->any())
+    document.querySelector('[data-form-dialog="customerDialog"]').click();
+    @endif
+})();
+</script>
+@endpush

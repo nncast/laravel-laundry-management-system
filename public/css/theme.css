@@ -1,71 +1,109 @@
 /* ==========================================================================
-   Soap Opera design tokens, shared by every page (layout pages, POS and login).
-   Flat style: solid sky blues, white surfaces with 1px borders, no gloss or
-   drop shadows. The bubble mascot is the only 3D element.
-   Change colors here, not in the pages.
+   Soap Opera design tokens, shared by the sign-in page, the app shell and the
+   POS. Components live in app.css; change colors, type and spacing here.
+
+   Contrast (WCAG 2.1 AA): text colors are 4.5:1 or better on --surface and
+   --bg, --accent takes white text at 5.3:1, and --border-input (the edge that
+   identifies a form control) is 3:1. --text-faint is for icons and
+   decoration only, never for text people need to read.
    ========================================================================== */
 :root {
     --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-    /* Neutrals (blue-tinted so white surfaces feel airy) */
-    --bg: #f2f6fc;
+    /* ---- Neutrals (blue-tinted) ---- */
+    --bg: #f4f7fb;
     --surface: #ffffff;
-    --surface-muted: #f6f9fe;
-    --surface-sunken: #ecf3fc;
-    --border: #e1eaf5;
-    --border-strong: #cbd9ea;
+    --surface-muted: #f8fafd;
+    --surface-sunken: #eef2f7;
+    --surface-hover: #f2f6fc;
+    --border: #e1e8f1;
+    --border-strong: #cdd8e6;
+    --border-input: #7f93b0;
     --text: #0b1b34;
-    --text-secondary: #2b3d5a;
-    --text-muted: #5f7391;
-    --text-faint: #98a9c1;
+    --text-secondary: #334663;
+    --text-muted: #596d8a;
+    --text-faint: #7d8ea8;
 
-    /* Brand */
-    --accent: #1f74f0;
-    --accent-hover: #155fd2;
-    --accent-soft: #e8f2ff;
-    --accent-ring: rgba(31, 116, 240, 0.2);
+    /* ---- Brand ---- */
+    --accent: #1766dc;
+    --accent-hover: #1257c2;
+    --accent-pressed: #0f4aa6;
+    --accent-soft: #eef4ff;
+    --accent-soft-strong: #dbe8ff;
+    --accent-ring: rgba(23, 102, 220, 0.28);
     --accent-light: #5fb3ff;
-    /* Flat: the old gradient/gloss names now hold solid colors and empty shadows */
+    --on-accent: #ffffff;
+
+    /* ---- Status ---- */
+    --success: #0e7c3e;
+    --success-hover: #0b6833;
+    --success-soft: #e6f6ec;
+    --success-text: #0f6b3a;
+    --danger: #c62f35;
+    --danger-hover: #a8252b;
+    --danger-soft: #fdeeee;
+    --danger-text: #a3262b;
+    --warning: #f5a524;
+    --warning-hover: #d98a0b;
+    --warning-soft: #fff4e0;
+    --warning-text: #8a5300;
+    --info: #12a6d8;
+    --info-soft: #e5f7fd;
+    --info-text: #0b6584;
+    --violet-soft: #f0ecff;
+    --violet-text: #5b3fd0;
+
+    /* ---- Type scale (rem = 16px) ---- */
+    --fs-xs: 0.75rem;     /* 12: eyebrows, keyboard hints */
+    --fs-sm: 0.8125rem;   /* 13: meta, table headers */
+    --fs-base: 0.9375rem; /* 15: body, table cells */
+    --fs-md: 1rem;        /* 16: inputs (no iOS zoom), card titles */
+    --fs-lg: 1.25rem;     /* 20: section titles */
+    --fs-xl: 1.5rem;      /* 24: page titles */
+    --fs-2xl: 2rem;       /* 32: key figures */
+
+    /* ---- Spacing (4px grid) ---- */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-8: 32px;
+    --s-10: 40px;
+
+    /* ---- Touch targets: 44px minimum everywhere, 48px on touch screens ---- */
+    --tap: 44px;
+    --tap-lg: 52px;
+
+    /* ---- Shape ---- */
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 999px;
+
+    /* ---- Elevation: surfaces sit flat on borders; only floating layers cast shadows ---- */
+    --shadow-sm: 0 1px 2px rgba(11, 27, 52, 0.06);
+    --shadow: 0 4px 12px -2px rgba(11, 27, 52, 0.10), 0 2px 4px -2px rgba(11, 27, 52, 0.06);
+    --shadow-md: var(--shadow);
+    --shadow-lg: 0 18px 44px -12px rgba(11, 27, 52, 0.28);
+
+    /* ---- Motion ---- */
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --fast: 120ms;
+    --normal: 200ms;
+
+    /* Names the sign-in page still uses (flat: solid colors, no gloss) */
     --grad-brand: var(--accent);
     --grad-button: var(--accent);
     --grad-button-hover: var(--accent-hover);
     --gloss: 0 0 #0000;
     --glow: 0 0 #0000;
+}
 
-    /* Status */
-    --success: #12a150;
-    --success-hover: #0e8a44;
-    --success-soft: #e6f8ee;
-    --success-text: #0f6b3a;
-    --danger: #e5484d;
-    --danger-hover: #c93439;
-    --danger-soft: #fdeeee;
-    --danger-text: #a3262b;
-    --warning: #f5a524;
-    --warning-hover: #d98a0b;
-    --warning-soft: #fff6e5;
-    --warning-text: #8a5300;
-    --info: #12a6d8;
-    --info-hover: #0b8cb8;
-    --info-soft: #e5f7fd;
-    --info-text: #0b6584;
-
-    /* Shape */
-    --radius-lg: 18px;
-    --radius: 14px;
-    --radius-sm: 10px;
-    --radius-pill: 999px;
-    /* Surfaces are separated by borders; only floating layers (modals, toasts, menus) cast a shadow */
-    --shadow-sm: 0 0 #0000;
-    --shadow: 0 0 #0000;
-    --shadow-md: 0 0 #0000;
-    --shadow-lg: 0 12px 32px -12px rgba(11, 27, 52, 0.22);
-
-    /* Older names still used by some pages */
-    --blue: var(--accent);
-    --blue-dark: var(--accent-hover);
-    --text-dark: var(--text);
-    --text-light: var(--text-muted);
+@media (pointer: coarse) {
+    :root { --tap: 48px; --tap-lg: 56px; }
 }
 
 body {
@@ -73,14 +111,13 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-::selection { background: #cfe4ff; }
+::selection { background: var(--accent-soft-strong); }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 /* Flat icon tile: a soft tint of the tone color with the icon in that color */
 .bubble-tile {
     --tile: var(--accent);
-    --tile-light: var(--accent-light);
     display: grid;
     place-items: center;
     flex-shrink: 0;
@@ -88,15 +125,16 @@ body {
     height: 44px;
     border-radius: 12px;
     color: var(--tile);
-    background: color-mix(in srgb, var(--tile) 13%, #fff);
+    background: color-mix(in srgb, var(--tile) 12%, #fff);
 }
-.tone-blue   { --tile: #1f74f0; --tile-light: #6fbcff; }
-.tone-sky    { --tile: #0ea2e6; --tile-light: #7fdcff; }
-.tone-indigo { --tile: #4d63f0; --tile-light: #9aa9ff; }
-.tone-aqua   { --tile: #0fb3a3; --tile-light: #7eeadf; }
-.tone-violet { --tile: #7b61f0; --tile-light: #bfaaff; }
-.tone-amber  { --tile: #f29a11; --tile-light: #ffd27a; }
-.tone-green  { --tile: #12a150; --tile-light: #7fe0a6; }
+.tone-blue   { --tile: #1766dc; }
+.tone-sky    { --tile: #0a85bd; }
+.tone-indigo { --tile: #4d63f0; }
+.tone-aqua   { --tile: #0e8a7e; }
+.tone-violet { --tile: #6a4fe0; }
+.tone-amber  { --tile: #b86e00; }
+.tone-green  { --tile: #0e7c3e; }
+.tone-red    { --tile: #c62f35; }
 
 /* Bubble mascot (resources/views/components/mascot.blade.php). Arms and legs use
    currentColor: white on brand blue, .mascot-ink on light surfaces. */

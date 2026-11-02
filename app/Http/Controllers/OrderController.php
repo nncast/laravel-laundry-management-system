@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\SystemSetting;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,20 +16,70 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->input('search'));
+        $from = $this->dateInput($request, 'from', '');
+        $to = $this->dateInput($request, 'to', '');
+        $payment = in_array($request->input('payment'), ['unpaid', 'partial', 'paid'], true) ? $request->input('payment') : '';
+        // A status, "open" (still in the shop) or "overdue"
+        $status = (string) $request->input('status', '');
+        if (!in_array($status, [...Order::STATUSES, 'open', 'overdue'], true)) {
+            $status = '';
+        }
 
-        $orders = Order::with(['customer:id,name', 'staff:id,name'])
+        // Everything except the status tab, so each tab can show how many orders it holds
+        $filtered = Order::query()
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('order_number', 'like', "%{$search}%")
-                      ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', "%{$search}%"))
+                      ->orWhereHas('customer', fn ($c) => $c->where(fn ($c) => $c->where('name', 'like', "%{$search}%")->orWhere('contact', 'like', "%{$search}%")))
                       ->orWhereHas('staff', fn ($s) => $s->where('name', 'like', "%{$search}%"));
                 });
             })
+            ->when($payment === 'unpaid', fn ($q) => $q->unpaid())
+            ->when($payment === 'partial', fn ($q) => $q->unpaid()->where('paid_amount', '>', 0))
+            ->when($payment === 'paid', fn ($q) => $q->where('total', '>', 0)->whereColumn('paid_amount', '>=', 'total'))
+            ->when($from !== '', fn ($q) => $q->where('order_date', '>=', $from))
+            ->when($to !== '', fn ($q) => $q->where('order_date', '<', Carbon::parse($to)->addDay()->toDateString()));
+
+        $byStatus = (clone $filtered)->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+        $counts = ['' => (int) $byStatus->sum(), 'open' => (int) $byStatus->only(Order::OPEN_STATUSES)->sum(), 'overdue' => (clone $filtered)->overdue()->count()];
+        foreach (Order::STATUSES as $name) {
+            $counts[$name] = (int) ($byStatus[$name] ?? 0);
+        }
+
+        $orders = $filtered
+            ->with(['customer:id,name,contact', 'staff:id,name'])
+            ->when(in_array($status, Order::STATUSES, true), fn ($q) => $q->where('status', $status))
+            ->when($status === 'open', fn ($q) => $q->whereIn('status', Order::OPEN_STATUSES))
+            ->when($status === 'overdue', fn ($q) => $q->overdue())
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
 
-        return view('orders', compact('orders', 'search'));
+        return view('orders', compact('orders', 'search', 'status', 'payment', 'from', 'to', 'counts'));
+    }
+
+    /**
+     * Move several orders to one status (the orders list's bulk action).
+     */
+    public function bulkStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1|max:200',
+            'ids.*' => 'integer',
+            'status' => 'required|in:' . implode(',', Order::STATUSES),
+        ]);
+
+        $updated = Order::whereIn('id', $validated['ids'])
+            ->where('status', '!=', $validated['status'])
+            ->get()
+            ->each(fn (Order $order) => $order->update(['status' => $validated['status']]))
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'updated' => $updated,
+            'message' => $updated === 1 ? '1 order updated.' : "{$updated} orders updated.",
+        ]);
     }
 
     /**
