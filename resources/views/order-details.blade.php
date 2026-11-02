@@ -1104,7 +1104,7 @@ body {
                         </div>
                         @endif
                         <div class="payment-row">
-                            <span class="payment-label">Discount:</span>
+                            <span class="payment-label">Discount{{ $order->discount_percent !== null ? ' (' . (float) $order->discount_percent . '%)' : '' }}:</span>
                             <span class="payment-value">{{ number_format($order->discount, 2) }} PHP</span>
                         </div>
                         @if($order->tax > 0)
