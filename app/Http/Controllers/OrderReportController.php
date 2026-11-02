@@ -63,6 +63,7 @@ class OrderReportController extends Controller
             yield ['Completed', $summary['completed_count']];
             yield ['Pending', $summary['pending_count']];
             yield ['Processing', $summary['processing_count']];
+            yield ['Ready for pickup', $summary['ready_count']];
             yield ['Cancelled', $summary['cancelled_count']];
             yield [];
             yield ['Generated on', now()->format('Y-m-d H:i:s')];
@@ -105,6 +106,7 @@ class OrderReportController extends Controller
             ->selectRaw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count")
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count")
             ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_count")
+            ->selectRaw("SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) as ready_count")
             ->selectRaw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count")
             ->first();
 
@@ -114,6 +116,7 @@ class OrderReportController extends Controller
             'completed_count' => (int) $row->completed_count,
             'pending_count' => (int) $row->pending_count,
             'processing_count' => (int) $row->processing_count,
+            'ready_count' => (int) $row->ready_count,
             'cancelled_count' => (int) $row->cancelled_count,
             'page_orders' => $page ? $page->count() : 0,
             'page_amount' => $page ? (float) $page->sum('total') : 0,

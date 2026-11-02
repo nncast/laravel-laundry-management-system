@@ -1000,6 +1000,7 @@ body {
                     <select class="status-dropdown" data-order-id="{{ $order->id }}" data-current="{{ $order->status }}" aria-label="Order status">
                         <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Processing</option>
+                        <option value="ready" {{ $order->status == 'ready' ? 'selected' : '' }}>Ready for pickup</option>
                         <option value="completed" {{ $order->status == 'completed' ? 'selected' : '' }}>Completed</option>
                         <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
