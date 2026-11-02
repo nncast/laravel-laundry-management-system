@@ -104,6 +104,26 @@ class BackupTest extends TestCase
         $this->assertSame(1, (int) DB::selectOne('PRAGMA foreign_keys')->foreign_keys);
     }
 
+    public function test_restoring_an_older_backup_brings_its_tables_up_to_date(): void
+    {
+        // A backup made before the newest migration, as an older version of the app would make it
+        $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful();
+        $sql = file_get_contents($this->asAdmin()->get('/backup/download')->baseResponse->getFile()->getPathname());
+        $this->artisan('migrate')->assertSuccessful();
+
+        $file = UploadedFile::fake()->createWithContent('backup.sql', $sql);
+        $this->asAdmin()
+            ->post('/backup/restore', ['backup_file' => $file, 'confirm' => '1'])
+            ->assertRedirect(route('login'));
+
+        $migrator = app('migrator');
+        $pending = array_diff(
+            array_keys($migrator->getMigrationFiles(database_path('migrations'))),
+            $migrator->getRepository()->getRan()
+        );
+        $this->assertSame([], array_values($pending));
+    }
+
     public function test_restore_requires_confirmation_and_rejects_foreign_files(): void
     {
         $file = UploadedFile::fake()->createWithContent('evil.sql', 'DROP TABLE orders;');
