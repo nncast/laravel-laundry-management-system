@@ -222,7 +222,7 @@ class LaundryAppTest extends TestCase
 
         // "New order" on the customers page opens the POS with the customer picked
         $this->actingAsStaff($this->cashier)->get("/pos?customer={$this->customer->id}")
-            ->assertOk()->assertViewHas('preselectedCustomerId', $this->customer->id);
+            ->assertOk()->assertViewHas('preselectedCustomer', fn ($c) => $c->id === $this->customer->id);
     }
 
     public function test_pos_ignores_prices_sent_by_the_browser(): void

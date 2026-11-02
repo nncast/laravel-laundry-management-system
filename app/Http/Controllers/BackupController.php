@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -79,6 +80,8 @@ class BackupController extends Controller
 
         try {
             $this->runStatements($this->splitStatements($sql, $driver), $driver);
+            // Cached copies of what was just replaced (settings, dashboard trends)
+            Cache::flush();
         } catch (\Throwable $e) {
             Log::error('Restore failed: ' . $e->getMessage(), ['exception' => $e]);
 

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\SystemSetting;
 use App\Support\Format;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,11 +13,11 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Load the system settings at most once per request, no matter how
-        // many views/partials are rendered.
+        // The system settings: cached between requests (cleared when they are saved)
+        // and loaded at most once per request, however many views use them.
         $this->app->singleton('system.settings', function () {
             try {
-                return SystemSetting::first() ?? new SystemSetting();
+                return Cache::rememberForever('system.settings', fn () => SystemSetting::first() ?? new SystemSetting());
             } catch (\Throwable $e) {
                 // Table not migrated yet (fresh install) – fall back to defaults
                 return new SystemSetting();

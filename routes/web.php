@@ -45,6 +45,7 @@ Route::middleware('auth.staff')->group(function () {
     Route::controller(OrderController::class)->group(function () {
         Route::get('/orders', 'index')->name('orders.index');
         Route::post('/orders/bulk-status', 'bulkStatus')->name('orders.bulk.status');
+        Route::get('/orders/lookup', 'lookup')->name('orders.lookup');
         Route::get('/orders/{order}', 'show')->name('orders.show');
         Route::get('/orders/{order}/details', 'details')->name('orders.details');
         Route::get('/orders/{order}/print', 'print')->name('orders.print');

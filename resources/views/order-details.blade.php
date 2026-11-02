@@ -15,11 +15,13 @@
     $balance = $order->balance;
     $canPay = $order->status !== 'cancelled' && $balance > 0;
     $addonsTotal = $order->addons->sum('pivot.price');
+    // This order's own currency (it may predate a currency change), for the payment dialog
+    $orderFmt = ['symbol' => currency_symbol($order->currency), 'decimals' => app(\App\Support\Format::class)->decimals($order->currency)];
     $methods = ['cash' => ['Cash', 'fa-money-bill-wave'], 'card' => ['Card', 'fa-credit-card'], 'transfer' => ['Transfer', 'fa-building-columns'], 'other' => ['Other', 'fa-ellipsis']];
 @endphp
 
 @section('page-header')
-<header class="page-header detail-header">
+<header class="page-header detail-header" id="orderHeader" data-refresh>
     <div class="page-heading">
         <p class="eyebrow"><a href="{{ route('orders.index') }}" class="back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> Orders</a></p>
         <h1 class="page-title">{{ $order->order_number }}</h1>
@@ -116,6 +118,7 @@
 
 <div class="grid-sidebar">
     <div class="stack">
+        <div id="orderProgress" data-refresh>
         @if($order->status === 'cancelled')
             <div class="alert alert-danger no-print"><i class="fas fa-ban" aria-hidden="true"></i><span>This order was cancelled. It no longer counts in sales.</span></div>
         @else
@@ -127,8 +130,9 @@
                 </ol>
             </div>
         @endif
+        </div>
 
-        <section class="card" aria-labelledby="items-title">
+        <section class="card" id="orderItems" data-refresh aria-labelledby="items-title">
             <header class="card-header"><h2 class="card-title" id="items-title"><i class="fas fa-shirt" aria-hidden="true"></i> Items</h2></header>
             <div class="table-wrap static">
                 <table class="table items-table">
@@ -167,7 +171,7 @@
             </div>
         </section>
 
-        <section class="card" aria-labelledby="payments-title">
+        <section class="card" id="orderPayments" data-refresh aria-labelledby="payments-title">
             <header class="card-header">
                 <h2 class="card-title" id="payments-title"><i class="fas fa-receipt" aria-hidden="true"></i> Payments</h2>
                 @if($canPay)<button type="button" class="btn btn-sm btn-soft no-print" data-dialog-open="paymentDialog"><i class="fas fa-plus" aria-hidden="true"></i> Add payment</button>@endif
@@ -200,7 +204,7 @@
     </div>
 
     <aside class="stack">
-        <section class="card balance-card {{ $order->status === 'cancelled' ? '' : ($balance > 0 ? 'is-due' : 'is-paid') }}" aria-label="Balance">
+        <section id="orderBalance" data-refresh class="card balance-card {{ $order->status === 'cancelled' ? '' : ($balance > 0 ? 'is-due' : 'is-paid') }}" aria-label="Balance">
             <div class="card-body">
                 <span class="eyebrow">{{ $balance > 0 && $order->status !== 'cancelled' ? 'Balance due' : 'Balance' }}</span>
                 <span class="balance-amount money">{{ money(max($balance, 0), $order->currency) }}</span>
@@ -229,7 +233,7 @@
             </div>
         </section>
 
-        <section class="card no-print" aria-labelledby="details-title">
+        <section class="card no-print" id="orderDetailsCard" data-refresh aria-labelledby="details-title">
             <header class="card-header"><h2 class="card-title" id="details-title"><i class="fas fa-circle-info" aria-hidden="true"></i> Details</h2></header>
             <div class="card-body stack-sm">
                 <dl class="dl">
@@ -239,7 +243,7 @@
                 </dl>
                 <div class="field">
                     <label class="label" for="statusSelect">Change status</label>
-                    <select class="select" id="statusSelect">
+                    <select class="select" id="statusSelect" data-current="{{ $order->status }}">
                         @foreach(\App\Models\Order::STATUSES as $value)
                             <option value="{{ $value }}" @selected($order->status === $value)>{{ ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'][$value] }}</option>
                         @endforeach
@@ -253,7 +257,7 @@
     </aside>
 </div>
 
-<dialog id="paymentDialog" class="dialog dialog-sm" aria-labelledby="paymentTitle">
+<dialog id="paymentDialog" class="dialog dialog-sm" aria-labelledby="paymentTitle" data-refresh data-balance="{{ max($balance, 0) }}">
     <form id="paymentForm" novalidate>
         <div class="dialog-header">
             <h2 class="dialog-title" id="paymentTitle">Add payment</h2>
@@ -297,30 +301,36 @@
 <script>
 (function () {
     const orderId = {{ $order->id }};
-    const balance = {{ max($balance, 0) }};
-    // This order's own currency (it may predate a currency change)
-    const orderFmt = @json(['symbol' => currency_symbol($order->currency), 'decimals' => app(\App\Support\Format::class)->decimals($order->currency)]);
+    const orderFmt = @json($orderFmt);
     const money = value => window.money(value, orderFmt);
     const labels = { pending: 'Pending', processing: 'Processing', ready: 'Ready for pickup', completed: 'Completed', cancelled: 'Cancelled' };
 
-    // ---- Status ----
+    // ---- Status: the page updates in place (notes being typed stay as they are) ----
     async function setStatus(status, control) {
+        const select = document.getElementById('statusSelect');
         if (status === 'cancelled') {
             const ok = await confirmAction({ title: 'Cancel this order?', message: 'It will no longer count in sales. You can change the status back later.', confirmText: 'Cancel order', cancelText: 'Keep order' });
-            if (!ok) { document.getElementById('statusSelect').value = @json($order->status); return; }
+            if (!ok) { select.value = select.dataset.current; return; }
         }
         control?.classList.add('is-loading');
         try {
             await sendJson(appUrl(`orders/${orderId}/update-status`), { status });
-            flashToast(`Order marked ${labels[status].toLowerCase()}.`);
-            location.reload();
+            await refreshRegions();
+            showToast(`Order marked ${labels[status].toLowerCase()}.`, 'success');
         } catch (e) {
-            control?.classList.remove('is-loading');
+            select.value = select.dataset.current;
             showToast(e.message, 'error');
+        } finally {
+            control?.classList.remove('is-loading');
         }
     }
-    document.querySelectorAll('[data-set-status]').forEach(b => b.addEventListener('click', () => setStatus(b.dataset.setStatus, b)));
-    document.getElementById('statusSelect').addEventListener('change', e => setStatus(e.target.value));
+    document.addEventListener('click', e => {
+        const button = e.target.closest('[data-set-status]');
+        if (button) setStatus(button.dataset.setStatus, button);
+    });
+    document.addEventListener('change', e => {
+        if (e.target.id === 'statusSelect') setStatus(e.target.value, null);
+    });
 
     // ---- Notes ----
     document.getElementById('notesForm').addEventListener('submit', async e => {
@@ -337,44 +347,52 @@
         }
     });
 
-    // ---- Payment ----
-    const dialog = document.getElementById('paymentDialog');
-    const amount = document.getElementById('amount');
-    const result = document.getElementById('payResult');
-    const payButton = document.getElementById('payButton');
-    const describe = () => {
-        const value = parseFloat(amount.value) || 0;
-        if (value <= 0) { result.textContent = ''; payButton.textContent = 'Record payment'; return; }
-        if (value > balance) { result.innerHTML = `Change to give back: <span class="text-success">${money(value - balance)}</span>`; payButton.textContent = 'Record ' + money(balance); }
-        else if (value < balance) { result.innerHTML = `Partial payment · <span class="text-danger">${money(balance - value)}</span> still due`; payButton.textContent = 'Record ' + money(value); }
-        else { result.textContent = 'Pays the order in full.'; payButton.textContent = 'Record ' + money(value); }
-    };
-    amount.addEventListener('input', describe);
-    document.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { amount.value = Number(b.dataset.amount).toFixed(orderFmt.decimals); describe(); }));
-    dialog.addEventListener('close', () => { document.getElementById('amountError').textContent = ''; amount.removeAttribute('aria-invalid'); });
-    describe();
-
-    document.getElementById('paymentForm').addEventListener('submit', async e => {
-        e.preventDefault();
-        const value = parseFloat(amount.value) || 0;
+    // ---- Payment dialog (bound again each time the page refreshes it) ----
+    function bindPayment() {
+        const dialog = document.getElementById('paymentDialog');
+        const form = document.getElementById('paymentForm');
+        if (!dialog || !form) return;
+        const balance = Number(dialog.dataset.balance) || 0;
+        const amount = document.getElementById('amount');
+        const result = document.getElementById('payResult');
+        const payButton = document.getElementById('payButton');
         const error = document.getElementById('amountError');
-        if (value <= 0) { error.textContent = 'Enter the amount received.'; amount.setAttribute('aria-invalid', 'true'); amount.focus(); return; }
-        payButton.classList.add('is-loading');
-        try {
-            const data = await sendJson(appUrl(`orders/${orderId}/add-payment`), {
-                amount: value,
-                payment_method: dialog.querySelector('input[name="payment_method"]:checked').value,
-            });
-            flashToast(data.change > 0 ? `Payment recorded. Give back ${money(data.change)} change.` : 'Payment recorded.');
-            location.replace(appUrl(`orders/${orderId}/details`));
-        } catch (err) {
-            payButton.classList.remove('is-loading');
-            error.textContent = err.message;
-        }
-    });
+        const describe = () => {
+            const value = parseFloat(amount.value) || 0;
+            if (value <= 0) { result.textContent = ''; payButton.textContent = 'Record payment'; return; }
+            if (value > balance) { result.innerHTML = `Change to give back: <span class="text-success">${money(value - balance)}</span>`; payButton.textContent = 'Record ' + money(balance); }
+            else if (value < balance) { result.innerHTML = `Partial payment · <span class="text-danger">${money(balance - value)}</span> still due`; payButton.textContent = 'Record ' + money(value); }
+            else { result.textContent = 'Pays the order in full.'; payButton.textContent = 'Record ' + money(value); }
+        };
+        amount.addEventListener('input', describe);
+        dialog.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { amount.value = Number(b.dataset.amount).toFixed(orderFmt.decimals); describe(); }));
+        dialog.addEventListener('close', () => { error.textContent = ''; amount.removeAttribute('aria-invalid'); });
+        describe();
+
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const value = parseFloat(amount.value) || 0;
+            if (value <= 0) { error.textContent = 'Enter the amount received.'; amount.setAttribute('aria-invalid', 'true'); amount.focus(); return; }
+            payButton.classList.add('is-loading');
+            try {
+                const data = await sendJson(appUrl(`orders/${orderId}/add-payment`), {
+                    amount: value,
+                    payment_method: dialog.querySelector('input[name="payment_method"]:checked').value,
+                });
+                closeDialog(dialog);
+                await refreshRegions();
+                showToast(data.change > 0 ? `Payment recorded. Give back ${money(data.change)} change.` : 'Payment recorded.', 'success', 8000);
+            } catch (err) {
+                payButton.classList.remove('is-loading');
+                error.textContent = err.message;
+            }
+        });
+    }
+    bindPayment();
+    document.addEventListener('regions:refreshed', bindPayment);
 
     @if($canPay && request()->boolean('pay'))
-    openDialog(dialog);
+    openDialog('paymentDialog');
     @endif
     @if(request()->boolean('print'))
     window.addEventListener('load', () => setTimeout(() => window.print(), 300));

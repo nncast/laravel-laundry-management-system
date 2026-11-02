@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-<div class="card card-flush">
+<div class="card card-flush" id="listCard" data-refresh>
     @if($categories->isEmpty())
         <div class="empty">
             <span class="empty-icon" aria-hidden="true"><i class="fas fa-folder-tree"></i></span>

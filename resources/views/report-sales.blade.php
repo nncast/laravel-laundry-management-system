@@ -16,20 +16,22 @@
 
 @section('content')
 <x-report-range route="reports.sales" :start="$filters['start_date']" :end="$filters['end_date']" />
-<x-other-currencies :rows="$otherCurrencies" />
-
-<section class="kpi-grid" aria-label="Totals for {{ $range }}" style="margin-bottom: var(--s-5)">
-    <div class="kpi"><span class="kpi-label">Sales</span><span class="kpi-value">{{ money($summary['total_sales']) }}</span><span class="kpi-meta">{{ $summary['total_orders'] }} {{ \Illuminate\Support\Str::plural('order', $summary['total_orders']) }}</span></div>
-    <div class="kpi"><span class="kpi-label">Collected</span><span class="kpi-value">{{ money($summary['total_paid']) }}</span><span class="kpi-meta">Paid on these orders</span></div>
-    <div class="kpi {{ $summary['total_outstanding'] > 0 ? 'is-alert' : '' }}"><span class="kpi-label">Outstanding</span><span class="kpi-value">{{ money($summary['total_outstanding']) }}</span><span class="kpi-meta">Still to collect</span></div>
-    <div class="kpi"><span class="kpi-label">Average order</span><span class="kpi-value">{{ money($summary['average_order_value']) }}</span><span class="kpi-meta">Sales ÷ orders</span></div>
-    <div class="kpi"><span class="kpi-label">Discounts given</span><span class="kpi-value">{{ money($summary['total_discount']) }}</span><span class="kpi-meta">Fixed amounts and percentages</span></div>
-    <div class="kpi"><span class="kpi-label">Completed</span><span class="kpi-value">{{ number_format($summary['completion_rate'], 0) }}%</span><span class="kpi-meta">{{ $summary['completed_orders'] }} of {{ $summary['total_orders'] }} orders · {{ $summary['total_items_sold'] }} items, {{ $summary['total_addons_sold'] }} add-ons</span></div>
-</section>
+@if($summary)
+    @include('partials.sales-summary')
+@else
+    {{-- A long period: the table shows at once and the totals follow --}}
+    <div id="salesSummary" data-lazy="{{ $summaryUrl }}" aria-busy="true">
+        <section class="kpi-grid" aria-label="Loading the totals" style="margin-bottom: var(--s-5)">
+            @for($i = 0; $i < 6; $i++)
+                <div class="kpi"><span class="skeleton" style="width:45%"></span><span class="skeleton" style="height:28px;width:70%"></span><span class="skeleton" style="width:60%"></span></div>
+            @endfor
+        </section>
+    </div>
+@endif
 
 <div class="card card-flush">
-    <header class="card-header"><h2 class="card-title"><i class="fas fa-list" aria-hidden="true"></i> Orders in this period</h2><span class="card-subtitle">{{ count($salesData) }} {{ \Illuminate\Support\Str::plural('order', count($salesData)) }}</span></header>
-    @if(count($salesData) === 0)
+    <header class="card-header"><h2 class="card-title"><i class="fas fa-list" aria-hidden="true"></i> Orders in this period</h2><span class="card-subtitle">{{ number_format($salesData->total()) }} {{ \Illuminate\Support\Str::plural('order', $salesData->total()) }}</span></header>
+    @if($salesData->total() === 0)
         <div class="empty">
             <span class="empty-icon" aria-hidden="true"><i class="fas fa-chart-line"></i></span>
             <p class="empty-title">No sales in this period</p>
@@ -58,6 +60,7 @@
             </tbody>
         </table>
     </div>
+    {{ $salesData->links() }}
     @endif
 </div>
 @endsection

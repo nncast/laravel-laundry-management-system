@@ -8,12 +8,19 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Support\Format;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     /** Automatic backups run every 24 hours; one older than this means they are failing. */
     private const BACKUP_STALE_HOURS = 26;
+
+    /** The action center lists this many orders per tab (the tab shows the full count). */
+    private const ATTENTION_ROWS = 6;
+
+    /** Trends (chart, top services) may be this many minutes old; the counts are always live. */
+    private const TREND_CACHE_MINUTES = 10;
 
     /**
      * Display the dashboard.
@@ -47,28 +54,7 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
 
-        // Top services by number of completed orders
-        $topServices = Service::query()
-            ->select(
-                'services.id',
-                'services.name',
-                DB::raw('COUNT(order_items.id) as order_count'),
-                DB::raw('COALESCE(SUM(order_items.total), 0) as total_revenue')
-            )
-            ->join('order_items', 'services.id', '=', 'order_items.service_id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.status', 'completed')
-            ->where('orders.currency', app(Format::class)->currency)
-            ->groupBy('services.id', 'services.name')
-            ->orderByDesc('order_count')
-            ->take(5)
-            ->get();
-
-        $chartData = [
-            'week' => $this->chartData('week'),
-            'month' => $this->chartData('month'),
-            'year' => $this->chartData('year'),
-        ];
+        [$topServices, $chartData] = $this->trends();
 
         // Automatic daily backup, made after this page has been sent so nobody waits for it
         app()->terminating(fn () => BackupController::backupIfDue());
@@ -87,7 +73,8 @@ class DashboardController extends Controller
      * Things staff should act on, found automatically on every dashboard load:
      * overdue orders, orders ready for pickup, completed orders that still have
      * a balance, products at or below their minimum stock and, for admins,
-     * backups that have stopped happening.
+     * backups that have stopped happening. Each list holds the oldest few;
+     * the *Count values say how many there are in all.
      */
     private function attention(): array
     {
@@ -96,15 +83,11 @@ class DashboardController extends Controller
             ->orderBy('available_stock')
             ->get(['id', 'name', 'available_stock', 'minimum_stock_level']);
 
-        $stuckOrders = Order::with('customer:id,name')->overdue()->orderBy('order_date')->get();
+        $first = fn ($query) => (clone $query)->with('customer:id,name')->orderBy('order_date')->take(self::ATTENTION_ROWS)->get();
 
-        $readyOrders = Order::with('customer:id,name')->where('status', 'ready')->orderBy('order_date')->get();
-
-        $unpaidOrders = Order::with('customer:id,name')
-            ->where('status', 'completed')
-            ->whereColumn('paid_amount', '<', 'total')
-            ->orderBy('order_date')
-            ->get();
+        $overdue = Order::overdue();
+        $ready = Order::where('status', 'ready');
+        $pickedUpUnpaid = Order::where('status', 'completed')->whereColumn('paid_amount', '<', 'total');
 
         $stuckRule = 'Pending ' . Order::OVERDUE_PENDING_DAYS . '+ day or processing ' . Order::OVERDUE_PROCESSING_DAYS . '+ days';
 
@@ -112,7 +95,18 @@ class DashboardController extends Controller
         $lastBackupAt = $isAdmin ? BackupController::lastBackupTime() : null;
         $backupStale = $isAdmin && ($lastBackupAt === null || $lastBackupAt < time() - self::BACKUP_STALE_HOURS * 3600);
 
-        return compact('lowStock', 'stuckOrders', 'readyOrders', 'unpaidOrders', 'stuckRule', 'lastBackupAt', 'backupStale');
+        return [
+            'lowStock' => $lowStock,
+            'stuckOrders' => $first($overdue),
+            'stuckCount' => (clone $overdue)->count(),
+            'readyOrders' => $first($ready),
+            'readyListCount' => (clone $ready)->count(),
+            'unpaidOrders' => $first($pickedUpUnpaid),
+            'unpaidPickupCount' => (clone $pickedUpUnpaid)->count(),
+            'stuckRule' => $stuckRule,
+            'lastBackupAt' => $lastBackupAt,
+            'backupStale' => $backupStale,
+        ];
     }
 
     /**
@@ -138,21 +132,23 @@ class DashboardController extends Controller
     }
 
     /**
-     * Headline numbers, computed with a few aggregate queries.
+     * Headline numbers. Each query filters on status first, so it is answered
+     * from orders_status_date_money_index without reading whole rows.
      */
     private function stats(): array
     {
         // Money sums count the business currency only (see Order::scopeInBusinessCurrency)
         $currency = app(Format::class)->currency;
 
-        $overall = Order::query()
-            ->selectRaw('COUNT(*) as total_orders')
-            ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders")
-            ->selectRaw("SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_orders")
-            ->selectRaw("SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) as ready_orders")
-            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'completed' AND currency = ? THEN total ELSE 0 END), 0) as total_revenue", [$currency])
-            ->selectRaw("SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total AND currency = ? THEN 1 ELSE 0 END) as unpaid_count", [$currency])
-            ->selectRaw("COALESCE(SUM(CASE WHEN status <> 'cancelled' AND paid_amount < total AND currency = ? THEN total - paid_amount ELSE 0 END), 0) as unpaid_balance", [$currency])
+        $open = Order::whereIn('status', Order::OPEN_STATUSES)
+            ->selectRaw('status, COUNT(*) as n')
+            ->groupBy('status')
+            ->pluck('n', 'status');
+
+        $unpaid = Order::where('status', '!=', 'cancelled')
+            ->where('currency', $currency)
+            ->whereColumn('paid_amount', '<', 'total')
+            ->selectRaw('COUNT(*) as n, COALESCE(SUM(total - paid_amount), 0) as amount_due')   // not "balance": Order has a balance accessor
             ->first();
 
         $today = Order::today()
@@ -163,22 +159,61 @@ class DashboardController extends Controller
             ->selectRaw("SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending")
             ->first();
 
+        $pending = (int) ($open['pending'] ?? 0);
+        $processing = (int) ($open['processing'] ?? 0);
+        $ready = (int) ($open['ready'] ?? 0);
+
         return [
-            'totalOrders' => (int) $overall->total_orders,
-            'pendingOrders' => (int) $overall->pending_orders,
-            'processingOrders' => (int) $overall->processing_orders,
-            'readyCount' => (int) $overall->ready_orders,
-            'openOrders' => (int) $overall->pending_orders + (int) $overall->processing_orders + (int) $overall->ready_orders,
+            'totalOrders' => Order::count(),
+            'pendingOrders' => $pending,
+            'processingOrders' => $processing,
+            'readyCount' => $ready,
+            'openOrders' => $pending + $processing + $ready,
             'overdueCount' => Order::overdue()->count(),
-            'unpaidCount' => (int) $overall->unpaid_count,
-            'unpaidBalance' => round((float) $overall->unpaid_balance, 2),
-            'totalRevenue' => (float) $overall->total_revenue,
+            'unpaidCount' => (int) $unpaid->n,
+            'unpaidBalance' => round((float) $unpaid->amount_due, 2),
+            'totalRevenue' => (float) Order::where('status', 'completed')->where('currency', $currency)->sum('total'),
             'todayOrders' => (int) $today->orders,
             'todayRevenue' => (float) $today->revenue,
             'todayCompleted' => (int) $today->completed,
             'todayProcessing' => (int) $today->processing,
             'todayPending' => (int) $today->pending,
         ];
+    }
+
+    /**
+     * Top services and the sales chart: trends, so a few minutes' delay is fine
+     * and the heavier grouped queries run at most once per period.
+     */
+    private function trends(): array
+    {
+        $key = 'dashboard.trends.' . app(Format::class)->currency . '.' . today()->toDateString();
+
+        return Cache::remember($key, now()->addMinutes(self::TREND_CACHE_MINUTES), function () {
+            $topServices = Service::query()
+                ->select(
+                    'services.id',
+                    'services.name',
+                    DB::raw('COUNT(order_items.id) as order_count'),
+                    DB::raw('COALESCE(SUM(order_items.total), 0) as total_revenue')
+                )
+                ->join('order_items', 'services.id', '=', 'order_items.service_id')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->where('orders.status', 'completed')
+                ->where('orders.currency', app(Format::class)->currency)
+                ->groupBy('services.id', 'services.name')
+                ->orderByDesc('order_count')
+                ->take(5)
+                ->get();
+
+            $chartData = [
+                'week' => $this->chartData('week'),
+                'month' => $this->chartData('month'),
+                'year' => $this->chartData('year'),
+            ];
+
+            return [$topServices, $chartData];
+        });
     }
 
     /**
@@ -220,9 +255,9 @@ class DashboardController extends Controller
         $buckets = [];
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
             [$label, $title] = match ($period) {
-                'month' => ['Week ' . (intdiv($date->day - 1, 7) + 1), 'Week ' . (intdiv($date->day - 1, 7) + 1) . ' of ' . $date->format('F')],
-                'year' => [$date->format('M'), $date->format('F Y')],
-                default => [$date->format('D'), $date->format('l, M j')],
+                'month' => ['Week ' . (intdiv($date->day - 1, 7) + 1), 'Week ' . (intdiv($date->day - 1, 7) + 1) . ' of ' . $date->translatedFormat('F')],
+                'year' => [$date->translatedFormat('M'), $date->translatedFormat('F Y')],
+                default => [$date->translatedFormat('D'), fmt_date($date)],
             };
 
             $buckets[$label] ??= ['title' => $title, 'sales' => 0.0, 'orders' => 0];

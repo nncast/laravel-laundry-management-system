@@ -285,13 +285,19 @@ class Order extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return self::labelFor((string) $this->status);
+    }
+
+    /** The label for a status, also for rows read without a model (CSV exports). */
+    public static function labelFor(string $status): string
+    {
+        return match($status) {
             'pending' => 'Pending',
             'processing' => 'Processing',
             'ready' => 'Ready for pickup',
             'completed' => 'Completed',
             'cancelled' => 'Cancelled',
-            default => ucfirst((string) $this->status)
+            default => ucfirst($status)
         };
     }
 
