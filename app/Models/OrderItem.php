@@ -97,6 +97,6 @@ class OrderItem extends Model
      */
     public function getNameAttribute(): string
     {
-        return $this->service->name ?? 'Unknown Service';
+        return $this->service->name ?? __('Deleted service');
     }
 }

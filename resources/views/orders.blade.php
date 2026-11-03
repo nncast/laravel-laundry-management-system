@@ -1,24 +1,24 @@
 @extends('layouts.app')
 
-@section('title', 'Orders')
-@section('page-title', 'Orders')
+@section('title', __('Orders'))
+@section('page-title', __('Orders'))
 
 @php
     $isManager = in_array(session('staff.role'), ['manager', 'admin'], true);
-    $tabs = ['' => 'All', 'open' => 'Open', 'overdue' => 'Overdue', 'pending' => 'Pending', 'processing' => 'Processing',
-             'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+    $tabs = ['' => __('All'), 'open' => __('Open'), 'overdue' => __('Overdue'), 'pending' => __('Pending'), 'processing' => __('Processing'),
+             'ready' => __('Ready for pickup'), 'completed' => __('Completed'), 'cancelled' => __('Cancelled')];
     $filtersOn = $search !== '' || $payment !== '' || $from !== '' || $to !== '';
     // The one tap that moves an open order along: [next status, button text, icon]
     $nextStep = [
-        'pending' => ['processing', 'Start', 'fa-play'],
-        'processing' => ['ready', 'Ready', 'fa-bell'],
-        'ready' => ['completed', 'Picked up', 'fa-check'],
+        'pending' => ['processing', __('Start'), 'fa-play'],
+        'processing' => ['ready', __('Ready'), 'fa-bell'],
+        'ready' => ['completed', __('Picked up'), 'fa-check'],
     ];
-    $statusLabels = ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+    $statusLabels = collect(\App\Models\Order::STATUSES)->mapWithKeys(fn ($s) => [$s => \App\Models\Order::labelFor($s)])->all();
 @endphp
 
 @section('page-subtitle')
-    {{ number_format($orders->total()) }} {{ \Illuminate\Support\Str::plural('order', $orders->total()) }}{{ $status !== '' ? ' · ' . strtolower($tabs[$status]) : '' }}{{ $filtersOn ? ' · filtered' : '' }}
+    {{ __($orders->total() === 1 ? '1 order' : ':count orders', ['count' => fmt_number($orders->total())]) }}{{ $status !== '' ? ' · ' . $tabs[$status] : '' }}{{ $filtersOn ? ' · ' . __('filtered') : '' }}
 @endsection
 
 @push('styles')
@@ -52,7 +52,7 @@
 @endpush
 
 @section('content')
-<nav class="chips scroll order-tabs" aria-label="Order status">
+<nav class="chips scroll order-tabs" aria-label="{{ __('Order status') }}">
     @foreach($tabs as $key => $label)
         <a href="{{ route('orders.index', array_filter(['status' => $key, 'search' => $search, 'payment' => $payment, 'from' => $from, 'to' => $to])) }}"
            class="chip" @if($status === $key) aria-current="page" @endif>
@@ -65,52 +65,52 @@
     @if($status !== '')<input type="hidden" name="status" value="{{ $status }}">@endif
     <div class="search">
         <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-        <input class="input" type="search" name="search" value="{{ $search }}" placeholder="Order number, customer or phone" aria-label="Search orders" autocomplete="off">
+        <input class="input" type="search" name="search" value="{{ $search }}" placeholder="{{ __('Order number, customer or phone') }}" aria-label="{{ __('Search orders') }}" autocomplete="off">
     </div>
     <button type="button" class="btn btn-secondary filter-toggle" aria-expanded="false" aria-controls="filterFields">
-        <i class="fas fa-sliders" aria-hidden="true"></i> Filters @if($payment !== '' || $from !== '' || $to !== '')<span class="chip-count">{{ ($payment !== '') + ($from !== '') + ($to !== '') }}</span>@endif
+        <i class="fas fa-sliders" aria-hidden="true"></i> {{ __('Filters') }} @if($payment !== '' || $from !== '' || $to !== '')<span class="chip-count">{{ ($payment !== '') + ($from !== '') + ($to !== '') }}</span>@endif
     </button>
     <div class="filter-fields" id="filterFields">
     <div class="field">
-        <label class="label" for="payment">Payment</label>
+        <label class="label" for="payment">{{ __('Payment') }}</label>
         <select class="select" id="payment" name="payment">
-            <option value="">Any</option>
-            <option value="unpaid" @selected($payment === 'unpaid')>Has a balance</option>
-            <option value="partial" @selected($payment === 'partial')>Partly paid</option>
-            <option value="paid" @selected($payment === 'paid')>Fully paid</option>
+            <option value="">{{ __('Any') }}</option>
+            <option value="unpaid" @selected($payment === 'unpaid')>{{ __('Has a balance') }}</option>
+            <option value="partial" @selected($payment === 'partial')>{{ __('Partly paid') }}</option>
+            <option value="paid" @selected($payment === 'paid')>{{ __('Fully paid') }}</option>
         </select>
     </div>
     <div class="field">
-        <label class="label" for="from">From</label>
+        <label class="label" for="from">{{ __('From') }}</label>
         <input class="input" type="date" id="from" name="from" value="{{ $from }}">
     </div>
     <div class="field">
-        <label class="label" for="to">To</label>
+        <label class="label" for="to">{{ __('To') }}</label>
         <input class="input" type="date" id="to" name="to" value="{{ $to }}">
     </div>
-    <button type="submit" class="btn btn-secondary"><i class="fas fa-filter" aria-hidden="true"></i> Apply</button>
+    <button type="submit" class="btn btn-secondary"><i class="fas fa-filter" aria-hidden="true"></i> {{ __('Apply') }}</button>
     </div>
     @if($filtersOn || $status !== '')
-        <a href="{{ route('orders.index') }}" class="btn btn-ghost">Clear</a>
-        <button type="button" class="btn btn-ghost" id="saveViewBtn"><i class="fas fa-bookmark" aria-hidden="true"></i> Save view</button>
+        <a href="{{ route('orders.index') }}" class="btn btn-ghost">{{ __('Clear') }}</a>
+        <button type="button" class="btn btn-ghost" id="saveViewBtn"><i class="fas fa-bookmark" aria-hidden="true"></i> {{ __('Save view') }}</button>
     @endif
 </form>
 
-<div class="saved-views" id="savedViews" aria-label="Saved views"></div>
+<div class="saved-views" id="savedViews" aria-label="{{ __('Saved views') }}"></div>
 
 @if($orders->isEmpty())
     <div class="card">
         <div class="empty">
             @if($filtersOn || $status !== '')
                 <span class="empty-icon" aria-hidden="true"><i class="fas fa-filter-circle-xmark"></i></span>
-                <p class="empty-title">No orders match</p>
-                <p>Try another tab, or clear the filters.</p>
-                <a href="{{ route('orders.index') }}" class="btn btn-secondary">Clear filters</a>
+                <p class="empty-title">{{ __('No orders match') }}</p>
+                <p>{{ __('Try another tab, or clear the filters.') }}</p>
+                <a href="{{ route('orders.index') }}" class="btn btn-secondary">{{ __('Clear filters') }}</a>
             @else
                 <x-mascot mood="curious" class="empty-art mascot-ink" />
-                <p class="empty-title">No orders yet</p>
-                <p>New orders from the point of sale show up here.</p>
-                <a href="{{ route('pos.index') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> New order</a>
+                <p class="empty-title">{{ __('No orders yet') }}</p>
+                <p>{{ __('New orders from the point of sale show up here.') }}</p>
+                <a href="{{ route('pos.index') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> {{ __('New order') }}</a>
             @endif
         </div>
     </div>
@@ -120,13 +120,13 @@
         <table class="table table-stack" id="ordersTable">
             <thead>
                 <tr>
-                    <th class="check-col"><label class="check" title="Select all"><input type="checkbox" id="selectAll"><span class="sr-only">Select all orders on this page</span></label></th>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                    <th class="num">Total</th>
-                    <th class="actions"><span class="sr-only">Actions</span></th>
+                    <th class="check-col"><label class="check" title="{{ __('Select all') }}"><input type="checkbox" id="selectAll"><span class="sr-only">{{ __('Select all orders on this page') }}</span></label></th>
+                    <th>{{ __('Order') }}</th>
+                    <th>{{ __('Customer') }}</th>
+                    <th>{{ __('Status') }}</th>
+                    <th>{{ __('Payment') }}</th>
+                    <th class="num">{{ __('Total') }}</th>
+                    <th class="actions"><span class="sr-only">{{ __('Actions') }}</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -138,43 +138,43 @@
                         <a href="{{ route('orders.details', $order) }}" class="cell-title order-no">{{ $order->order_number }}</a>
                         <div class="cell-sub">{{ fmt_date($order->order_date) }}</div>
                     </td>
-                    <td data-label="Customer">
+                    <td data-label="{{ __('Customer') }}">
                         <div>
-                            <div class="cell-title">{{ $order->customer->name ?? 'Walk-in customer' }}</div>
+                            <div class="cell-title">{{ $order->customer->name ?? __('Walk-in customer') }}</div>
                             @if($order->customer?->contact)<div class="cell-sub">{{ $order->customer->contact }}</div>@endif
                         </div>
                     </td>
-                    <td data-label="Status"><span class="badge badge-{{ $order->status }}" data-status-badge>{{ $order->status_label }}</span></td>
-                    <td data-label="Payment">
+                    <td data-label="{{ __('Status') }}"><span class="badge badge-{{ $order->status }}" data-status-badge>{{ $order->status_label }}</span></td>
+                    <td data-label="{{ __('Payment') }}">
                         <div class="pay-cell">
                             @if($order->status === 'cancelled')
                                 <span class="cell-sub">—</span>
                             @elseif($order->balance <= 0)
-                                <span class="badge badge-paid">Paid</span>
+                                <span class="badge badge-paid">{{ __('Paid') }}</span>
                             @else
-                                <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? 'Partly paid' : 'Unpaid' }}</span>
-                                <span class="cell-sub money">{{ money($order->balance, $order->currency) }} due</span>
+                                <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? __('Partly paid') : __('Unpaid') }}</span>
+                                <span class="cell-sub money">{{ __(':amount due', ['amount' => money($order->balance, $order->currency)]) }}</span>
                             @endif
                         </div>
                     </td>
-                    <td data-label="Total" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
+                    <td data-label="{{ __('Total') }}" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
                     <td class="actions">
                         <div class="cell-actions">
                             @if($step && $order->status === 'ready' && $order->balance > 0)
-                                <a href="{{ route('orders.details', ['order' => $order, 'pay' => 1]) }}" class="btn btn-sm btn-soft step-btn"><i class="fas fa-wallet" aria-hidden="true"></i> Collect</a>
+                                <a href="{{ route('orders.details', ['order' => $order, 'pay' => 1]) }}" class="btn btn-sm btn-soft step-btn"><i class="fas fa-wallet" aria-hidden="true"></i> {{ __('Collect') }}</a>
                             @elseif($step)
                                 <button type="button" class="btn btn-sm btn-soft step-btn" data-next="{{ $step[0] }}"><i class="fas {{ $step[2] }}" aria-hidden="true"></i> {{ $step[1] }}</button>
                             @endif
                             @if($order->can_edit)
-                                <a href="{{ route('pos.edit', $order) }}" class="icon-btn" aria-label="Edit {{ $order->order_number }}" title="Edit"><i class="fas fa-pen" aria-hidden="true"></i></a>
+                                <a href="{{ route('pos.edit', $order) }}" class="icon-btn" aria-label="{{ __('Edit :number', ['number' => $order->order_number]) }}" title="{{ __('Edit') }}"><i class="fas fa-pen" aria-hidden="true"></i></a>
                             @else
                                 <span class="icon-btn slot" aria-hidden="true"></span>
                             @endif
                             @if($isManager && $order->paid_amount <= 0)
-                                <form action="{{ route('orders.destroy', $order) }}" method="POST" data-confirm="{{ $order->order_number }} will be removed for good." data-confirm-title="Delete this order?">
+                                <form action="{{ route('orders.destroy', $order) }}" method="POST" data-confirm="{{ __(':number will be removed for good.', ['number' => $order->order_number]) }}" data-confirm-title="{{ __('Delete this order?') }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="icon-btn danger" aria-label="Delete {{ $order->order_number }}" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                                    <button type="submit" class="icon-btn danger" aria-label="{{ __('Delete :number', ['number' => $order->order_number]) }}" title="{{ __('Delete') }}"><i class="fas fa-trash" aria-hidden="true"></i></button>
                                 </form>
                             @elseif($isManager)
                                 <span class="icon-btn slot" aria-hidden="true"></span>
@@ -190,30 +190,30 @@
 </div>
 @endif
 
-<div class="bulk-bar" id="bulkBar" hidden role="region" aria-label="Bulk actions">
-    <span class="bulk-count" id="bulkCount">0 selected</span>
-    <button type="button" class="btn btn-sm btn-ghost" data-bulk="processing"><i class="fas fa-play" aria-hidden="true"></i> Processing</button>
-    <button type="button" class="btn btn-sm btn-ghost" data-bulk="ready"><i class="fas fa-bell" aria-hidden="true"></i> Ready</button>
-    <button type="button" class="btn btn-sm btn-ghost" data-bulk="completed"><i class="fas fa-check" aria-hidden="true"></i> Completed</button>
-    <button type="button" class="icon-btn bulk-clear" id="bulkClear" aria-label="Clear selection"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+<div class="bulk-bar" id="bulkBar" hidden role="region" aria-label="{{ __('Bulk actions') }}">
+    <span class="bulk-count" id="bulkCount">{{ __(':count selected', ['count' => 0]) }}</span>
+    <button type="button" class="btn btn-sm btn-ghost" data-bulk="processing"><i class="fas fa-play" aria-hidden="true"></i> {{ __('Processing') }}</button>
+    <button type="button" class="btn btn-sm btn-ghost" data-bulk="ready"><i class="fas fa-bell" aria-hidden="true"></i> {{ __('Ready') }}</button>
+    <button type="button" class="btn btn-sm btn-ghost" data-bulk="completed"><i class="fas fa-check" aria-hidden="true"></i> {{ __('Completed') }}</button>
+    <button type="button" class="icon-btn bulk-clear" id="bulkClear" aria-label="{{ __('Clear selection') }}"><i class="fas fa-xmark" aria-hidden="true"></i></button>
 </div>
 
 <dialog id="saveViewDialog" class="dialog dialog-sm" aria-labelledby="saveViewTitle">
     <form method="dialog" id="saveViewForm">
         <div class="dialog-header">
-            <h2 class="dialog-title" id="saveViewTitle">Save this view</h2>
-            <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+            <h2 class="dialog-title" id="saveViewTitle">{{ __('Save this view') }}</h2>
+            <button type="button" class="icon-btn" data-dialog-close aria-label="{{ __('Close') }}"><i class="fas fa-xmark" aria-hidden="true"></i></button>
         </div>
         <div class="dialog-body">
             <div class="field">
-                <label class="label" for="viewName">Name</label>
-                <input class="input" id="viewName" maxlength="30" required placeholder="e.g. Unpaid this week">
-                <p class="help">Saved on this device. Tap it later to get these filters back.</p>
+                <label class="label" for="viewName">{{ __('Name') }}</label>
+                <input class="input" id="viewName" maxlength="30" required placeholder="{{ __('e.g. Unpaid this week') }}">
+                <p class="help">{{ __('Saved on this device. Tap it later to get these filters back.') }}</p>
             </div>
         </div>
         <div class="dialog-footer">
-            <button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button>
-            <button type="submit" class="btn btn-primary" value="save">Save view</button>
+            <button type="button" class="btn btn-secondary" data-dialog-close>{{ __('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary" value="save">{{ __('Save view') }}</button>
         </div>
     </form>
 </dialog>
@@ -258,8 +258,8 @@
         try {
             const data = await setStatus(rows.map(r => Number(r.dataset.id)), status);
             rows.forEach(r => paint(r, status));
-            showToast(rows.length === 1 ? `Order marked ${statusLabels[status].toLowerCase()}.` : data.message, 'success', 6000, {
-                label: 'Undo',
+            showToast(rows.length === 1 ? t('Order marked as :status.', { status: statusLabels[status] }) : data.message, 'success', 6000, {
+                label: t('Undo'),
                 onClick: async () => {
                     try {
                         for (const [row, old] of before) { await setStatus([Number(row.dataset.id)], old); paint(row, old); }
@@ -287,7 +287,7 @@
         const n = selectedRows().length;
         checks.forEach(c => c.closest('tr').classList.toggle('is-selected', c.checked));
         bar.hidden = n === 0;
-        document.getElementById('bulkCount').textContent = n + ' selected';
+        document.getElementById('bulkCount').textContent = t(':count selected', { count: n });
         if (all) { all.checked = n > 0 && n === checks.length; all.indeterminate = n > 0 && n < checks.length; }
     };
     checks.forEach(c => c.addEventListener('change', refresh));
@@ -298,9 +298,9 @@
             const rows = selectedRows();
             const status = button.dataset.bulk;
             const ok = await confirmAction({
-                title: `Mark ${rows.length} ${rows.length === 1 ? 'order' : 'orders'} as ${statusLabels[status].toLowerCase()}?`,
-                message: 'You can undo this right after.',
-                confirmText: 'Update', tone: 'neutral',
+                title: t(rows.length === 1 ? 'Mark 1 order as :status?' : 'Mark :count orders as :status?', { count: rows.length, status: statusLabels[status] }),
+                message: t('You can undo this right after.'),
+                confirmText: t('Update'), tone: 'neutral',
             });
             if (!ok) return;
             await change(rows, status);
@@ -325,7 +325,7 @@
             link.append(document.createTextNode(' ' + view.name));
             const remove = document.createElement('button');
             remove.type = 'button';
-            remove.setAttribute('aria-label', 'Remove saved view ' + view.name);
+            remove.setAttribute('aria-label', t('Remove saved view :name', { name: view.name }));
             remove.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i>';
             remove.addEventListener('click', () => { const views = load(); views.splice(i, 1); store(views); renderViews(); });
             chip.append(link, remove);
@@ -342,7 +342,7 @@
         if (!name) return;
         store([...load().filter(v => v.name !== name), { name, query: location.search }].slice(-8));
         renderViews();
-        showToast(`Saved "${name}".`, 'success');
+        showToast(t('Saved ":name".', { name }), 'success');
     });
 })();
 </script>

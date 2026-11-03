@@ -46,6 +46,7 @@ We welcome contributions from our team and the community. Please follow these gu
 - Follow the existing project conventions.
 - Prefer small, reviewable changes.
 - Do not add unrelated formatting changes.
+- Write every string people see in English inside `__('…')` (Blade and PHP) or `t('…')` (JavaScript), with `:name` placeholders for values, and add its translation to each `lang/*.json`. The tests list anything missing. Use logical CSS properties (`margin-inline-start`, not `margin-left`) so right-to-left languages mirror.
 - For screens, build on the design system in [docs/DESIGN.md](docs/DESIGN.md): colors and sizes come from `public/css/theme.css`, components from `public/css/app.css`. Keep page-specific CSS to layout, and keep touch targets at least 44 px.
 
 ## Pull requests

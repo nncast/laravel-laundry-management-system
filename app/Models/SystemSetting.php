@@ -26,6 +26,9 @@ class SystemSetting extends Model
         'receipt_show_qr',
         'receipt_show_barcode',
         'turnaround_days',
+        'default_locale',
+        'fallback_locale',
+        'enabled_locales',
     ];
 
     /** The same defaults as the database, for a shop that has not saved settings yet. */
@@ -34,19 +37,34 @@ class SystemSetting extends Model
         'receipt_show_qr' => true,
         'receipt_show_barcode' => true,
         'turnaround_days' => 2,
+        'default_locale' => 'en',
+        'fallback_locale' => 'en',
     ];
 
     protected $casts = [
         'receipt_show_qr' => 'boolean',
         'receipt_show_barcode' => 'boolean',
         'turnaround_days' => 'integer',
+        'enabled_locales' => 'array',
     ];
 
-    /** Settings are cached (AppServiceProvider); saving them clears the cached copy. */
+    /** Settings are cached (AppServiceProvider); saving them clears the cached copy and this request's. */
     protected static function booted(): void
     {
-        static::saved(fn () => Cache::forget('system.settings'));
-        static::deleted(fn () => Cache::forget('system.settings'));
+        $forget = function () {
+            Cache::forget('system.settings');
+            app()->forgetInstance('system.settings');
+        };
+        static::saved($forget);
+        static::deleted($forget);
+    }
+
+    /** The languages staff can pick (Settings → Language): codes from config/locales.php, all of them by default. */
+    public function enabledLocales(): array
+    {
+        $available = array_keys(config('locales'));
+
+        return array_values(array_intersect($available, $this->enabled_locales ?: $available)) ?: ['en'];
     }
 
     /** The receipt logo as a data: URI (the file is kept in storage/app, not public/), or null. */

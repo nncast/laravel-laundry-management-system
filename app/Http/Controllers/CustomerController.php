@@ -14,9 +14,10 @@ class CustomerController extends Controller
         'address' => 'nullable|string|max:500',
     ];
 
-    private const MESSAGES = [
-        'contact.regex' => 'Contact number must be 10 to 15 digits.',
-    ];
+    private function messages(): array
+    {
+        return ['contact.regex' => __('Contact number must be 10 to 15 digits.')];
+    }
 
     public function index(Request $request)
     {
@@ -73,28 +74,28 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate(self::RULES, self::MESSAGES);
+        $validated = $request->validate(self::RULES, $this->messages());
 
         $customer = Customer::create($validated);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Customer added successfully.',
+                'message' => __('Customer added successfully.'),
                 'customer' => $customer->only(['id', 'name', 'contact', 'address']),
             ], 201);
         }
 
-        return redirect()->route('customers.index')->with('success', 'Customer added successfully.');
+        return redirect()->route('customers.index')->with('success', __('Customer added successfully.'));
     }
 
     public function update(Request $request, Customer $customer)
     {
-        $validated = $request->validate(self::RULES, self::MESSAGES);
+        $validated = $request->validate(self::RULES, $this->messages());
 
         $customer->update($validated);
 
-        return redirect()->back()->with('success', 'Customer updated.');
+        return redirect()->back()->with('success', __('Customer updated.'));
     }
 
     public function destroy(Customer $customer)
@@ -102,6 +103,6 @@ class CustomerController extends Controller
         // Orders keep their history (customer_id is set to NULL → "Walk-in Customer")
         $customer->delete();
 
-        return redirect()->back()->with('success', 'Customer deleted successfully.');
+        return redirect()->back()->with('success', __('Customer deleted successfully.'));
     }
 }

@@ -10,6 +10,7 @@ use chillerlan\QRCode\QROptions;
 use Dompdf\Dompdf;
 use Dompdf\Frame;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 /**
  * An order's printed documents: the customer's receipt, the claim ticket they
@@ -31,6 +32,11 @@ class OrderDocumentController extends Controller
     {
         $data = $this->data($request, $order, $document);
         $html = view('print.document', $data + ['pdf' => true])->render();
+        if (preg_match('/[\p{Han}\p{Hiragana}\p{Katakana}]/u', $html)) {
+            // Chinese or Japanese text (in any language: a customer's name too) needs the bundled CJK font;
+            // only then, as loading it adds a few hundred milliseconds
+            $html = view('print.document', $data + ['pdf' => true, 'cjkFont' => str_replace('\\', '/', resource_path('fonts/NotoSansCJK-Regular.ttf'))])->render();
+        }
         $paper = $data['paper'];
 
         if (str_ends_with($paper, 'mm')) {
@@ -81,7 +87,15 @@ class OrderDocumentController extends Controller
 
     private function renderPdf(string $html, string|array $paper, ?callable $onFrame = null): Dompdf
     {
-        $dompdf = new Dompdf(['defaultMediaType' => 'print', 'defaultFont' => 'DejaVu Sans', 'isFontSubsettingEnabled' => true]);
+        File::ensureDirectoryExists(storage_path('fonts'));   // dompdf keeps the CJK font's metrics here
+        $dompdf = new Dompdf([
+            'defaultMediaType' => 'print',
+            'defaultFont' => 'DejaVu Sans',
+            'isFontSubsettingEnabled' => true,
+            'chroot' => base_path(),
+            'fontDir' => storage_path('fonts'),
+            'fontCache' => storage_path('fonts'),
+        ]);
         if ($onFrame) {
             $dompdf->setCallbacks([['event' => 'end_frame', 'f' => $onFrame]]);
         }

@@ -18,19 +18,20 @@ class AuthStaff
         // Re-check the account on every request so that deactivated staff are
         // logged out and role changes take effect without a re-login.
         $staff = Staff::query()
-            ->select(['id', 'name', 'role', 'is_active'])
+            ->select(['id', 'name', 'role', 'locale', 'is_active'])
             ->find(Session::get('staff.id'));
 
         if (!$staff || !$staff->is_active) {
             Session::flush();
-            return $this->unauthenticated($request, 'Your session has ended. Please log in again.');
+            return $this->unauthenticated($request, __('Your session has ended. Please log in again.'));
         }
 
-        if (Session::get('staff.role') !== $staff->role || Session::get('staff.name') !== $staff->name) {
+        if (Session::get('staff.role') !== $staff->role || Session::get('staff.name') !== $staff->name || Session::get('staff.locale') !== $staff->locale) {
             Session::put('staff', [
                 'id'   => $staff->id,
                 'name' => $staff->name,
                 'role' => $staff->role,
+                'locale' => $staff->locale,
             ]);
         }
 
@@ -42,7 +43,7 @@ class AuthStaff
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
-                'message' => $message ?? 'Authentication required. Please login again.',
+                'message' => $message ?? __('Authentication required. Please log in again.'),
             ], 401);
         }
 

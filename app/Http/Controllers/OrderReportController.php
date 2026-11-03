@@ -36,15 +36,15 @@ class OrderReportController extends Controller
         $summary = $this->summary($filters);
 
         $rows = (function () use ($orders, $filters, $summary) {
-            yield ["Order Report - {$filters['start_date']} to {$filters['end_date']}"];
+            yield [__('Order report: :from to :to', ['from' => $filters['start_date'], 'to' => $filters['end_date']])];
             yield [];
-            yield ['Order Number', 'Date', 'Customer', 'Services', 'Currency', 'Amount', 'Paid', 'Balance', 'Status'];
+            yield [__('Order no.'), __('Date'), __('Customer'), __('Services'), __('Currency'), __('Amount'), __('Paid'), __('Balance'), __('Status')];
 
             foreach ($orders as $order) {
                 yield [
                     $order->order_number,
                     substr((string) $order->order_date, 0, 10),
-                    $order->customer_name ?? 'Walk-in Customer',
+                    $order->customer_name ?? __('Walk-in customer'),
                     $order->items->map(fn ($item) => $item->name . ($item->qty > 1 ? " (x{$item->qty})" : ''))->implode(', '),
                     $order->currency,
                     number_format((float) $order->total, 2, '.', ''),
@@ -55,16 +55,16 @@ class OrderReportController extends Controller
             }
 
             yield [];
-            yield ['Summary'];
-            yield ['Total Orders', $summary['total_orders']];
-            yield ['Total Amount (' . app(Format::class)->currency . ')', number_format($summary['total_amount'], 2, '.', '')];
-            yield ['Completed', $summary['completed_count']];
-            yield ['Pending', $summary['pending_count']];
-            yield ['Processing', $summary['processing_count']];
-            yield ['Ready for pickup', $summary['ready_count']];
-            yield ['Cancelled', $summary['cancelled_count']];
+            yield [__('Summary')];
+            yield [__('Total orders'), $summary['total_orders']];
+            yield [__('Total amount (:currency)', ['currency' => app(Format::class)->currency]), number_format($summary['total_amount'], 2, '.', '')];
+            yield [__('Completed'), $summary['completed_count']];
+            yield [__('Pending'), $summary['pending_count']];
+            yield [__('Processing'), $summary['processing_count']];
+            yield [__('Ready for pickup'), $summary['ready_count']];
+            yield [__('Cancelled'), $summary['cancelled_count']];
             yield [];
-            yield ['Generated on', now()->format('Y-m-d H:i:s')];
+            yield [__('Generated on'), now()->format('Y-m-d H:i:s')];
         })();
 
         return $this->csvDownload("order_report_{$filters['start_date']}_to_{$filters['end_date']}.csv", $rows);

@@ -38,7 +38,7 @@ class BackupController extends Controller
         } catch (\Throwable $e) {
             Log::error('Backup failed: ' . $e->getMessage(), ['exception' => $e]);
 
-            return back()->with('error', 'Failed to create backup: ' . $e->getMessage());
+            return back()->with('error', __('Failed to create backup: :error', ['error' => $e->getMessage()]));
         }
 
         Log::info('Backup created: ' . basename($path), ['staff_id' => Session::get('staff.id')]);
@@ -55,18 +55,18 @@ class BackupController extends Controller
             'backup_file' => 'required|file|max:51200', // 50 MB
             'confirm' => 'accepted',
         ], [
-            'confirm.accepted' => 'Please confirm that you want to replace all current data.',
+            'confirm.accepted' => __('Please confirm that you want to replace all current data.'),
         ]);
 
         $sql = file_get_contents($request->file('backup_file')->getRealPath());
 
         if ($sql === false || !str_starts_with(ltrim($sql, "\xEF\xBB\xBF \r\n"), self::HEADER)) {
-            return back()->with('error', 'This file is not a backup created by this system.');
+            return back()->with('error', __('This file is not a backup created by this system.'));
         }
 
         $driver = DB::connection()->getDriverName();
         if (!preg_match('/^-- Driver: (\w+)/m', $sql, $m) || $m[1] !== $driver) {
-            return back()->with('error', 'This backup was created for a different database type and cannot be restored here.');
+            return back()->with('error', __('This backup was created for a different database type and cannot be restored here.'));
         }
 
         // Always take a safety backup before replacing anything
@@ -75,7 +75,7 @@ class BackupController extends Controller
         } catch (\Throwable $e) {
             Log::error('Pre-restore backup failed: ' . $e->getMessage());
 
-            return back()->with('error', 'Could not create a safety backup, restore aborted: ' . $e->getMessage());
+            return back()->with('error', __('Could not create a safety backup, restore aborted: :error', ['error' => $e->getMessage()]));
         }
 
         try {
@@ -85,8 +85,7 @@ class BackupController extends Controller
         } catch (\Throwable $e) {
             Log::error('Restore failed: ' . $e->getMessage(), ['exception' => $e]);
 
-            return back()->with('error', 'Restore failed: ' . $e->getMessage()
-                . ' A safety backup was saved as ' . basename($safety) . '.');
+            return back()->with('error', __('Restore failed: :error A safety backup was saved as :file.', ['error' => $e->getMessage(), 'file' => basename($safety)]));
         }
 
         // A backup made by an older version brings back older tables (and its own
@@ -96,8 +95,7 @@ class BackupController extends Controller
         } catch (\Throwable $e) {
             Log::error('Migrating a restored backup failed: ' . $e->getMessage(), ['exception' => $e]);
 
-            return back()->with('error', 'The backup was restored, but updating its tables failed: ' . $e->getMessage()
-                . ' Run "php artisan migrate" before using the app.');
+            return back()->with('error', __('The backup was restored, but updating its tables failed: :error Run "php artisan migrate" before using the app.', ['error' => $e->getMessage()]));
         }
 
         Log::warning('Database restored from backup', ['staff_id' => Session::get('staff.id')]);
@@ -110,7 +108,7 @@ class BackupController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')
-            ->with('error', 'Database restored successfully. Please log in again.');
+            ->with('error', __('Database restored successfully. Please log in again.'));
     }
 
     /**

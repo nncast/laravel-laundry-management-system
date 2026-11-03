@@ -18,8 +18,13 @@
 @endunless
 <style>
 @page { {{ $page }} }
+@if(!empty($cjkFont))
+@font-face { font-family: "Noto Sans CJK"; src: url("{{ $cjkFont }}"); }
+@font-face { font-family: "Noto Sans CJK"; font-weight: bold; src: url("{{ $cjkFont }}"); }   /* one weight is bundled; bold uses it too */
+@endif
 body { margin: 0; }
-.doc { margin: 0 auto; color: #000; background: #fff; font: 12px/1.4 {!! $pdf ? '"DejaVu Sans", sans-serif' : 'system-ui, "Segoe UI", Roboto, Arial, sans-serif' !!}; }
+{{-- PDFs: DejaVu Sans has the peso sign; the CJK font (only when needed) comes first and DejaVu fills its gaps --}}
+.doc { margin: 0 auto; color: #000; background: #fff; font: 12px/1.4 {!! !$pdf ? 'system-ui, "Segoe UI", Roboto, Arial, sans-serif' : (empty($cjkFont) ? '"DejaVu Sans", sans-serif' : '"Noto Sans CJK", "DejaVu Sans", sans-serif') !!}; }
 .paper-80mm .doc { width: 72mm; padding: 4mm 0 6mm; }
 .paper-58mm .doc { width: 48mm; padding: 3mm 0 6mm; font-size: 10.5px; }
 .paper-a4 .doc, .paper-letter .doc { font-size: 13px; }

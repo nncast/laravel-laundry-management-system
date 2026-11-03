@@ -56,7 +56,7 @@ class AddonController extends Controller
         if (DB::table('order_addons')->where('addon_id', $addon->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This add-on is used in existing orders and cannot be deleted. Set it to Inactive to hide it from the POS.',
+                'message' => __('This add-on is used in existing orders and cannot be deleted. Set it to Inactive to hide it from the POS.'),
             ], 422);
         }
 

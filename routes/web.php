@@ -15,6 +15,7 @@ use App\Http\Controllers\{
     AddonController,
     OrderController,
     OrderDocumentController,
+    LanguageController,
     DashboardController,
     BackupController,
     DailyReportController,
@@ -177,10 +178,15 @@ Route::middleware('auth.staff')->group(function () {
             Route::post('/system', [SystemSettingController::class, 'update'])->name('settings.update');
             Route::post('/region', [SystemSettingController::class, 'updateRegion'])->name('settings.region');
             Route::post('/receipts', [SystemSettingController::class, 'updateReceipts'])->name('settings.receipts');
+            Route::post('/language', [SystemSettingController::class, 'updateLanguage'])->name('settings.language');
             Route::get('/mastersettings', [SystemSettingController::class, 'edit'])->name('settings.mastersettings');
         });
     });
 });
+
+// ---------- LANGUAGE (also on the sign-in page) ----------
+Route::post('/language', [LanguageController::class, 'update'])->name('language.update');
+Route::get('/lang/{locale}.js', [LanguageController::class, 'script'])->name('language.script');
 
 // Catch-all route for undefined routes
 Route::fallback(function () {

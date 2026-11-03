@@ -38,14 +38,18 @@ class Format
     ) {
     }
 
+    /** "auto" number and date formats: the language's own (config/locales.php). */
+    public const AUTO = 'auto';
+
     public static function fromSettings(SystemSetting $settings): self
     {
         $pick = fn ($value, array $allowed, string $default) => in_array($value, $allowed, true) ? $value : $default;
+        $language = config('locales.' . app()->getLocale()) ?? config('locales.en');
 
         return new self(
             $pick($settings->currency, array_keys(config('currencies')), 'PHP'),
-            $pick($settings->number_format, array_keys(self::NUMBER_FORMATS), 'comma_dot'),
-            $pick($settings->date_format, array_keys(self::DATE_FORMATS), 'M j, Y'),
+            $settings->number_format === self::AUTO ? $language['number'] : $pick($settings->number_format, array_keys(self::NUMBER_FORMATS), 'comma_dot'),
+            $settings->date_format === self::AUTO ? $language['date'] : $pick($settings->date_format, array_keys(self::DATE_FORMATS), 'M j, Y'),
             $pick($settings->time_format, array_keys(self::TIME_FORMATS), '12h'),
         );
     }

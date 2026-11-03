@@ -36,7 +36,7 @@ class ProductController extends Controller
         Product::create($request->validate(self::RULES));
 
         return redirect()->route('products.index')
-            ->with('success', 'Product added successfully!');
+            ->with('success', __('Product added successfully!'));
     }
 
     public function update(Request $request)
@@ -46,7 +46,7 @@ class ProductController extends Controller
         Product::findOrFail($validated['product_id'])
             ->update(collect($validated)->except('product_id')->all());
 
-        return back()->with('success', 'Product updated.');
+        return back()->with('success', __('Product updated.'));
     }
 
     public function destroy(Request $request)

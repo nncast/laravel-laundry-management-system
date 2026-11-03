@@ -111,7 +111,7 @@ class OrderController extends Controller
             ->map(fn (Order $order) => [
                 'id' => $order->id,
                 'number' => $order->order_number,
-                'customer' => $order->customer->name ?? 'Walk-in customer',
+                'customer' => $order->customer->name ?? __('Walk-in customer'),
                 'status' => $order->status,
                 'status_label' => $order->status_label,
                 'total' => money($order->total, $order->currency),
@@ -186,7 +186,7 @@ class OrderController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Order status updated successfully.',
+                'message' => __('Order status updated successfully.'),
                 'order' => [
                     'id' => $order->id,
                     'status' => $order->status,
@@ -195,7 +195,7 @@ class OrderController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Order status updated successfully.');
+        return back()->with('success', __('Order status updated successfully.'));
     }
 
     /**
@@ -211,7 +211,7 @@ class OrderController extends Controller
         if ($order->status === 'cancelled') {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot add a payment to a cancelled order.',
+                'message' => __('Cannot add a payment to a cancelled order.'),
             ], 422);
         }
 
@@ -219,7 +219,7 @@ class OrderController extends Controller
         if ($balance <= 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'This order is already fully paid.',
+                'message' => __('This order is already fully paid.'),
             ], 422);
         }
 
@@ -235,7 +235,7 @@ class OrderController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Payment added successfully.',
+            'message' => __('Payment added successfully.'),
             'change' => $change,
             'order' => [
                 'id' => $order->id,
@@ -258,7 +258,7 @@ class OrderController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Notes saved successfully.',
+            'message' => __('Notes saved successfully.'),
             'notes' => $order->notes,
         ]);
     }
@@ -269,11 +269,11 @@ class OrderController extends Controller
     public function destroy(Order $order)
     {
         if ($order->payments()->exists()) {
-            return back()->with('error', 'Cannot delete an order that has payments. Cancel it instead.');
+            return back()->with('error', __('Cannot delete an order that has payments. Cancel it instead.'));
         }
 
         $order->delete();
 
-        return redirect()->route('orders.index')->with('success', 'Order deleted successfully.');
+        return redirect()->route('orders.index')->with('success', __('Order deleted successfully.'));
     }
 }

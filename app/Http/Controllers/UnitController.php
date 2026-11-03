@@ -56,7 +56,7 @@ class UnitController extends Controller
         if ($unit->products()->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This unit is used by products. Change those products first, or set the unit to Inactive.',
+                'message' => __('This unit is used by products. Change those products first, or set the unit to Inactive.'),
             ], 422);
         }
 

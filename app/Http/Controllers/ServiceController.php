@@ -77,7 +77,7 @@ class ServiceController extends Controller
         if (OrderItem::where('service_id', $service->id)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This service is used in existing orders and cannot be deleted. Set it to Inactive to hide it from the POS.',
+                'message' => __('This service is used in existing orders and cannot be deleted. Set it to Inactive to hide it from the POS.'),
             ], 422);
         }
 

@@ -58,15 +58,15 @@ class SalesReportController extends Controller
         $currency = app(Format::class)->currency;
 
         $rows = (function () use ($orders, $summary, $startDate, $endDate, $money, $currency) {
-            yield ["Sales Report - {$startDate} to {$endDate}"];
+            yield [__('Sales report: :from to :to', ['from' => $startDate, 'to' => $endDate])];
             yield [];
-            yield ['Date', 'Order #', 'Customer', 'Currency', 'Services', 'Add-ons', 'Discount', 'Total', 'Paid Amount', 'Outstanding', 'Status'];
+            yield [__('Date'), __('Order no.'), __('Customer'), __('Currency'), __('Services'), __('Add-ons'), __('Discount'), __('Total'), __('Paid'), __('Outstanding'), __('Status')];
 
             foreach ($orders as $order) {
                 yield [
                     substr((string) $order->order_date, 0, 10),
                     $order->order_number,
-                    $order->customer_name ?? 'Walk-in Customer',
+                    $order->customer_name ?? __('Walk-in customer'),
                     $order->currency,
                     $money($order->subtotal),
                     $money($order->addon_total),
@@ -79,19 +79,19 @@ class SalesReportController extends Controller
             }
 
             yield [];
-            yield ["Summary ({$currency} orders)"];
-            yield ['Total Orders', $summary['total_orders']];
-            yield ['Total Sales', $money($summary['total_sales'])];
-            yield ['Total Discount', $money($summary['total_discount'])];
-            yield ['Total Paid', $money($summary['total_paid'])];
-            yield ['Total Outstanding', $money($summary['total_outstanding'])];
-            yield ['Total Items Sold', $summary['total_items_sold']];
-            yield ['Total Add-ons Sold', $summary['total_addons_sold']];
-            yield ['Average Order Value', $money($summary['average_order_value'])];
-            yield ['Completed Orders', $summary['completed_orders']];
-            yield ['Completion Rate', number_format($summary['completion_rate'], 2) . '%'];
+            yield [__('Summary (:currency orders)', ['currency' => $currency])];
+            yield [__('Total orders'), $summary['total_orders']];
+            yield [__('Total sales'), $money($summary['total_sales'])];
+            yield [__('Discounts given'), $money($summary['total_discount'])];
+            yield [__('Total paid'), $money($summary['total_paid'])];
+            yield [__('Outstanding'), $money($summary['total_outstanding'])];
+            yield [__('Items sold'), $summary['total_items_sold']];
+            yield [__('Add-ons sold'), $summary['total_addons_sold']];
+            yield [__('Average order'), $money($summary['average_order_value'])];
+            yield [__('Completed orders'), $summary['completed_orders']];
+            yield [__('Completion rate'), number_format($summary['completion_rate'], 2) . '%'];
             yield [];
-            yield ['Generated on', now()->format('Y-m-d H:i:s')];
+            yield [__('Generated on'), now()->format('Y-m-d H:i:s')];
         })();
 
         return $this->csvDownload("sales_report_{$startDate}_to_{$endDate}.csv", $rows);
@@ -116,7 +116,7 @@ class SalesReportController extends Controller
                     'end_date' => $endDate,
                 ],
             ],
-            'message' => 'Sales report data retrieved successfully',
+            'message' => __('Sales report data retrieved successfully'),
         ]);
     }
 
@@ -144,7 +144,7 @@ class SalesReportController extends Controller
             'order' => $order,
             'date' => $order->order_date?->format('Y-m-d'),
             'order_number' => $order->order_number,
-            'customer_name' => $order->customer->name ?? 'Walk-in Customer',
+            'customer_name' => $order->customer->name ?? __('Walk-in customer'),
             'customer' => $order->customer,
             'items_total' => $itemsTotal,
             'addon_total' => $addonTotal,

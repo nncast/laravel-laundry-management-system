@@ -302,11 +302,11 @@ class Order extends Model
     public static function labelFor(string $status): string
     {
         return match($status) {
-            'pending' => 'Pending',
-            'processing' => 'Processing',
-            'ready' => 'Ready for pickup',
-            'completed' => 'Completed',
-            'cancelled' => 'Cancelled',
+            'pending' => __('Pending'),
+            'processing' => __('Processing'),
+            'ready' => __('Ready for pickup'),
+            'completed' => __('Completed'),
+            'cancelled' => __('Cancelled'),
             default => ucfirst($status)
         };
     }

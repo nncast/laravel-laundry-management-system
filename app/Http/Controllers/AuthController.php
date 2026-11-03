@@ -30,12 +30,12 @@ class AuthController extends Controller
 
         if (!$staff || !Hash::check($request->password, $staff->password)) {
             return back()->withInput($request->only('username'))
-                ->with('error', 'Invalid username or password.');
+                ->with('error', __('Invalid username or password.'));
         }
 
         if (!$staff->is_active) {
             return back()->withInput($request->only('username'))
-                ->with('error', 'Your account is deactivated.');
+                ->with('error', __('Your account is deactivated.'));
         }
 
         // Prevent session fixation, then store the staff in the new session
@@ -44,6 +44,7 @@ class AuthController extends Controller
             'id'   => $staff->id,
             'name' => $staff->name,
             'role' => $staff->role,
+            'locale' => $staff->locale,   // their language (null: the one picked here, or the shop's)
         ]);
 
         return redirect()->intended(route('dashboard'));

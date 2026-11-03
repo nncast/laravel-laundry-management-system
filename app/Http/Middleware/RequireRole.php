@@ -21,11 +21,11 @@ class RequireRole
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
-                'message' => 'You do not have permission to perform this action.',
+                'message' => __('You do not have permission to perform this action.'),
             ], 403);
         }
 
         return redirect()->route('dashboard')
-            ->with('error', 'You do not have permission to access that page.');
+            ->with('error', __('You do not have permission to access that page.'));
     }
 }

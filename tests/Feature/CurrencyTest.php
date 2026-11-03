@@ -106,7 +106,7 @@ class CurrencyTest extends TestCase
             ->assertOk()
             ->assertViewHas('summary', fn ($s) => $s['total_orders'] === 1 && $s['total_sales'] == 1255)
             ->assertViewHas('otherCurrencies', fn ($rows) => $rows->count() === 1 && $rows[0]->currency === 'PHP')
-            ->assertSee('Not added in');
+            ->assertSee('from before the currency changed');
 
         $stats = $this->asAdmin()->getJson('/dashboard/stats')->json('stats');
         $this->assertEquals(1255, $stats['unpaidBalance']);
@@ -114,7 +114,7 @@ class CurrencyTest extends TestCase
 
         $csv = $this->asAdmin()->get("/reports/order/download?start_date={$start}&end_date={$end}")->streamedContent();
         $this->assertStringContainsString('Currency', $csv);
-        $this->assertStringContainsString('Total Amount (USD)', $csv);
+        $this->assertStringContainsString('Total amount (USD)', $csv);
     }
 
     public function test_yen_orders_round_to_whole_yen(): void

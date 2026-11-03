@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
-@section('title', 'Services')
-@section('page-title', 'Services')
-@section('page-subtitle', 'What customers can order at the point of sale')
+@section('title', __('Services'))
+@section('page-title', __('Services'))
+@section('page-subtitle', __('What customers can order at the point of sale'))
 
 @section('page-actions')
-    <button type="button" class="btn btn-primary" data-form-dialog="serviceDialog" data-title="Add service" data-submit="Save service"
-            data-action="{{ route('services.store') }}" data-method="POST" @disabled($serviceTypes->isEmpty())><i class="fas fa-plus" aria-hidden="true"></i> Add service</button>
+    <button type="button" class="btn btn-primary" data-form-dialog="serviceDialog" data-title="{{ __('Add service') }}" data-submit="{{ __('Save service') }}"
+            data-action="{{ route('services.store') }}" data-method="POST" @disabled($serviceTypes->isEmpty())><i class="fas fa-plus" aria-hidden="true"></i> {{ __('Add service') }}</button>
 @endsection
 
 @section('content')
 @if($serviceTypes->isEmpty())
-    <div class="alert alert-info" style="margin-bottom: var(--s-4)"><i class="fas fa-circle-info" aria-hidden="true"></i><span>Add a <a href="{{ route('services.type') }}">service type</a> first (e.g. Wash &amp; Fold); services are grouped by type at the point of sale.</span></div>
+    <div class="alert alert-info" style="margin-bottom: var(--s-4)"><i class="fas fa-circle-info" aria-hidden="true"></i><span>{!! __('Add a :type first (e.g. Wash & Fold); services are grouped by type at the point of sale.', ['type' => '<a href="' . e(route('services.type')) . '">' . e(__('service type')) . '</a>']) !!}</span></div>
 @endif
 
 <div class="toolbar">
     <div class="search">
         <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-        <input class="input" type="search" placeholder="Search services" aria-label="Search services" data-table-filter="servicesTable" autocomplete="off">
+        <input class="input" type="search" placeholder="{{ __('Search services') }}" aria-label="{{ __('Search services') }}" data-table-filter="servicesTable" autocomplete="off">
     </div>
 </div>
 
@@ -25,14 +25,14 @@
     @if($services->isEmpty())
         <div class="empty">
             <span class="empty-icon" aria-hidden="true"><i class="fas fa-tags"></i></span>
-            <p class="empty-title">No services yet</p>
-            <p>Add the services you offer, like Wash &amp; Dry or Press, with their prices.</p>
+            <p class="empty-title">{{ __('No services yet') }}</p>
+            <p>{{ __('Add the services you offer, like Wash & Dry or Press, with their prices.') }}</p>
         </div>
     @else
     <div class="table-wrap">
         <table class="table table-stack" id="servicesTable">
             <thead>
-                <tr><th>Service</th><th>Type</th><th class="num">Price</th><th>Status</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
+                <tr><th>{{ __('Service') }}</th><th>{{ __('Type') }}</th><th class="num">{{ __('Price') }}</th><th>{{ __('Status') }}</th><th class="actions"><span class="sr-only">{{ __('Actions') }}</span></th></tr>
             </thead>
             <tbody>
                 @foreach($services as $service)
@@ -47,39 +47,39 @@
                             <span class="cell-title">{{ $service->name }}</span>
                         </div>
                     </td>
-                    <td data-label="Type"><span class="badge badge-info">{{ $service->serviceType->name ?? 'No type' }}</span></td>
-                    <td data-label="Price" class="num"><strong>{{ money($service->price) }}</strong></td>
-                    <td data-label="Status"><span class="badge {{ $service->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $service->is_active ? 'Active' : 'Hidden from POS' }}</span></td>
+                    <td data-label="{{ __('Type') }}"><span class="badge badge-info">{{ $service->serviceType->name ?? __('No type') }}</span></td>
+                    <td data-label="{{ __('Price') }}" class="num"><strong>{{ money($service->price) }}</strong></td>
+                    <td data-label="{{ __('Status') }}"><span class="badge {{ $service->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $service->is_active ? __('Active') : __('Hidden from POS') }}</span></td>
                     <td class="actions">
                         <div class="cell-actions">
-                            <button type="button" class="icon-btn" aria-label="Edit {{ $service->name }}" title="Edit"
-                                    data-form-dialog="serviceDialog" data-title="Edit service" data-submit="Save changes"
+                            <button type="button" class="icon-btn" aria-label="{{ __('Edit :name', ['name' => $service->name]) }}" title="{{ __('Edit') }}"
+                                    data-form-dialog="serviceDialog" data-title="{{ __('Edit service') }}" data-submit="{{ __('Save changes') }}"
                                     data-action="{{ route('services.update', $service->id) }}" data-method="PUT"
                                     data-values="{{ json_encode(['name' => $service->name, 'service_type_id' => $service->service_type_id, 'price' => $service->price, 'is_active' => $service->is_active ? 1 : 0]) }}"><i class="fas fa-pen" aria-hidden="true"></i></button>
-                            <form method="POST" action="{{ route('services.destroy', $service->id) }}" data-ajax data-success="Service deleted."
-                                  data-confirm="{{ $service->name }} will be removed from the catalog." data-confirm-title="Delete this service?">
+                            <form method="POST" action="{{ route('services.destroy', $service->id) }}" data-ajax data-success="{{ __('Service deleted.') }}"
+                                  data-confirm="{{ __(':name will be removed from the catalog.', ['name' => $service->name]) }}" data-confirm-title="{{ __('Delete this service?') }}">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="icon-btn danger" aria-label="Delete {{ $service->name }}" title="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                                <button type="submit" class="icon-btn danger" aria-label="{{ __('Delete :name', ['name' => $service->name]) }}" title="{{ __('Delete') }}"><i class="fas fa-trash" aria-hidden="true"></i></button>
                             </form>
                         </div>
                     </td>
                 </tr>
                 @endforeach
-                <tr class="no-match" hidden><td colspan="5" class="muted">No services match your search.</td></tr>
+                <tr class="no-match" hidden><td colspan="5" class="muted">{{ __('No services match your search.') }}</td></tr>
             </tbody>
         </table>
     </div>
     @endif
 </div>
 
-<x-form-dialog id="serviceDialog" title="Add service" :action="route('services.store')" submit="Save service" success="Service saved." files>
-    <x-field name="name" label="Name" required maxlength="255" placeholder="e.g. Wash & Dry (8 kg)" />
+<x-form-dialog id="serviceDialog" :title="__('Add service')" :action="route('services.store')" :submit="__('Save service')" :success="__('Service saved.')" files>
+    <x-field name="name" :label="__('Name')" required maxlength="255" :placeholder="__('e.g. Wash & Dry (8 kg)')" />
     <div class="form-row">
-        <x-field name="service_type_id" label="Type" required :options="['' => 'Choose a type'] + $serviceTypes->pluck('name', 'id')->all()" />
-        <x-field name="price" label="Price" type="number" :prefix="currency_symbol()" required min="0" :step="money_step()" inputmode="decimal" />
+        <x-field name="service_type_id" :label="__('Type')" required :options="['' => __('Choose a type')] + $serviceTypes->pluck('name', 'id')->all()" />
+        <x-field name="price" :label="__('Price')" type="number" :prefix="currency_symbol()" required min="0" :step="money_step()" inputmode="decimal" />
     </div>
-    <x-field name="is_active" label="Show at the point of sale" type="segmented" :options="['1' => 'Active', '0' => 'Hidden']" data-default="1" />
-    <x-field name="icon_file" label="Picture" type="file" accept="image/*" help="Optional. JPG, PNG, GIF or WebP up to 2 MB. Leave empty to keep the current one." />
+    <x-field name="is_active" :label="__('Show at the point of sale')" type="segmented" :options="['1' => __('Active'), '0' => __('Hidden')]" data-default="1" />
+    <x-field name="icon_file" :label="__('Picture')" type="file" accept="image/*" :help="__('Optional. JPG, PNG, GIF or WebP up to 2 MB. Leave empty to keep the current one.')" />
 </x-form-dialog>
 @endsection

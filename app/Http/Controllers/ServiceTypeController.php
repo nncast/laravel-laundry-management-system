@@ -26,7 +26,7 @@ class ServiceTypeController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        return redirect()->route('services.type')->with('success', 'Service type created successfully!');
+        return redirect()->route('services.type')->with('success', __('Service type created successfully!'));
     }
 
     public function update(Request $request)
@@ -43,7 +43,7 @@ class ServiceTypeController extends Controller
             'is_active' => $request->boolean('is_active', $serviceType->is_active),
         ]);
 
-        return redirect()->route('services.type')->with('success', 'Service type updated successfully!');
+        return redirect()->route('services.type')->with('success', __('Service type updated successfully!'));
     }
 
     public function destroy(Request $request)
@@ -57,11 +57,11 @@ class ServiceTypeController extends Controller
         // Deleting would cascade-delete its services (and their order history)
         if ($serviceType->services()->exists()) {
             return redirect()->route('services.type')
-                ->with('error', 'This service type still has services. Move or delete them first, or set it to Inactive.');
+                ->with('error', __('This service type still has services. Move or delete them first, or set it to Inactive.'));
         }
 
         $serviceType->delete();
 
-        return redirect()->route('services.type')->with('success', 'Service type deleted successfully!');
+        return redirect()->route('services.type')->with('success', __('Service type deleted successfully!'));
     }
 }
