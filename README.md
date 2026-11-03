@@ -1,7 +1,7 @@
 <div align="center"><img src="docs/logo.png" width="100" alt="Soap Opera logo"></div>
 <h1 align="center">Soap Opera</h1>
 <div align="center">
-<img src="https://img.shields.io/badge/version-2.4.0-1766DC?style=flat-square" alt="version">
+<img src="https://img.shields.io/badge/version-2.4.1-1766DC?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-complete-1766DC?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
@@ -135,7 +135,7 @@ It replaces paper job orders and notebooks with a **point of sale, order trackin
 git clone https://github.com/nncast/laravel-laundry-management-system.git
 cd laravel-laundry-management-system
 ```
-Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v2.4.0.zip) and extract it.
+Or download the [source .zip](https://github.com/nncast/laravel-laundry-management-system/archive/refs/tags/v2.4.1.zip) and extract it.
 
 ### 3. Install dependencies
 ```bash
