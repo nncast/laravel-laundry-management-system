@@ -108,8 +108,8 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
 #percentChips { margin-top: var(--s-2); }
 #percentChips .chip { min-height: 40px; }
 .total-row { font-size: 24px; }
-.checkout-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: var(--s-2); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
-.checkout-actions .btn { min-height: 60px; min-width: 0; flex-wrap: wrap; column-gap: var(--s-2); row-gap: 0; white-space: normal; line-height: 1.2; text-align: center; }
+.checkout-actions { display: grid; grid-template-columns: fit-content(45%) minmax(0, 1fr); gap: var(--s-2); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
+.checkout-actions .btn { min-height: 60px; min-width: 0; padding-inline: var(--s-4); flex-wrap: wrap; column-gap: var(--s-2); row-gap: 0; white-space: normal; line-height: 1.2; text-align: center; }
 .checkout-actions .btn-primary { font-size: 17px; }
 
 /* Payment dialog */
@@ -717,6 +717,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     const found = new Map();
     let pending = null;
     let timer = null;
+    let pickFirst = false;   // Enter pressed before the answer arrived (fast typing, a scanner)
     async function lookup(term) {
         if (found.has(term)) return found.get(term);
         pending?.abort();
@@ -738,6 +739,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     }
     function onType() {
         clearTimeout(timer);
+        pickFirst = false;
         const term = search.value.trim();
         if (!term) { results.hidden = true; search.setAttribute('aria-expanded', 'false'); return; }
         if (!found.has(term)) showLoading();
@@ -748,6 +750,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     }
     function showResults(list) {
         if (search.value.trim() === '') return;
+        if (pickFirst && list.length) { pickFirst = false; pickCustomer(list[0]); return; }
         const found = list;
         highlighted = found.length ? 0 : -1;
         results.replaceChildren();
@@ -786,6 +789,9 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
         } else if (e.key === 'Enter' && highlighted >= 0 && options[highlighted]) {
             e.preventDefault();
             options[highlighted].click();
+        } else if (e.key === 'Enter' && search.value.trim()) {
+            e.preventDefault();
+            pickFirst = true;
         } else if (e.key === 'Escape') {
             results.hidden = true;
             search.setAttribute('aria-expanded', 'false');
