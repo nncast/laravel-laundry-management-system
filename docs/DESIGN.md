@@ -16,7 +16,8 @@ This document covers:
 6. [Accessibility](#6-accessibility)
 7. [Touch and mobile](#7-touch-and-mobile)
 8. [Printed documents](#8-printed-documents-v230)
-9. [Not built yet](#9-not-built-yet)
+9. [Languages](#9-languages-v240)
+10. [Not built yet](#10-not-built-yet)
 
 Code: tokens in `public/css/theme.css`, components and layout in `public/css/app.css`,
 shared behaviour in `public/js/app.js`, Blade components in `resources/views/components/`.
@@ -387,7 +388,40 @@ hands it to those apps on phones). Self-service pickup would put a signed token 
 code instead of the plain address. Cloud and network printers would take the PDF; raw
 ESC/POS printing would need a small local print service.
 
-## 9. Not built yet
+## 9. Languages (v2.4.0)
+
+**Which language.** `SetLocale` (web middleware) picks, in order: the staff member's own
+choice (`staffs.locale`, set from the menu and kept on the account), the one picked on the
+sign-in page (session), then the shop's default; a language an admin switched off is
+skipped. It also sets Carbon's language, so month and day names follow, and rebuilds
+`Format`, so **Automatic** number and date formats follow too (`config/locales.php`).
+
+**Strings.** English text is the key (`__('Save customer')`), translated in
+`lang/{code}.json`; form errors come from `lang/{code}/validation.php`. Values go in as
+`:name` placeholders, never by joining sentence pieces, because word order changes (the
+greeting is `Good morning, :name` / `おはようございます、:name さん`). Plurals are two
+keys picked in code (`1 order` / `:count orders`). Scripts call `t('…')` (app.js) with
+the strings from `/lang/{code}.js`, cached by the browser until the file changes. JSON
+keys don't fall back on their own in Laravel, so a missing-key handler tries the admin's
+fallback language before English.
+
+**Checks.** `LanguageTest` reads every `__()`/`t()` call in the code and fails when a
+language lacks a key or changes a placeholder. Before release a pseudo-language that wraps
+every translation in ⟦…⟧ is browsed page by page: any plain English left on screen is a
+string that was never wrapped.
+
+**Layout.** Longer languages (Filipino and Spanish run about a third longer) are checked
+at desktop and phone widths: buttons wrap instead of overflowing, and inputs may shrink.
+Japanese and Chinese use the system's CJK font after the brand font (`:lang()` rules in
+theme.css); their PDFs embed a Noto Sans subset (GB2312 + JIS X 0208, 3.4 MB) only when a
+document contains CJK text, with DejaVu Sans filling in symbols such as ₱.
+
+**Right to left.** `<html dir>` comes from the language's `dir`. The CSS uses logical
+properties (inline-start/end), so the layout mirrors; arrows flip and the menu slides in
+from the right. No right-to-left language ships yet; adding one is a config entry and its
+translations.
+
+## 10. Not built yet
 
 From the redesign brief, these need new business logic or data and were left out of v2.0.0:
 

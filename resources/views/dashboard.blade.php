@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
+@section('title', __('Dashboard'))
 
 @php
     $hour = now()->hour;
-    $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
-    $firstName = strtok(session('staff.name') ?? 'there', ' ');
+    $firstName = ['name' => strtok(session('staff.name') ?? __('there'), ' ')];
+    $greeting = $hour < 12 ? __('Good morning, :name', $firstName) : ($hour < 18 ? __('Good afternoon, :name', $firstName) : __('Good evening, :name', $firstName));
     $role = session('staff.role');
     $isManager = in_array($role, ['manager', 'admin'], true);
     $isAdmin = $role === 'admin';
@@ -14,24 +14,24 @@
 
     // [label, icon, tone, value, meta, link (null = not a link), alert]
     $kpis = [
-        ["Today's orders", 'fa-basket-shopping', 'tone-blue', $todayOrders, $todayPending . ' not started yet', route('orders.index', ['from' => $today, 'to' => $today]), false],
-        ['Active orders', 'fa-spinner', 'tone-sky', $openOrders, $pendingOrders . ' pending · ' . $processingOrders . ' processing', route('orders.index', ['status' => 'open']), false],
-        ['Ready for pickup', 'fa-bell', 'tone-violet', $readyCount, 'Waiting for customers', route('orders.index', ['status' => 'ready']), false],
-        ['Overdue', 'fa-hourglass-half', 'tone-red', $overdueCount, $stuckRule, route('orders.index', ['status' => 'overdue']), $overdueCount > 0],
-        ['Revenue today', 'fa-sack-dollar', 'tone-green', $whole($todayRevenue), $todayCompleted . ' completed today', $isAdmin ? route('reports.daily') : null, false],
-        ['Collected today', 'fa-hand-holding-dollar', 'tone-aqua', $whole($collectedToday), 'Payments taken at the counter', $isAdmin ? route('reports.daily') : null, false],
-        ['Revenue this month', 'fa-chart-line', 'tone-indigo', $whole($monthRevenue), null, $isAdmin ? route('reports.sales') : null, false],
-        ['Unpaid balance', 'fa-file-invoice', 'tone-amber', $whole($unpaidBalance), $unpaidCount . ' ' . \Illuminate\Support\Str::plural('order', $unpaidCount) . ' still owe', route('orders.index', ['payment' => 'unpaid']), false],
+        [__("Today's orders"), 'fa-basket-shopping', 'tone-blue', $todayOrders, __(':count not started yet', ['count' => $todayPending]), route('orders.index', ['from' => $today, 'to' => $today]), false],
+        [__('Active orders'), 'fa-spinner', 'tone-sky', $openOrders, __(':pending pending · :processing processing', ['pending' => $pendingOrders, 'processing' => $processingOrders]), route('orders.index', ['status' => 'open']), false],
+        [__('Ready for pickup'), 'fa-bell', 'tone-violet', $readyCount, __('Waiting for customers'), route('orders.index', ['status' => 'ready']), false],
+        [__('Overdue'), 'fa-hourglass-half', 'tone-red', $overdueCount, $stuckRule, route('orders.index', ['status' => 'overdue']), $overdueCount > 0],
+        [__('Revenue today'), 'fa-sack-dollar', 'tone-green', $whole($todayRevenue), __(':count completed today', ['count' => $todayCompleted]), $isAdmin ? route('reports.daily') : null, false],
+        [__('Collected today'), 'fa-hand-holding-dollar', 'tone-aqua', $whole($collectedToday), __('Payments taken at the counter'), $isAdmin ? route('reports.daily') : null, false],
+        [__('Revenue this month'), 'fa-chart-line', 'tone-indigo', $whole($monthRevenue), 'trend', $isAdmin ? route('reports.sales') : null, false],
+        [__('Unpaid balance'), 'fa-file-invoice', 'tone-amber', $whole($unpaidBalance), __($unpaidCount === 1 ? '1 order still owes' : ':count orders still owe', ['count' => $unpaidCount]), route('orders.index', ['payment' => 'unpaid']), false],
     ];
 
     // Action center: [key, tab label, icon, first rows, "view all" link, how many in all]
     $groups = [
-        ['overdue', 'Overdue', 'fa-hourglass-half', $stuckOrders, route('orders.index', ['status' => 'overdue']), $stuckCount],
-        ['ready', 'Ready for pickup', 'fa-bell', $readyOrders, route('orders.index', ['status' => 'ready']), $readyListCount],
-        ['unpaid', 'Picked up, unpaid', 'fa-file-invoice', $unpaidOrders, route('orders.index', ['status' => 'completed', 'payment' => 'unpaid']), $unpaidPickupCount],
+        ['overdue', __('Overdue'), 'fa-hourglass-half', $stuckOrders, route('orders.index', ['status' => 'overdue']), $stuckCount],
+        ['ready', __('Ready for pickup'), 'fa-bell', $readyOrders, route('orders.index', ['status' => 'ready']), $readyListCount],
+        ['unpaid', __('Picked up, unpaid'), 'fa-file-invoice', $unpaidOrders, route('orders.index', ['status' => 'completed', 'payment' => 'unpaid']), $unpaidPickupCount],
     ];
     if ($isManager) {
-        $groups[] = ['stock', 'Low stock', 'fa-box-open', $lowStock, route('products.index'), $lowStock->count()];
+        $groups[] = ['stock', __('Low stock'), 'fa-box-open', $lowStock, route('products.index'), $lowStock->count()];
     }
     $attentionCount = collect($groups)->sum(fn ($g) => $g[5]);
     $firstGroup = collect($groups)->first(fn ($g) => $g[5] > 0)[0] ?? null;
@@ -41,12 +41,12 @@
 <header class="page-header dash-header">
     <x-mascot mood="wave" class="dash-mascot mascot-ink" />
     <div class="page-heading">
-        <p class="eyebrow">{{ now()->translatedFormat('l, F j') }}</p>
-        <h1 class="page-title">{{ $greeting }}, {{ $firstName }}</h1>
+        <p class="eyebrow">{{ now()->isoFormat('dddd, LL') }}</p>
+        <h1 class="page-title">{{ $greeting }}</h1>
         <p class="page-subtitle">
-            @if($attentionCount === 1) 1 thing needs you today.
-            @elseif($attentionCount) {{ $attentionCount }} things need you today.
-            @else Everything is on track. Fresh loads, zero drama.
+            @if($attentionCount === 1) {{ __('1 thing needs you today.') }}
+            @elseif($attentionCount) {{ __(':count things need you today.', ['count' => $attentionCount]) }}
+            @else {{ __('Everything is on track. Fresh loads, zero drama.') }}
             @endif
         </p>
     </div>
@@ -64,7 +64,7 @@
     min-height: 60px; padding: 0 var(--s-4);
     border: 1px solid var(--border); border-radius: var(--radius);
     background: var(--surface); color: var(--text);
-    font-weight: 700; text-align: left; text-decoration: none;
+    font-weight: 700; text-align: start; text-decoration: none;
 }
 .quick-action > i { flex-shrink: 0; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
 .quick-action.is-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -94,16 +94,16 @@
 /* Sales: one series, one baseline, value on tap/hover/focus */
 .bar-chart { --plot-h: 220px; }
 .bar-plot { position: relative; height: var(--plot-h); margin: var(--s-2) 0 0 52px; }
-.bar-gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border); }
-.bar-gridline span { position: absolute; right: calc(100% + 10px); top: -9px; font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-gridline { position: absolute; inset-inline-start: 0; inset-inline-end: 0; border-top: 1px solid var(--border); }
+.bar-gridline span { position: absolute; inset-inline-end: calc(100% + 10px); top: -9px; font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bar-cols { position: absolute; inset: 0; display: flex; }
 .bar-col { position: relative; flex: 1; display: flex; align-items: flex-end; justify-content: center; border: 0; background: none; padding: 0; border-radius: 6px; }
 .bar-col:focus-visible { outline-offset: -2px; }
 .bar { position: relative; width: min(24px, 60%); background: var(--accent); border-radius: 4px 4px 0 0; transition: background-color var(--fast); }
 .bar-col.is-active .bar { background: var(--accent-hover); }
 .bar-col.is-active { background: var(--surface-muted); }
-.bar-cap { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); padding-bottom: 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
-.bar-labels { display: flex; margin-left: 52px; padding-top: var(--s-2); border-top: 1px solid var(--border-strong); }
+.bar-cap { position: absolute; inset-inline-start: 50%; bottom: 100%; transform: translateX(-50%); padding-bottom: 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.bar-labels { display: flex; margin-inline-start: 52px; padding-top: var(--s-2); border-top: 1px solid var(--border-strong); }
 .bar-labels span { flex: 1; text-align: center; font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 .bar-tip {
     position: absolute; z-index: 2; transform: translate(-50%, calc(-100% - 8px)); pointer-events: none;
@@ -144,31 +144,31 @@
 
 @section('content')
 <div class="stack">
-    <nav class="quick-actions" aria-label="Quick actions" style="--n: {{ 3 + ($isManager ? 1 : 0) + ($isAdmin ? 1 : 0) }}">
-        <a href="{{ route('pos.index') }}" class="quick-action is-primary"><i class="fas fa-plus" aria-hidden="true"></i><span>New order</span></a>
-        <button type="button" class="quick-action" data-focus-search><i class="fas fa-magnifying-glass" aria-hidden="true"></i><span>Find order</span></button>
-        <a href="{{ route('customers.index', ['new' => 1]) }}" class="quick-action"><i class="fas fa-user-plus" aria-hidden="true"></i><span>Add customer</span></a>
+    <nav class="quick-actions" aria-label="{{ __('Quick actions') }}" style="--n: {{ 3 + ($isManager ? 1 : 0) + ($isAdmin ? 1 : 0) }}">
+        <a href="{{ route('pos.index') }}" class="quick-action is-primary"><i class="fas fa-plus" aria-hidden="true"></i><span>{{ __('New order') }}</span></a>
+        <button type="button" class="quick-action" data-focus-search><i class="fas fa-magnifying-glass" aria-hidden="true"></i><span>{{ __('Find order') }}</span></button>
+        <a href="{{ route('customers.index', ['new' => 1]) }}" class="quick-action"><i class="fas fa-user-plus" aria-hidden="true"></i><span>{{ __('Add customer') }}</span></a>
         @if($isManager)
-        <a href="{{ route('products.index') }}" class="quick-action"><i class="fas fa-boxes-stacked" aria-hidden="true"></i><span>Inventory</span></a>
+        <a href="{{ route('products.index') }}" class="quick-action"><i class="fas fa-boxes-stacked" aria-hidden="true"></i><span>{{ __('Inventory') }}</span></a>
         @endif
         @if($isAdmin)
-        <a href="{{ route('reports.daily') }}" class="quick-action"><i class="fas fa-chart-column" aria-hidden="true"></i><span>Reports</span></a>
+        <a href="{{ route('reports.daily') }}" class="quick-action"><i class="fas fa-chart-column" aria-hidden="true"></i><span>{{ __('Reports') }}</span></a>
         @endif
     </nav>
 
-    <section class="kpi-grid kpi-4" aria-label="At a glance">
+    <section class="kpi-grid kpi-4" aria-label="{{ __('At a glance') }}">
         @foreach($kpis as [$label, $icon, $tone, $value, $meta, $href, $alert])
             <{{ $href ? 'a' : 'div' }} class="kpi {{ $alert ? 'is-alert' : '' }}" @if($href) href="{{ $href }}" @endif>
                 <span class="kpi-label"><span class="bubble-tile {{ $tone }}" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>{{ $label }}</span>
                 <span class="kpi-value">{{ $value }}</span>
                 <span class="kpi-meta">
-                    @if($label === 'Revenue this month')
+                    @if($meta === 'trend')
                         @if($revenueTrend > 0)
-                            <span class="trend-up"><i class="fas fa-arrow-trend-up" aria-hidden="true"></i> {{ $revenueTrend }}%</span> vs same days last month
+                            <span class="trend-up"><i class="fas fa-arrow-trend-up" aria-hidden="true"></i> {{ $revenueTrend }}%</span> {{ __('vs same days last month') }}
                         @elseif($revenueTrend < 0)
-                            <span class="trend-down"><i class="fas fa-arrow-trend-down" aria-hidden="true"></i> {{ abs($revenueTrend) }}%</span> vs same days last month
+                            <span class="trend-down"><i class="fas fa-arrow-trend-down" aria-hidden="true"></i> {{ abs($revenueTrend) }}%</span> {{ __('vs same days last month') }}
                         @else
-                            Same as this time last month
+                            {{ __('Same as this time last month') }}
                         @endif
                     @else
                         {{ $meta }}
@@ -183,12 +183,12 @@
         <div class="stack">
             <section class="card" aria-labelledby="attention-title">
                 <header class="card-header">
-                    <h2 class="card-title" id="attention-title"><i class="fas fa-bolt" aria-hidden="true"></i> Needs attention</h2>
-                    <span class="card-subtitle">Checked each time this page opens</span>
+                    <h2 class="card-title" id="attention-title"><i class="fas fa-bolt" aria-hidden="true"></i> {{ __('Needs attention') }}</h2>
+                    <span class="card-subtitle">{{ __('Checked each time this page opens') }}</span>
                 </header>
 
                 @if($attentionCount)
-                <div class="attention-tabs" role="tablist" aria-label="What needs attention">
+                <div class="attention-tabs" role="tablist" aria-label="{{ __('What needs attention') }}">
                     @foreach($groups as [$key, $label, $icon, $items, $allLink, $count])
                         <button type="button" class="chip" role="tab" id="tab-{{ $key }}" aria-controls="panel-{{ $key }}"
                                 aria-selected="{{ $key === $firstGroup ? 'true' : 'false' }}" tabindex="{{ $key === $firstGroup ? 0 : -1 }}"
@@ -212,19 +212,19 @@
                                             <span class="list-sub">{{ $item->available_stock }} left · minimum {{ $item->minimum_stock_level }}</span>
                                         </span>
                                     </a>
-                                    <span class="badge badge-warning">Restock</span>
+                                    <span class="badge badge-warning">{{ __('Restock') }}</span>
                                 @else
                                     <a href="{{ route('orders.details', $item) }}">
                                         <span class="bubble-tile {{ $key === 'overdue' ? 'tone-red' : ($key === 'ready' ? 'tone-violet' : 'tone-amber') }}" aria-hidden="true"><i class="fas {{ $icon }}"></i></span>
                                         <span class="list-main">
-                                            <span class="list-title">{{ $item->customer->name ?? 'Walk-in customer' }}</span>
+                                            <span class="list-title">{{ $item->customer->name ?? __('Walk-in customer') }}</span>
                                             <span class="list-sub">{{ $item->order_number }} · {{ fmt_date($item->order_date) }}{{ $key === 'overdue' ? ' · ' . $item->status_label : '' }}</span>
                                         </span>
                                     </a>
                                     @if($key === 'ready' && $item->balance <= 0)
-                                        <button type="button" class="btn btn-sm btn-success" data-pickup="{{ $item->id }}"><i class="fas fa-check" aria-hidden="true"></i> Picked up</button>
+                                        <button type="button" class="btn btn-sm btn-success" data-pickup="{{ $item->id }}"><i class="fas fa-check" aria-hidden="true"></i> {{ __('Picked up') }}</button>
                                     @elseif($item->balance > 0)
-                                        <span class="badge badge-unpaid money">{{ money($item->balance, $item->currency) }} due</span>
+                                        <span class="badge badge-unpaid money">{{ __(':amount due', ['amount' => money($item->balance, $item->currency)]) }}</span>
                                     @else
                                         <span class="cell-sub nowrap">{{ $item->order_date?->diffForHumans(['parts' => 1]) }}</span>
                                     @endif
@@ -241,8 +241,8 @@
                 @else
                 <div class="empty">
                     <x-mascot mood="proud" class="empty-art mascot-ink" />
-                    <p class="empty-title">All caught up</p>
-                    <p>No overdue, unpaid or waiting orders{{ $isManager ? ', and stock is fine' : '' }}.</p>
+                    <p class="empty-title">{{ __('All caught up') }}</p>
+                    <p>{{ $isManager ? __('No overdue, unpaid or waiting orders, and stock is fine.') : __('No overdue, unpaid or waiting orders.') }}</p>
                 </div>
                 @endif
 
@@ -250,11 +250,11 @@
                 <footer class="card-footer system-status">
                     @if($backupStale)
                         <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-                        <span>{{ $lastBackupAt ? 'Last backup ' . \Carbon\Carbon::createFromTimestamp($lastBackupAt)->diffForHumans() : 'No backup yet' }}. A new one is being made now; if this stays, check Settings.</span>
-                        <a href="{{ route('settings.mastersettings') }}#backups" class="btn btn-sm btn-secondary">Backups</a>
+                        <span>{{ $lastBackupAt ? __('Last backup :time.', ['time' => \Carbon\Carbon::createFromTimestamp($lastBackupAt)->diffForHumans()]) : __('No backup yet.') }} {{ __('A new one is being made now; if this stays, check Settings.') }}</span>
+                        <a href="{{ route('settings.mastersettings') }}#backups" class="btn btn-sm btn-secondary">{{ __('Backups') }}</a>
                     @else
                         <i class="fas fa-circle-check" aria-hidden="true"></i>
-                        <span>Data backed up {{ \Carbon\Carbon::createFromTimestamp($lastBackupAt)->diffForHumans() }}</span>
+                        <span>{{ __('Data backed up :time', ['time' => \Carbon\Carbon::createFromTimestamp($lastBackupAt)->diffForHumans()]) }}</span>
                     @endif
                 </footer>
                 @endif
@@ -263,13 +263,13 @@
             <section class="card" aria-labelledby="sales-title">
                 <header class="card-header">
                     <div>
-                        <h2 class="card-title" id="sales-title"><i class="fas fa-chart-column" aria-hidden="true"></i> Sales</h2>
-                        <p class="card-subtitle">Completed orders, by day</p>
+                        <h2 class="card-title" id="sales-title"><i class="fas fa-chart-column" aria-hidden="true"></i> {{ __('Sales') }}</h2>
+                        <p class="card-subtitle">{{ __('Completed orders, by day') }}</p>
                     </div>
-                    <div class="segmented" role="radiogroup" aria-label="Sales period">
-                        <label><input type="radio" name="salesPeriod" value="week" checked><span>Week</span></label>
-                        <label><input type="radio" name="salesPeriod" value="month"><span>Month</span></label>
-                        <label><input type="radio" name="salesPeriod" value="year"><span>Year</span></label>
+                    <div class="segmented" role="radiogroup" aria-label="{{ __('Sales period') }}">
+                        <label><input type="radio" name="salesPeriod" value="week" checked><span>{{ __('Week') }}</span></label>
+                        <label><input type="radio" name="salesPeriod" value="month"><span>{{ __('Month') }}</span></label>
+                        <label><input type="radio" name="salesPeriod" value="year"><span>{{ __('Year') }}</span></label>
                     </div>
                 </header>
                 <div class="card-body">
@@ -284,19 +284,19 @@
                             $compact = $top >= 10000;
                             $tick = fn ($v) => currency_symbol() . ($compact ? rtrim(rtrim(fmt_number($v / 1000, 1), '0'), '.,') . 'K' : fmt_number($v));
                             $peak = $max > 0 ? array_search($max, $series['sales']) : null;
-                            $unit = ['week' => 'day', 'month' => 'week', 'year' => 'month'][$period];
+                            $unit = ['week' => __('Completed sales per day'), 'month' => __('Completed sales per week'), 'year' => __('Completed sales per month')][$period];
                         @endphp
                         <div class="bar-chart" data-period="{{ $period }}" @if($period !== 'week') hidden @endif>
                             <div class="bar-plot">
                                 @for($i = 0; $i <= 4; $i++)
                                     <div class="bar-gridline" style="bottom: {{ $i * 25 }}%" aria-hidden="true"><span>{{ $tick($step * $i) }}</span></div>
                                 @endfor
-                                <div class="bar-cols" role="group" aria-label="Completed sales per {{ $unit }}">
+                                <div class="bar-cols" role="group" aria-label="{{ $unit }}">
                                     @foreach($series['sales'] as $i => $value)
                                         @php $orders = $series['orders'][$i]; $amount = money($value); @endphp
                                         <button type="button" class="bar-col"
-                                                data-value="{{ $amount }}" data-label="{{ $series['titles'][$i] }} · {{ $orders }} {{ \Illuminate\Support\Str::plural('order', $orders) }}"
-                                                aria-label="{{ $series['titles'][$i] }}: {{ $amount }} from {{ $orders }} completed {{ \Illuminate\Support\Str::plural('order', $orders) }}">
+                                                data-value="{{ $amount }}" data-label="{{ $series['titles'][$i] }} · {{ __($orders === 1 ? ':count order' : ':count orders', ['count' => $orders]) }}"
+                                                aria-label="{{ __(':period: :amount from :count completed orders', ['period' => $series['titles'][$i], 'amount' => $amount, 'count' => $orders]) }}">
                                             @if($value > 0)
                                                 <span class="bar" style="height: {{ round($value / $top * 100, 2) }}%">
                                                     @if($i === $peak)<span class="bar-cap" aria-hidden="true">{{ $tick($value) }}</span>@endif
@@ -313,7 +313,7 @@
                     @endforeach
                 </div>
                 @if($isAdmin)
-                <div class="card-footer"><a href="{{ route('reports.sales') }}" class="btn btn-sm btn-ghost">Open sales report <i class="fas fa-arrow-right" aria-hidden="true"></i></a></div>
+                <div class="card-footer"><a href="{{ route('reports.sales') }}" class="btn btn-sm btn-ghost">{{ __('Open sales report') }} <i class="fas fa-arrow-right" aria-hidden="true"></i></a></div>
                 @endif
             </section>
         </div>
@@ -321,14 +321,14 @@
         <div class="stack">
             <section class="card" aria-labelledby="recent-title">
                 <header class="card-header">
-                    <h2 class="card-title" id="recent-title"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Recent orders</h2>
-                    <a href="{{ route('orders.index') }}" class="btn btn-sm btn-ghost">View all</a>
+                    <h2 class="card-title" id="recent-title"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> {{ __('Recent orders') }}</h2>
+                    <a href="{{ route('orders.index') }}" class="btn btn-sm btn-ghost">{{ __('View all') }}</a>
                 </header>
                 @if($recentOrders->isEmpty())
                     <div class="empty">
                         <span class="empty-icon" aria-hidden="true"><i class="fas fa-receipt"></i></span>
-                        <p class="empty-title">No orders yet</p>
-                        <a href="{{ route('pos.index') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> New order</a>
+                        <p class="empty-title">{{ __('No orders yet') }}</p>
+                        <a href="{{ route('pos.index') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> {{ __('New order') }}</a>
                     </div>
                 @else
                 <ul class="list">
@@ -336,7 +336,7 @@
                     <li>
                         <a class="list-item" href="{{ route('orders.details', $order) }}">
                             <span class="list-main">
-                                <span class="list-title">{{ $order->customer->name ?? 'Walk-in customer' }}</span>
+                                <span class="list-title">{{ $order->customer->name ?? __('Walk-in customer') }}</span>
                                 <span class="list-sub">{{ $order->order_number }}</span>
                             </span>
                             <span class="list-end col">
@@ -352,17 +352,17 @@
 
             <section class="card" aria-labelledby="top-title">
                 <header class="card-header">
-                    <h2 class="card-title" id="top-title"><i class="fas fa-star" aria-hidden="true"></i> Top services</h2>
-                    <span class="card-subtitle">Completed orders</span>
+                    <h2 class="card-title" id="top-title"><i class="fas fa-star" aria-hidden="true"></i> {{ __('Top services') }}</h2>
+                    <span class="card-subtitle">{{ __('Completed orders') }}</span>
                 </header>
                 @if($topServices->isEmpty())
-                    <p class="empty">Shows up once orders are completed.</p>
+                    <p class="empty">{{ __('Shows up once orders are completed.') }}</p>
                 @else
                     @php $mostOrders = max(1, $topServices->max('order_count')); @endphp
                     <ol class="rank-list">
                         @foreach($topServices as $service)
                         <li>
-                            <div class="rank-row"><span>{{ $service->name }}</span><span>{{ $service->order_count }} {{ \Illuminate\Support\Str::plural('order', $service->order_count) }} · {{ money($service->total_revenue, whole: true) }}</span></div>
+                            <div class="rank-row"><span>{{ $service->name }}</span><span>{{ __($service->order_count === 1 ? ':count order' : ':count orders', ['count' => $service->order_count]) }} · {{ money($service->total_revenue, whole: true) }}</span></div>
                             <div class="rank-track" aria-hidden="true"><span class="rank-bar" style="width: {{ round($service->order_count / $mostOrders * 100, 1) }}%"></span></div>
                         </li>
                         @endforeach
@@ -416,8 +416,8 @@
                 row.hidden = true;
                 const count = document.querySelector('#tab-ready [data-count]');
                 count.textContent = Math.max(0, Number(count.textContent) - 1);
-                showToast('Order marked as picked up.', 'success', 6000, {
-                    label: 'Undo',
+                showToast(t('Order marked as picked up.'), 'success', 6000, {
+                    label: t('Undo'),
                     onClick: async () => {
                         try { await setStatus(id, 'ready'); row.hidden = false; count.textContent = Number(count.textContent) + 1; }
                         catch (e) { showToast(e.message, 'error'); }
@@ -436,7 +436,7 @@
         radio.addEventListener('change', () => {
             document.querySelectorAll('.bar-chart').forEach(chart => { chart.hidden = chart.dataset.period !== radio.value; });
             const subtitle = document.querySelector('#sales-title').closest('.card-header').querySelector('.card-subtitle');
-            subtitle.textContent = 'Completed orders, by ' + ({ week: 'day', month: 'week', year: 'month' })[radio.value];
+            subtitle.textContent = ({ week: t('Completed orders, by day'), month: t('Completed orders, by week'), year: t('Completed orders, by month') })[radio.value];
         });
     });
     let tip = null;

@@ -18,6 +18,7 @@ class Staff extends Authenticatable
         'username',
         'password',
         'role',
+        'locale',
         'is_active',
     ];
 

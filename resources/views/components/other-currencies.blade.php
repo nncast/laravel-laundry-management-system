@@ -7,11 +7,10 @@
 <div class="alert alert-info" role="note" style="margin-bottom: var(--s-5)">
     <i class="fas fa-coins" aria-hidden="true"></i>
     <span>
-        Totals are in {{ app(\App\Support\Format::class)->currency }}. Not added in:
+        {{ __('Totals are in :currency. Not added, from before the currency changed:', ['currency' => app(\App\Support\Format::class)->currency]) }}
         @foreach($rows as $row)
-            {{ $row->orders }} {{ \Illuminate\Support\Str::plural('order', $row->orders) }} in {{ $row->currency }} ({{ money($row->total, $row->currency) }}){{ $loop->last ? '' : ',' }}
+            {{ __($row->orders === 1 ? '1 order in :currency (:amount)' : ':count orders in :currency (:amount)', ['count' => $row->orders, 'currency' => $row->currency, 'amount' => money($row->total, $row->currency)]) }}{{ $loop->last ? '' : ',' }}
         @endforeach
-        from before the currency changed.
     </span>
 </div>
 @endif

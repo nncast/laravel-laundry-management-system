@@ -1,42 +1,43 @@
 @extends('layouts.app')
 
-@section('title', 'Order ' . $order->order_number)
+@section('title', __('Order :number', ['number' => $order->order_number]))
 
 @php
     $isManager = in_array(session('staff.role'), ['manager', 'admin'], true);
-    $flow = ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed'];
+    $flow = ['pending' => __('Pending'), 'processing' => __('Processing'), 'ready' => __('Ready for pickup'), 'completed' => __('Completed')];
     $position = array_search($order->status, array_keys($flow), true);
     // The one obvious next step: [status, button text, icon, button style]
     $next = [
-        'pending' => ['processing', 'Start processing', 'fa-play', 'btn-primary'],
-        'processing' => ['ready', 'Mark ready for pickup', 'fa-bell', 'btn-primary'],
-        'ready' => ['completed', 'Mark picked up', 'fa-check', 'btn-success'],
+        'pending' => ['processing', __('Start processing'), 'fa-play', 'btn-primary'],
+        'processing' => ['ready', __('Mark ready for pickup'), 'fa-bell', 'btn-primary'],
+        'ready' => ['completed', __('Mark picked up'), 'fa-check', 'btn-success'],
     ][$order->status] ?? null;
     $balance = $order->balance;
     $canPay = $order->status !== 'cancelled' && $balance > 0;
     $addonsTotal = $order->addons->sum('pivot.price');
     // This order's own currency (it may predate a currency change), for the payment dialog
     $orderFmt = ['symbol' => currency_symbol($order->currency), 'decimals' => app(\App\Support\Format::class)->decimals($order->currency)];
-    $methods = ['cash' => ['Cash', 'fa-money-bill-wave'], 'card' => ['Card', 'fa-credit-card'], 'transfer' => ['Transfer', 'fa-building-columns'], 'other' => ['Other', 'fa-ellipsis']];
+    $methods = ['cash' => [__('Cash'), 'fa-money-bill-wave'], 'card' => [__('Card'), 'fa-credit-card'], 'transfer' => [__('Transfer'), 'fa-building-columns'], 'other' => [__('Other'), 'fa-ellipsis']];
+    $statusLabels = collect(\App\Models\Order::STATUSES)->mapWithKeys(fn ($s) => [$s => \App\Models\Order::labelFor($s)])->all();
 @endphp
 
 @section('page-header')
 <header class="page-header detail-header" id="orderHeader" data-refresh>
     <div class="page-heading">
-        <p class="eyebrow"><a href="{{ route('orders.index') }}" class="back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> Orders</a></p>
+        <p class="eyebrow"><a href="{{ route('orders.index') }}" class="back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> {{ __('Orders') }}</a></p>
         <h1 class="page-title">{{ $order->order_number }}</h1>
         <div class="cluster header-badges">
             <span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span>
             @if($order->status !== 'cancelled')
                 @if($balance <= 0)
-                    <span class="badge badge-paid">Paid</span>
+                    <span class="badge badge-paid">{{ __('Paid') }}</span>
                 @else
-                    <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? 'Partly paid' : 'Unpaid' }}</span>
+                    <span class="badge {{ $order->paid_amount > 0 ? 'badge-partial' : 'badge-unpaid' }}">{{ $order->paid_amount > 0 ? __('Partly paid') : __('Unpaid') }}</span>
                 @endif
             @endif
             <span class="muted">{{ fmt_date($order->order_date) }}</span>
             @if($order->ready_by && in_array($order->status, \App\Models\Order::OPEN_STATUSES, true))
-                <span class="muted">· Ready by <strong>{{ fmt_date($order->ready_by) }}</strong></span>
+                <span class="muted">· {!! __('Ready by :date', ['date' => '<strong>' . e(fmt_date($order->ready_by)) . '</strong>']) !!}</span>
             @endif
         </div>
     </div>
@@ -45,13 +46,13 @@
             <button type="button" class="btn {{ $next[3] }}" data-set-status="{{ $next[0] }}"><i class="fas {{ $next[2] }}" aria-hidden="true"></i> {{ $next[1] }}</button>
         @endif
         @if($canPay)
-            <button type="button" class="btn {{ $next ? 'btn-secondary' : 'btn-primary' }}" data-dialog-open="paymentDialog"><i class="fas fa-wallet" aria-hidden="true"></i> Add payment</button>
+            <button type="button" class="btn {{ $next ? 'btn-secondary' : 'btn-primary' }}" data-dialog-open="paymentDialog"><i class="fas fa-wallet" aria-hidden="true"></i> {{ __('Add payment') }}</button>
         @endif
         @if($order->can_edit)
-            <a href="{{ route('pos.edit', $order) }}" class="btn btn-secondary"><i class="fas fa-pen" aria-hidden="true"></i> Edit</a>
+            <a href="{{ route('pos.edit', $order) }}" class="btn btn-secondary"><i class="fas fa-pen" aria-hidden="true"></i> {{ __('Edit') }}</a>
         @endif
         {{-- Receipt once paid, claim ticket before; the print page switches documents and paper --}}
-        <a href="{{ route('orders.document', [$order, $order->payments->isNotEmpty() ? 'receipt' : 'ticket']) }}" class="btn btn-secondary"><i class="fas fa-print" aria-hidden="true"></i> Print</a>
+        <a href="{{ route('orders.document', [$order, $order->payments->isNotEmpty() ? 'receipt' : 'ticket']) }}" class="btn btn-secondary"><i class="fas fa-print" aria-hidden="true"></i> {{ __('Print') }}</a>
     </div>
 </header>
 @endsection
@@ -71,7 +72,7 @@
 
 .items-table td:first-child { font-weight: 700; }
 .totals { padding: var(--s-4) var(--s-5) var(--s-5); border-top: 1px solid var(--border); }
-.totals .summary { max-width: 380px; margin-left: auto; }
+.totals .summary { max-width: 380px; margin-inline-start: auto; }
 
 .balance-card { text-align: center; }
 .balance-card .card-body { display: grid; gap: var(--s-2); }
@@ -103,10 +104,10 @@
     <div class="stack">
         <div id="orderProgress" data-refresh>
         @if($order->status === 'cancelled')
-            <div class="alert alert-danger no-print"><i class="fas fa-ban" aria-hidden="true"></i><span>This order was cancelled. It no longer counts in sales.</span></div>
+            <div class="alert alert-danger no-print"><i class="fas fa-ban" aria-hidden="true"></i><span>{{ __('This order was cancelled. It no longer counts in sales.') }}</span></div>
         @else
             <div class="card no-print">
-                <ol class="progress" aria-label="Order progress">
+                <ol class="progress" aria-label="{{ __('Order progress') }}">
                     @foreach($flow as $key => $label)
                         <li class="{{ $loop->index < $position ? 'done' : ($loop->index === $position ? 'current' : '') }}" @if($loop->index === $position) aria-current="step" @endif><span>{{ $label }}</span></li>
                     @endforeach
@@ -116,24 +117,24 @@
         </div>
 
         <section class="card" id="orderItems" data-refresh aria-labelledby="items-title">
-            <header class="card-header"><h2 class="card-title" id="items-title"><i class="fas fa-shirt" aria-hidden="true"></i> Items</h2></header>
+            <header class="card-header"><h2 class="card-title" id="items-title"><i class="fas fa-shirt" aria-hidden="true"></i> {{ __('Items') }}</h2></header>
             <div class="table-wrap static">
                 <table class="table items-table">
-                    <thead><tr><th>Service</th><th class="num">Price</th><th class="num">Qty</th><th class="num">Total</th></tr></thead>
+                    <thead><tr><th>{{ __('Service') }}</th><th class="num">{{ __('Price') }}</th><th class="num">{{ __('Qty') }}</th><th class="num">{{ __('Total') }}</th></tr></thead>
                     <tbody>
                         @forelse($order->items as $item)
                         <tr>
-                            <td>{{ $item->service->name ?? 'Deleted service' }}</td>
+                            <td>{{ $item->service->name ?? __('Deleted service') }}</td>
                             <td class="num">{{ money($item->price, $order->currency) }}</td>
                             <td class="num">{{ $item->qty }}</td>
                             <td class="num">{{ money($item->total, $order->currency) }}</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="muted">No services on this order.</td></tr>
+                        <tr><td colspan="4" class="muted">{{ __('No services on this order.') }}</td></tr>
                         @endforelse
                         @foreach($order->addons as $addon)
                         <tr>
-                            <td>{{ $addon->name }} <span class="badge">Add-on</span></td>
+                            <td>{{ $addon->name }} <span class="badge">{{ __('Add-on') }}</span></td>
                             <td class="num">{{ money($addon->pivot->price, $order->currency) }}</td>
                             <td class="num">1</td>
                             <td class="num">{{ money($addon->pivot->price, $order->currency) }}</td>
@@ -144,20 +145,20 @@
             </div>
             <div class="totals">
                 <div class="summary">
-                    <div class="summary-row"><span>Services</span><span>{{ money($order->subtotal, $order->currency) }}</span></div>
-                    @if($addonsTotal > 0)<div class="summary-row"><span>Add-ons</span><span>{{ money($addonsTotal, $order->currency) }}</span></div>@endif
+                    <div class="summary-row"><span>{{ __('Services') }}</span><span>{{ money($order->subtotal, $order->currency) }}</span></div>
+                    @if($addonsTotal > 0)<div class="summary-row"><span>{{ __('Add-ons') }}</span><span>{{ money($addonsTotal, $order->currency) }}</span></div>@endif
                     @if($order->discount > 0)<div class="summary-row"><span>Discount{{ $order->discount_percent !== null ? ' (' . (float) $order->discount_percent . '%)' : '' }}</span><span>−{{ money($order->discount, $order->currency) }}</span></div>@endif
-                    <div class="summary-row summary-total"><span>Total</span><span>{{ money($order->total, $order->currency) }}</span></div>
-                    <div class="summary-row"><span>Paid</span><span>{{ money($order->paid_amount, $order->currency) }}</span></div>
-                    <div class="summary-row"><span>Balance</span><span class="{{ $balance > 0 ? 'text-danger' : 'text-success' }}">{{ money(max($balance, 0), $order->currency) }}</span></div>
+                    <div class="summary-row summary-total"><span>{{ __('Total') }}</span><span>{{ money($order->total, $order->currency) }}</span></div>
+                    <div class="summary-row"><span>{{ __('Paid') }}</span><span>{{ money($order->paid_amount, $order->currency) }}</span></div>
+                    <div class="summary-row"><span>{{ __('Balance') }}</span><span class="{{ $balance > 0 ? 'text-danger' : 'text-success' }}">{{ money(max($balance, 0), $order->currency) }}</span></div>
                 </div>
             </div>
         </section>
 
         <section class="card" id="orderPayments" data-refresh aria-labelledby="payments-title">
             <header class="card-header">
-                <h2 class="card-title" id="payments-title"><i class="fas fa-receipt" aria-hidden="true"></i> Payments</h2>
-                @if($canPay)<button type="button" class="btn btn-sm btn-soft no-print" data-dialog-open="paymentDialog"><i class="fas fa-plus" aria-hidden="true"></i> Add payment</button>@endif
+                <h2 class="card-title" id="payments-title"><i class="fas fa-receipt" aria-hidden="true"></i> {{ __('Payments') }}</h2>
+                @if($canPay)<button type="button" class="btn btn-sm btn-soft no-print" data-dialog-open="paymentDialog"><i class="fas fa-plus" aria-hidden="true"></i> {{ __('Add payment') }}</button>@endif
             </header>
             @forelse($order->payments->sortByDesc('created_at') as $payment)
                 <div class="payment-row">
@@ -167,39 +168,39 @@
                         <span class="list-sub">{{ $payment->receipt_number }} · {{ fmt_date($payment->created_at) }} · {{ fmt_time($payment->created_at) }}@if($payment->receiver) · {{ $payment->receiver->name }}@endif</span>
                     </span>
                     <strong class="money">{{ money($payment->amount, $order->currency) }}</strong>
-                    <a class="icon-btn" href="{{ route('orders.document', [$order, 'receipt', 'payment' => $payment->id]) }}" data-print aria-label="Print receipt {{ $payment->receipt_number }}"><i class="fas fa-print" aria-hidden="true"></i></a>
+                    <a class="icon-btn" href="{{ route('orders.document', [$order, 'receipt', 'payment' => $payment->id]) }}" data-print aria-label="{{ __('Print receipt :number', ['number' => $payment->receipt_number]) }}"><i class="fas fa-print" aria-hidden="true"></i></a>
                 </div>
             @empty
-                <p class="empty">No payments yet.</p>
+                <p class="empty">{{ __('No payments yet.') }}</p>
             @endforelse
         </section>
 
         <section class="card" aria-labelledby="notes-title">
-            <header class="card-header"><h2 class="card-title" id="notes-title"><i class="fas fa-note-sticky" aria-hidden="true"></i> Notes</h2></header>
+            <header class="card-header"><h2 class="card-title" id="notes-title"><i class="fas fa-note-sticky" aria-hidden="true"></i> {{ __('Notes') }}</h2></header>
             <div class="card-body">
                 <form class="notes-form stack-sm no-print" id="notesForm">
-                    <label class="sr-only" for="notes">Notes for this order</label>
-                    <textarea class="textarea" id="notes" maxlength="1000" placeholder="Stains, special care, pickup instructions…">{{ $order->notes }}</textarea>
-                    <div><button type="submit" class="btn btn-secondary"><i class="fas fa-floppy-disk" aria-hidden="true"></i> Save notes</button></div>
+                    <label class="sr-only" for="notes">{{ __('Notes for this order') }}</label>
+                    <textarea class="textarea" id="notes" maxlength="1000" placeholder="{{ __('Stains, special care, pickup instructions…') }}">{{ $order->notes }}</textarea>
+                    <div><button type="submit" class="btn btn-secondary"><i class="fas fa-floppy-disk" aria-hidden="true"></i> {{ __('Save notes') }}</button></div>
                 </form>
             </div>
         </section>
     </div>
 
     <aside class="stack">
-        <section id="orderBalance" data-refresh class="card balance-card {{ $order->status === 'cancelled' ? '' : ($balance > 0 ? 'is-due' : 'is-paid') }}" aria-label="Balance">
+        <section id="orderBalance" data-refresh class="card balance-card {{ $order->status === 'cancelled' ? '' : ($balance > 0 ? 'is-due' : 'is-paid') }}" aria-label="{{ __('Balance') }}">
             <div class="card-body">
-                <span class="eyebrow">{{ $balance > 0 && $order->status !== 'cancelled' ? 'Balance due' : 'Balance' }}</span>
+                <span class="eyebrow">{{ $balance > 0 && $order->status !== 'cancelled' ? __('Balance due') : __('Balance') }}</span>
                 <span class="balance-amount money">{{ money(max($balance, 0), $order->currency) }}</span>
                 <span class="muted">of {{ money($order->total, $order->currency) }} · {{ money($order->paid_amount, $order->currency) }} paid</span>
                 @if($canPay)
-                    <button type="button" class="btn btn-primary btn-lg btn-block no-print" data-dialog-open="paymentDialog"><i class="fas fa-wallet" aria-hidden="true"></i> Collect payment</button>
+                    <button type="button" class="btn btn-primary btn-lg btn-block no-print" data-dialog-open="paymentDialog"><i class="fas fa-wallet" aria-hidden="true"></i> {{ __('Collect payment') }}</button>
                 @endif
             </div>
         </section>
 
         <section class="card" aria-labelledby="customer-title">
-            <header class="card-header"><h2 class="card-title" id="customer-title"><i class="fas fa-user" aria-hidden="true"></i> Customer</h2></header>
+            <header class="card-header"><h2 class="card-title" id="customer-title"><i class="fas fa-user" aria-hidden="true"></i> {{ __('Customer') }}</h2></header>
             <div class="card-body stack-sm">
                 @if($order->customer)
                     <strong>{{ $order->customer->name }}</strong>
@@ -209,33 +210,33 @@
                     @if($order->customer->address)
                         <span class="contact-row"><i class="fas fa-location-dot" aria-hidden="true"></i> {{ $order->customer->address }}</span>
                     @endif
-                    <a href="{{ route('orders.index', ['search' => $order->customer->name]) }}" class="btn btn-ghost btn-sm no-print" style="align-self:flex-start"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Their other orders</a>
+                    <a href="{{ route('orders.index', ['search' => $order->customer->name]) }}" class="btn btn-ghost btn-sm no-print" style="align-self:flex-start"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> {{ __('Their other orders') }}</a>
                 @else
-                    <span class="muted">Walk-in customer</span>
+                    <span class="muted">{{ __('Walk-in customer') }}</span>
                 @endif
             </div>
         </section>
 
         <section class="card no-print" id="orderDetailsCard" data-refresh aria-labelledby="details-title">
-            <header class="card-header"><h2 class="card-title" id="details-title"><i class="fas fa-circle-info" aria-hidden="true"></i> Details</h2></header>
+            <header class="card-header"><h2 class="card-title" id="details-title"><i class="fas fa-circle-info" aria-hidden="true"></i> {{ __('Details') }}</h2></header>
             <div class="card-body stack-sm">
                 <dl class="dl">
-                    <dt>Taken by</dt><dd>{{ $order->staff->name ?? '—' }}</dd>
-                    <dt>Ready by</dt><dd>{{ $order->ready_by ? fmt_date($order->ready_by) : '—' }}</dd>
-                    @if($order->weight)<dt>Weight</dt><dd>{{ fmt_weight($order->weight) }}</dd>@endif
-                    <dt>Created</dt><dd>{{ fmt_datetime($order->created_at) }}</dd>
-                    <dt>Updated</dt><dd>{{ fmt_datetime($order->updated_at) }}</dd>
+                    <dt>{{ __('Taken by') }}</dt><dd>{{ $order->staff->name ?? '—' }}</dd>
+                    <dt>{{ __('Ready by') }}</dt><dd>{{ $order->ready_by ? fmt_date($order->ready_by) : '—' }}</dd>
+                    @if($order->weight)<dt>{{ __('Weight') }}</dt><dd>{{ fmt_weight($order->weight) }}</dd>@endif
+                    <dt>{{ __('Created') }}</dt><dd>{{ fmt_datetime($order->created_at) }}</dd>
+                    <dt>{{ __('Updated') }}</dt><dd>{{ fmt_datetime($order->updated_at) }}</dd>
                 </dl>
                 <div class="field">
-                    <label class="label" for="statusSelect">Change status</label>
+                    <label class="label" for="statusSelect">{{ __('Change status') }}</label>
                     <select class="select" id="statusSelect" data-current="{{ $order->status }}">
                         @foreach(\App\Models\Order::STATUSES as $value)
-                            <option value="{{ $value }}" @selected($order->status === $value)>{{ ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'][$value] }}</option>
+                            <option value="{{ $value }}" @selected($order->status === $value)>{{ $statusLabels[$value] }}</option>
                         @endforeach
                     </select>
                 </div>
                 @if(!in_array($order->status, ['completed', 'cancelled'], true))
-                    <button type="button" class="btn btn-danger-soft" data-set-status="cancelled"><i class="fas fa-ban" aria-hidden="true"></i> Cancel order</button>
+                    <button type="button" class="btn btn-danger-soft" data-set-status="cancelled"><i class="fas fa-ban" aria-hidden="true"></i> {{ __('Cancel order') }}</button>
                 @endif
             </div>
         </section>
@@ -245,13 +246,13 @@
 <dialog id="paymentDialog" class="dialog dialog-sm" aria-labelledby="paymentTitle" data-refresh data-balance="{{ max($balance, 0) }}">
     <form id="paymentForm" novalidate>
         <div class="dialog-header">
-            <h2 class="dialog-title" id="paymentTitle">Add payment</h2>
-            <button type="button" class="icon-btn" data-dialog-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+            <h2 class="dialog-title" id="paymentTitle">{{ __('Add payment') }}</h2>
+            <button type="button" class="icon-btn" data-dialog-close aria-label="{{ __('Close') }}"><i class="fas fa-xmark" aria-hidden="true"></i></button>
         </div>
         <div class="dialog-body">
-            <div class="pay-due"><span class="muted">Balance due</span><strong class="money">{{ money(max($balance, 0), $order->currency) }}</strong></div>
+            <div class="pay-due"><span class="muted">{{ __('Balance due') }}</span><strong class="money">{{ money(max($balance, 0), $order->currency) }}</strong></div>
             <div class="field">
-                <span class="label" id="methodLabel">Method</span>
+                <span class="label" id="methodLabel">{{ __('Method') }}</span>
                 <div class="segmented block" role="radiogroup" aria-labelledby="methodLabel">
                     @foreach($methods as $value => [$label, $icon])
                         <label><input type="radio" name="payment_method" value="{{ $value }}" @checked($value === 'cash')><span><i class="fas {{ $icon }}" aria-hidden="true"></i> {{ $label }}</span></label>
@@ -259,15 +260,15 @@
                 </div>
             </div>
             <div class="field">
-                <label class="label" for="amount">Amount received</label>
+                <label class="label" for="amount">{{ __('Amount received') }}</label>
                 <div class="input-affix">
                     <span class="affix" aria-hidden="true">{{ currency_symbol($order->currency) }}</span>
                     <input class="input" type="number" id="amount" name="amount" inputmode="decimal" min="{{ money_step($order->currency) }}" step="{{ money_step($order->currency) }}" value="{{ money_input(max($balance, 0), $order->currency) }}" aria-describedby="payResult">
                 </div>
                 <div class="field-error" id="amountError"></div>
             </div>
-            <div class="quick-cash" aria-label="Quick amounts">
-                <button type="button" class="btn btn-secondary" data-amount="{{ max($balance, 0) }}">Exact</button>
+            <div class="quick-cash" aria-label="{{ __('Quick amounts') }}">
+                <button type="button" class="btn btn-secondary" data-amount="{{ max($balance, 0) }}">{{ __('Exact') }}</button>
                 @foreach(array_slice(app(\App\Support\Format::class)->currencyInfo($order->currency)['bills'], -3) as $bill)
                     <button type="button" class="btn btn-secondary" data-amount="{{ $bill }}">{{ money($bill, $order->currency, whole: true) }}</button>
                 @endforeach
@@ -275,8 +276,8 @@
             <p class="pay-result" id="payResult" aria-live="polite"></p>
         </div>
         <div class="dialog-footer">
-            <button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button>
-            <button type="submit" class="btn btn-primary" id="payButton">Record payment</button>
+            <button type="button" class="btn btn-secondary" data-dialog-close>{{ __('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary" id="payButton">{{ __('Record payment') }}</button>
         </div>
     </form>
 </dialog>
@@ -288,13 +289,13 @@
     const orderId = {{ $order->id }};
     const orderFmt = @json($orderFmt);
     const money = value => window.money(value, orderFmt);
-    const labels = { pending: 'Pending', processing: 'Processing', ready: 'Ready for pickup', completed: 'Completed', cancelled: 'Cancelled' };
+    const labels = @json($statusLabels);
 
     // ---- Status: the page updates in place (notes being typed stay as they are) ----
     async function setStatus(status, control) {
         const select = document.getElementById('statusSelect');
         if (status === 'cancelled') {
-            const ok = await confirmAction({ title: 'Cancel this order?', message: 'It will no longer count in sales. You can change the status back later.', confirmText: 'Cancel order', cancelText: 'Keep order' });
+            const ok = await confirmAction({ title: t('Cancel this order?'), message: t('It will no longer count in sales. You can change the status back later.'), confirmText: t('Cancel order'), cancelText: t('Keep order') });
             if (!ok) { select.value = select.dataset.current; return; }
         }
         control?.classList.add('is-loading');
@@ -344,10 +345,10 @@
         const error = document.getElementById('amountError');
         const describe = () => {
             const value = parseFloat(amount.value) || 0;
-            if (value <= 0) { result.textContent = ''; payButton.textContent = 'Record payment'; return; }
-            if (value > balance) { result.innerHTML = `Change to give back: <span class="text-success">${money(value - balance)}</span>`; payButton.textContent = 'Record ' + money(balance); }
-            else if (value < balance) { result.innerHTML = `Partial payment · <span class="text-danger">${money(balance - value)}</span> still due`; payButton.textContent = 'Record ' + money(value); }
-            else { result.textContent = 'Pays the order in full.'; payButton.textContent = 'Record ' + money(value); }
+            if (value <= 0) { result.textContent = ''; payButton.textContent = t('Record payment'); return; }
+            if (value > balance) { result.innerHTML = t('Change to give back: :amount', { amount: `<span class="text-success">${money(value - balance)}</span>` }); payButton.textContent = t('Record :amount', { amount: money(balance) }); }
+            else if (value < balance) { result.innerHTML = t('Partial payment · :amount still due', { amount: `<span class="text-danger">${money(balance - value)}</span>` }); payButton.textContent = t('Record :amount', { amount: money(value) }); }
+            else { result.textContent = t('Pays the order in full.'); payButton.textContent = t('Record :amount', { amount: money(value) }); }
         };
         amount.addEventListener('input', describe);
         dialog.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { amount.value = Number(b.dataset.amount).toFixed(orderFmt.decimals); describe(); }));
@@ -357,7 +358,7 @@
         form.addEventListener('submit', async e => {
             e.preventDefault();
             const value = parseFloat(amount.value) || 0;
-            if (value <= 0) { error.textContent = 'Enter the amount received.'; amount.setAttribute('aria-invalid', 'true'); amount.focus(); return; }
+            if (value <= 0) { error.textContent = t('Enter the amount received.'); amount.setAttribute('aria-invalid', 'true'); amount.focus(); return; }
             payButton.classList.add('is-loading');
             try {
                 const data = await sendJson(appUrl(`orders/${orderId}/add-payment`), {
@@ -366,8 +367,8 @@
                 });
                 closeDialog(dialog);
                 await refreshRegions();
-                showToast(data.change > 0 ? `Payment recorded. Give back ${money(data.change)} change.` : 'Payment recorded.', 'success', 8000,
-                    { label: 'Print receipt', onClick: () => printDocument(appUrl(`orders/${orderId}/print/receipt`)) });
+                showToast(data.change > 0 ? t('Payment recorded. Give back :amount change.', { amount: money(data.change) }) : t('Payment recorded.'), 'success', 8000,
+                    { label: t('Print receipt'), onClick: () => printDocument(appUrl(`orders/${orderId}/print/receipt`)) });
             } catch (err) {
                 payButton.classList.remove('is-loading');
                 error.textContent = err.message;

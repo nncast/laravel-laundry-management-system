@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Daily summary')
-@section('page-title', 'Daily summary')
+@section('title', __('Daily summary'))
+@section('page-title', __('Daily summary'))
 @php
     $day = \Carbon\Carbon::parse($selectedDate);
-    $labels = ['pending' => 'Pending', 'processing' => 'Processing', 'ready' => 'Ready for pickup', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+    $labels = collect(\App\Models\Order::STATUSES)->mapWithKeys(fn ($s) => [$s => \App\Models\Order::labelFor($s)])->all();
 @endphp
-@section('page-subtitle', $day->format('l, F j, Y') . ($day->isToday() ? ' · today' : ''))
+@section('page-subtitle', $day->translatedFormat('l') . ', ' . fmt_date($day) . ($day->isToday() ? ' · ' . __('today') : ''))
 
 @section('page-actions')
-    <button type="button" class="btn btn-secondary" id="downloadCsv"><i class="fas fa-file-csv" aria-hidden="true"></i> Download CSV</button>
-    <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print" aria-hidden="true"></i> Print</button>
+    <button type="button" class="btn btn-secondary" id="downloadCsv"><i class="fas fa-file-csv" aria-hidden="true"></i> {{ __('Download CSV') }}</button>
+    <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print" aria-hidden="true"></i> {{ __('Print') }}</button>
 @endsection
 
 @push('styles')
@@ -31,24 +31,24 @@
 @endif
 
 <form class="day-picker no-print" method="GET" action="{{ route('reports.daily') }}" id="dayForm">
-    <a class="icon-btn outlined" href="{{ route('reports.daily', ['date' => $day->copy()->subDay()->toDateString()]) }}" aria-label="Previous day"><i class="fas fa-chevron-left" aria-hidden="true"></i></a>
-    <label class="sr-only" for="date">Day</label>
+    <a class="icon-btn outlined" href="{{ route('reports.daily', ['date' => $day->copy()->subDay()->toDateString()]) }}" aria-label="{{ __('Previous day') }}"><i class="fas fa-chevron-left" aria-hidden="true"></i></a>
+    <label class="sr-only" for="date">{{ __('Day') }}</label>
     <input class="input" type="date" id="date" name="date" value="{{ $selectedDate }}" max="{{ today()->toDateString() }}">
-    <a class="icon-btn outlined" href="{{ route('reports.daily', ['date' => $day->copy()->addDay()->toDateString()]) }}" aria-label="Next day" @if($day->isToday()) aria-disabled="true" style="pointer-events:none;opacity:.45" @endif><i class="fas fa-chevron-right" aria-hidden="true"></i></a>
-    @unless($day->isToday())<a class="btn btn-ghost" href="{{ route('reports.daily') }}">Today</a>@endunless
+    <a class="icon-btn outlined" href="{{ route('reports.daily', ['date' => $day->copy()->addDay()->toDateString()]) }}" aria-label="{{ __('Next day') }}" @if($day->isToday()) aria-disabled="true" style="pointer-events:none;opacity:.45" @endif><i class="fas fa-chevron-right" aria-hidden="true"></i></a>
+    @unless($day->isToday())<a class="btn btn-ghost" href="{{ route('reports.daily') }}">{{ __('Today') }}</a>@endunless
 </form>
 
 <x-other-currencies :rows="$stats['other_currencies']" />
-<section class="kpi-grid" aria-label="Totals" style="margin-bottom: var(--s-5)">
-    <div class="kpi"><span class="kpi-label">Orders taken</span><span class="kpi-value">{{ $stats['total_orders'] }}</span><span class="kpi-meta">{{ $stats['delivered_orders'] }} completed</span></div>
-    <div class="kpi"><span class="kpi-label">Sales</span><span class="kpi-value">{{ money($stats['total_sales']) }}</span><span class="kpi-meta">Orders dated this day</span></div>
-    <div class="kpi"><span class="kpi-label">Collected</span><span class="kpi-value">{{ money($stats['total_payments']) }}</span><span class="kpi-meta">Payments received this day, for any order</span></div>
-    <div class="kpi {{ $stats['outstanding'] > 0 ? 'is-alert' : '' }}"><span class="kpi-label">Outstanding</span><span class="kpi-value">{{ money($stats['outstanding']) }}</span><span class="kpi-meta">Still owed on this day's orders</span></div>
+<section class="kpi-grid" aria-label="{{ __('Totals') }}" style="margin-bottom: var(--s-5)">
+    <div class="kpi"><span class="kpi-label">{{ __('Orders taken') }}</span><span class="kpi-value">{{ $stats['total_orders'] }}</span><span class="kpi-meta">{{ $stats['delivered_orders'] }} completed</span></div>
+    <div class="kpi"><span class="kpi-label">{{ __('Sales') }}</span><span class="kpi-value">{{ money($stats['total_sales']) }}</span><span class="kpi-meta">{{ __('Orders dated this day') }}</span></div>
+    <div class="kpi"><span class="kpi-label">{{ __('Collected') }}</span><span class="kpi-value">{{ money($stats['total_payments']) }}</span><span class="kpi-meta">{{ __('Payments received this day, for any order') }}</span></div>
+    <div class="kpi {{ $stats['outstanding'] > 0 ? 'is-alert' : '' }}"><span class="kpi-label">{{ __('Outstanding') }}</span><span class="kpi-value">{{ money($stats['outstanding']) }}</span><span class="kpi-meta">{{ __('Still owed on this day\'s orders') }}</span></div>
 </section>
 
 <div class="grid-sidebar">
     <section class="card card-flush" aria-labelledby="day-orders">
-        <header class="card-header"><h2 class="card-title" id="day-orders"><i class="fas fa-receipt" aria-hidden="true"></i> Orders</h2>
+        <header class="card-header"><h2 class="card-title" id="day-orders"><i class="fas fa-receipt" aria-hidden="true"></i> {{ __('Orders') }}</h2>
             <div class="cluster">
                 @foreach($stats['status_breakdown'] as $status => $count)
                     <span class="badge badge-{{ $status }}">{{ $labels[$status] ?? ucfirst($status) }} · {{ $count }}</span>
@@ -56,19 +56,19 @@
             </div>
         </header>
         @if($stats['orders']->isEmpty())
-            <div class="empty"><span class="empty-icon" aria-hidden="true"><i class="fas fa-mug-hot"></i></span><p class="empty-title">No orders on this day</p></div>
+            <div class="empty"><span class="empty-icon" aria-hidden="true"><i class="fas fa-mug-hot"></i></span><p class="empty-title">{{ __('No orders on this day') }}</p></div>
         @else
         <div class="table-wrap static">
             <table class="table table-stack">
-                <thead><tr><th>Order</th><th>Customer</th><th class="num">Total</th><th class="num">Paid</th><th>Status</th></tr></thead>
+                <thead><tr><th>{{ __('Order') }}</th><th>{{ __('Customer') }}</th><th class="num">{{ __('Total') }}</th><th class="num">{{ __('Paid') }}</th><th>{{ __('Status') }}</th></tr></thead>
                 <tbody>
                     @foreach($stats['orders'] as $order)
                     <tr data-href="{{ route('orders.details', $order) }}">
                         <td class="cell-primary"><a class="cell-title nowrap" href="{{ route('orders.details', $order) }}">{{ $order->order_number }}</a></td>
-                        <td data-label="Customer">{{ $order->customer->name ?? 'Walk-in customer' }}</td>
-                        <td data-label="Total" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
-                        <td data-label="Paid" class="num {{ $order->balance > 0 && $order->status !== 'cancelled' ? 'text-danger' : '' }}">{{ money($order->paid_amount, $order->currency) }}</td>
-                        <td data-label="Status"><span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span></td>
+                        <td data-label="{{ __('Customer') }}">{{ $order->customer->name ?? __('Walk-in customer') }}</td>
+                        <td data-label="{{ __('Total') }}" class="num"><strong>{{ money($order->total, $order->currency) }}</strong></td>
+                        <td data-label="{{ __('Paid') }}" class="num {{ $order->balance > 0 && $order->status !== 'cancelled' ? 'text-danger' : '' }}">{{ money($order->paid_amount, $order->currency) }}</td>
+                        <td data-label="{{ __('Status') }}"><span class="badge badge-{{ $order->status }}">{{ $order->status_label }}</span></td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -78,9 +78,9 @@
     </section>
 
     <section class="card" aria-labelledby="day-services">
-        <header class="card-header"><h2 class="card-title" id="day-services"><i class="fas fa-star" aria-hidden="true"></i> Top services</h2></header>
+        <header class="card-header"><h2 class="card-title" id="day-services"><i class="fas fa-star" aria-hidden="true"></i> {{ __('Top services') }}</h2></header>
         @if($stats['top_services']->isEmpty())
-            <p class="empty">Nothing sold yet.</p>
+            <p class="empty">{{ __('Nothing sold yet.') }}</p>
         @else
             @php $most = max(1, $stats['top_services']->max('total_amount')); @endphp
             <ol class="rank-list">
@@ -109,14 +109,14 @@
         try {
             const { data } = await sendJson(appUrl('reports/daily/download?date=' + date), {}, 'GET');
             const rows = [
-                ['Daily report', date], [],
-                ['Particulars', 'Value (' + window.FMT.currency + ')'],
-                ['Total orders', data.total_orders],
-                ['Completed orders', data.delivered_orders],
-                ['Total sales', data.total_sales],
-                ['Payments received', data.total_payments],
-                ['Outstanding', data.outstanding], [],
-                ['Status', 'Orders'],
+                [t('Daily report'), date], [],
+                [t('Particulars'), t('Value (:currency)', { currency: window.FMT.currency })],
+                [t('Total orders'), data.total_orders],
+                [t('Completed orders'), data.delivered_orders],
+                [t('Total sales'), data.total_sales],
+                [t('Payments received'), data.total_payments],
+                [t('Outstanding'), data.outstanding], [],
+                [t('Status'), t('Orders')],
                 ...Object.entries(data.status_breakdown),
             ];
             const csv = '﻿' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');

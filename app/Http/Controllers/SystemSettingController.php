@@ -37,7 +37,7 @@ class SystemSettingController extends Controller
             'receipt_paper' => ['required', Rule::in(array_keys(OrderDocumentController::PAPERS))],
             'turnaround_days' => 'required|integer|min:0|max:30',
         ], [
-            'receipt_logo.max' => 'The logo must be smaller than 300 KB.',
+            'receipt_logo.max' => __('The logo must be smaller than 300 KB.'),
         ]);
 
         $settings = SystemSetting::first() ?? new SystemSetting();
@@ -60,7 +60,33 @@ class SystemSettingController extends Controller
 
         $settings->save();
 
-        return redirect()->to(route('settings.mastersettings') . '#receipts')->with('success', 'Receipt settings saved.');
+        return redirect()->to(route('settings.mastersettings') . '#receipts')->with('success', __('Receipt settings saved.'));
+    }
+
+    /**
+     * The languages staff can pick, the shop's default and the fallback for missing translations.
+     */
+    public function updateLanguage(Request $request)
+    {
+        $available = array_keys(config('locales'));
+        $validated = $request->validate([
+            'enabled_locales' => 'required|array|min:1',
+            'enabled_locales.*' => ['string', Rule::in($available)],
+            'default_locale' => ['required', Rule::in((array) $request->input('enabled_locales'))],
+            'fallback_locale' => ['required', Rule::in($available)],
+        ], [
+            'enabled_locales.required' => __('Pick at least one language.'),
+            'default_locale.in' => __('The default language must be one staff can pick.'),
+        ]);
+
+        $settings = SystemSetting::first() ?? new SystemSetting();
+        $settings->fill([
+            'enabled_locales' => array_values(array_intersect($available, $validated['enabled_locales'])),
+            'default_locale' => $validated['default_locale'],
+            'fallback_locale' => $validated['fallback_locale'],
+        ])->save();
+
+        return redirect()->to(route('settings.mastersettings') . '#language')->with('success', __('Language settings saved.'));
     }
 
     /**
@@ -71,8 +97,8 @@ class SystemSettingController extends Controller
     {
         $validated = $request->validate([
             'currency' => ['required', Rule::in(array_keys(config('currencies')))],
-            'number_format' => ['required', Rule::in(array_keys(Format::NUMBER_FORMATS))],
-            'date_format' => ['required', Rule::in(array_keys(Format::DATE_FORMATS))],
+            'number_format' => ['required', Rule::in([Format::AUTO, ...array_keys(Format::NUMBER_FORMATS)])],
+            'date_format' => ['required', Rule::in([Format::AUTO, ...array_keys(Format::DATE_FORMATS)])],
             'time_format' => ['required', Rule::in(array_keys(Format::TIME_FORMATS))],
         ]);
 
@@ -81,8 +107,8 @@ class SystemSettingController extends Controller
         $settings->fill($validated)->save();
 
         return redirect()->to(route('settings.mastersettings') . '#region')->with('success', $currencyChanged
-            ? "Currency changed to {$validated['currency']}. Prices were not converted: check your service, add-on and product prices."
-            : 'Currency and formats saved.');
+            ? __('Currency changed to :currency. Prices were not converted: check your service, add-on and product prices.', ['currency' => $validated['currency']])
+            : __('Currency and formats saved.'));
     }
 
     public function update(Request $request)
@@ -94,9 +120,9 @@ class SystemSettingController extends Controller
             // .ico files are often reported with a generic MIME type, so check the extension
             'favicon' => 'nullable|file|extensions:ico|max:200',
         ], [
-            'contact.regex' => 'Contact number must be 10 to 15 digits.',
-            'favicon.extensions' => 'The logo must be an .ico file.',
-            'favicon.max' => 'The logo must be smaller than 200 KB.',
+            'contact.regex' => __('Contact number must be 10 to 15 digits.'),
+            'favicon.extensions' => __('The logo must be an .ico file.'),
+            'favicon.max' => __('The logo must be smaller than 200 KB.'),
         ]);
 
         $settings = SystemSetting::first() ?? new SystemSetting();
@@ -115,15 +141,14 @@ class SystemSettingController extends Controller
                 Log::error('Favicon upload failed: ' . $e->getMessage());
 
                 return back()->withInput()
-                    ->with('error', 'Settings were not saved: the logo could not be uploaded (' . $e->getMessage() . ').');
+                    ->with('error', __('Settings were not saved: the logo could not be uploaded (:error).', ['error' => $e->getMessage()]));
             }
 
             $settings->favicon = 'images/favicon.ico';
         }
 
         $settings->save();
-        app()->forgetInstance('system.settings');
 
-        return redirect()->back()->with('success', 'Settings updated successfully.');
+        return redirect()->back()->with('success', __('Settings updated successfully.'));
     }
 }

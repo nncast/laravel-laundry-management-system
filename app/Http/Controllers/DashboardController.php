@@ -89,7 +89,7 @@ class DashboardController extends Controller
         $ready = Order::where('status', 'ready');
         $pickedUpUnpaid = Order::where('status', 'completed')->whereColumn('paid_amount', '<', 'total');
 
-        $stuckRule = 'Pending ' . Order::OVERDUE_PENDING_DAYS . '+ day or processing ' . Order::OVERDUE_PROCESSING_DAYS . '+ days';
+        $stuckRule = __('Pending :pending+ day or processing :processing+ days', ['pending' => Order::OVERDUE_PENDING_DAYS, 'processing' => Order::OVERDUE_PROCESSING_DAYS]);
 
         $isAdmin = session('staff.role') === 'admin';
         $lastBackupAt = $isAdmin ? BackupController::lastBackupTime() : null;
@@ -187,7 +187,7 @@ class DashboardController extends Controller
      */
     private function trends(): array
     {
-        $key = 'dashboard.trends.' . app(Format::class)->currency . '.' . today()->toDateString();
+        $key = 'dashboard.trends.' . app(Format::class)->currency . '.' . app()->getLocale() . '.' . today()->toDateString();
 
         return Cache::remember($key, now()->addMinutes(self::TREND_CACHE_MINUTES), function () {
             $topServices = Service::query()
@@ -255,7 +255,7 @@ class DashboardController extends Controller
         $buckets = [];
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
             [$label, $title] = match ($period) {
-                'month' => ['Week ' . (intdiv($date->day - 1, 7) + 1), 'Week ' . (intdiv($date->day - 1, 7) + 1) . ' of ' . $date->translatedFormat('F')],
+                'month' => [__('Week :number', ['number' => intdiv($date->day - 1, 7) + 1]), __('Week :number of :month', ['number' => intdiv($date->day - 1, 7) + 1, 'month' => $date->translatedFormat('F')])],
                 'year' => [$date->translatedFormat('M'), $date->translatedFormat('F Y')],
                 default => [$date->translatedFormat('D'), fmt_date($date)],
             };

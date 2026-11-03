@@ -23,7 +23,7 @@ class DailyReportController extends Controller
             return view('report-daily', [
                 'selectedDate' => $date,
                 'stats' => $this->getDefaultStats($date),
-                'error' => 'Unable to load report data. Please try again.',
+                'error' => __('Unable to load report data. Please try again.'),
             ]);
         }
 
@@ -45,7 +45,7 @@ class DailyReportController extends Controller
             return response()->json([
                 'success' => false,
                 'data' => $this->getDefaultStats($date),
-                'message' => 'Error generating report. Please try again.',
+                'message' => __('Error generating report. Please try again.'),
             ], 500);
         }
 
@@ -54,7 +54,7 @@ class DailyReportController extends Controller
         return response()->json([
             'success' => true,
             'data' => $stats,
-            'message' => 'Report data retrieved successfully',
+            'message' => __('Report data retrieved successfully'),
         ]);
     }
 

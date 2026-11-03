@@ -101,6 +101,9 @@
     --gloss: 0 0 #0000;
     --glow: 0 0 #0000;
 }
+/* Japanese and Chinese: the brand font has Latin letters only, so the system's CJK font comes next */
+:root:lang(ja) { --font: "Plus Jakarta Sans", "Yu Gothic UI", "Meiryo", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+:root:lang(zh) { --font: "Plus Jakarta Sans", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", system-ui, sans-serif; }
 
 @media (pointer: coarse) {
     :root { --tap: 48px; --tap-lg: 56px; }

@@ -23,7 +23,7 @@ class CategoryController extends Controller
 
         Category::create($validated);
 
-        return back()->with('success', 'Category added.');
+        return back()->with('success', __('Category added.'));
     }
 
     public function update(Request $request)
@@ -37,7 +37,7 @@ class CategoryController extends Controller
         Category::findOrFail($validated['category_id'])
             ->update($request->only('name', 'status'));
 
-        return back()->with('success', 'Category updated.');
+        return back()->with('success', __('Category updated.'));
     }
 
     public function destroy(Request $request)
@@ -52,7 +52,7 @@ class CategoryController extends Controller
         if ($category->products()->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'This category still has products. Move or delete them first, or set the category to Inactive.',
+                'message' => __('This category still has products. Move or delete them first, or set the category to Inactive.'),
             ], 422);
         }
 

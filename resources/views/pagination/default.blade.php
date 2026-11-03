@@ -1,5 +1,5 @@
 @if ($paginator->hasPages())
-<nav class="pagination-nav" role="navigation" aria-label="Pagination">
+<nav class="pagination-nav" role="navigation" aria-label="{{ __('Pages') }}">
     @if (method_exists($paginator, 'total'))
     <div class="pagination-info">
         Showing {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} of {{ $paginator->total() }}
@@ -8,9 +8,9 @@
 
     <ul class="pagination">
         @if ($paginator->onFirstPage())
-            <li class="disabled" aria-disabled="true"><span aria-label="Previous">&lsaquo;</span></li>
+            <li class="disabled" aria-disabled="true"><span aria-label="{{ __('Previous') }}">‹</span></li>
         @else
-            <li><a href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="Previous">&lsaquo;</a></li>
+            <li><a href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="{{ __('Previous') }}">‹</a></li>
         @endif
 
         @if (isset($elements))
@@ -32,9 +32,9 @@
         @endif
 
         @if ($paginator->hasMorePages())
-            <li><a href="{{ $paginator->nextPageUrl() }}" rel="next" aria-label="Next">&rsaquo;</a></li>
+            <li><a href="{{ $paginator->nextPageUrl() }}" rel="next" aria-label="{{ __('Next') }}">›</a></li>
         @else
-            <li class="disabled" aria-disabled="true"><span aria-label="Next">&rsaquo;</span></li>
+            <li class="disabled" aria-disabled="true"><span aria-label="{{ __('Next') }}">›</span></li>
         @endif
     </ul>
 </nav>

@@ -30,8 +30,8 @@
 
 <p class="heading">{{ __('Checklist') }}</p>
 <table>
-    @foreach(['Counted, pockets checked', 'Sorted', 'Stains treated', 'Washed', 'Dried', 'Folded or pressed', 'Packed and tagged', 'Quality checked'] as $step)
-        <tr><td><span class="tick"></span>{{ __($step) }}</td><td class="num sub">{{ __('By') }} ________</td></tr>
+    @foreach([__('Counted, pockets checked'), __('Sorted'), __('Stains treated'), __('Washed'), __('Dried'), __('Folded or pressed'), __('Packed and tagged'), __('Quality checked')] as $step)
+        <tr><td><span class="tick"></span>{{ $step }}</td><td class="num sub">{{ __('By') }} ________</td></tr>
     @endforeach
 </table>
 @if($qr)<div class="codes"><img class="qr" src="{{ $qr }}" alt=""></div>@endif

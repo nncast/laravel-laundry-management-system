@@ -50,7 +50,7 @@ class PosController extends Controller
                 'order_date' => fmt_date($last->order_date),
                 'items' => $last->items->map(fn ($item) => [
                     'service_id' => $item->service_id,
-                    'name' => $item->service->name ?? 'Deleted service',
+                    'name' => $item->service->name ?? __('Deleted service'),
                     'qty' => $item->qty,
                     'available' => (bool) ($item->service->is_active ?? false),
                 ])->values(),
@@ -106,7 +106,7 @@ class PosController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Order updated successfully!',
+            'message' => __('Order updated successfully!'),
             'order' => $this->orderSummary($order),
         ]);
     }
@@ -120,7 +120,7 @@ class PosController extends Controller
         if (!$staff) {
             return response()->json([
                 'success' => false,
-                'message' => 'Authentication required. Please login again.',
+                'message' => __('Authentication required. Please log in again.'),
             ], 401);
         }
 
@@ -143,7 +143,7 @@ class PosController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Order created successfully!',
+            'message' => __('Order created successfully!'),
             'order' => $this->orderSummary($order),
             'order_number' => $order->order_number,
         ]);
@@ -189,10 +189,11 @@ class PosController extends Controller
 
         // POS sections: one per service type (A-Z), services without a type last
         $serviceGroups = $services
-            ->groupBy(fn ($service) => $service->serviceType->name ?? 'Other')
+            ->groupBy(fn ($service) => $service->serviceType->name ?? __('Other'))
             ->sortKeys(SORT_NATURAL | SORT_FLAG_CASE);
-        if ($serviceGroups->has('Other')) {
-            $serviceGroups = $serviceGroups->except('Other')->put('Other', $serviceGroups->get('Other'));
+        $other = __('Other');
+        if ($serviceGroups->has($other)) {
+            $serviceGroups = $serviceGroups->except($other)->put($other, $serviceGroups->get($other));
         }
 
         // Customers of the latest orders, newest first: one tap for regulars.
@@ -229,11 +230,11 @@ class PosController extends Controller
             'payment_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'nullable|in:cash,card,transfer,other',
         ], [
-            'customer_id.required' => 'Please select a customer.',
-            'items.required' => 'Please add at least one service.',
-            'items.min' => 'Please add at least one service.',
-            'discount.max' => 'A percentage discount can be at most 100%.',
-            'ready_by.after_or_equal' => 'The ready-by date cannot be before the order date.',
+            'customer_id.required' => __('Please select a customer.'),
+            'items.required' => __('Please add at least one service.'),
+            'items.min' => __('Please add at least one service.'),
+            'discount.max' => __('A percentage discount can be at most 100%.'),
+            'ready_by.after_or_equal' => __('The ready-by date cannot be before the order date.'),
         ]);
     }
 
@@ -285,7 +286,7 @@ class PosController extends Controller
             $service = $services->get($serviceId);
             if (!$service || !$service->is_active) {
                 throw ValidationException::withMessages([
-                    'items' => 'One of the selected services is no longer available. Please refresh the page.',
+                    'items' => __('One of the selected services is no longer available. Please refresh the page.'),
                 ]);
             }
 
@@ -326,7 +327,7 @@ class PosController extends Controller
             $addon = $newAddons->get($addonId);
             if (!$addon || !$addon->is_active) {
                 throw ValidationException::withMessages([
-                    'addons' => 'One of the selected add-ons is no longer available. Please refresh the page.',
+                    'addons' => __('One of the selected add-ons is no longer available. Please refresh the page.'),
                 ]);
             }
             $sync[$addonId] = ['price' => $addon->price];
@@ -363,8 +364,8 @@ class PosController extends Controller
     private function notEditableReason(Order $order): string
     {
         return $order->currency !== app(Format::class)->currency
-            ? "This order was taken in {$order->currency}. Switch the business currency back to {$order->currency} to edit it."
-            : 'This order cannot be edited because it is already ' . $order->status . '.';
+            ? __('This order was taken in :currency. Switch the business currency back to :currency to edit it.', ['currency' => $order->currency])
+            : __('This order cannot be edited because it is already :status.', ['status' => $order->status_label]);
     }
 
     private function orderSummary(Order $order): array

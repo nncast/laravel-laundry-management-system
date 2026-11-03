@@ -52,12 +52,12 @@ class StaffController extends Controller
             'role' => 'required|string|in:admin,manager,cashier',
             'is_active' => 'required|boolean',
         ], [
-            'phone.regex' => 'Phone number must be 10 to 15 digits.',
+            'phone.regex' => __('Phone number must be 10 to 15 digits.'),
         ]);
 
         Staff::create($validated);
 
-        return redirect()->back()->with('success', 'Staff added successfully!');
+        return redirect()->back()->with('success', __('Staff added successfully!'));
     }
 
     /**
@@ -73,7 +73,7 @@ class StaffController extends Controller
             'is_active' => 'required|boolean',
             'password' => 'nullable|string|min:6',
         ], [
-            'phone.regex' => 'Phone number must be 10 to 15 digits.',
+            'phone.regex' => __('Phone number must be 10 to 15 digits.'),
         ]);
 
         $isSelf = $staff->id === (int) Session::get('staff.id');
@@ -81,11 +81,11 @@ class StaffController extends Controller
             && ($validated['role'] !== 'admin' || !$request->boolean('is_active'));
 
         if ($isSelf && $losesAdmin) {
-            return back()->with('error', 'You cannot deactivate your own account or remove your own admin role.');
+            return back()->with('error', __('You cannot deactivate your own account or remove your own admin role.'));
         }
 
         if ($losesAdmin && $this->activeAdminCount($staff->id) === 0) {
-            return back()->with('error', 'At least one active admin account is required.');
+            return back()->with('error', __('At least one active admin account is required.'));
         }
 
         $data = collect($validated)->except('password')->all();
@@ -95,7 +95,7 @@ class StaffController extends Controller
 
         $staff->update($data);
 
-        return redirect()->back()->with('success', 'Staff updated successfully!');
+        return redirect()->back()->with('success', __('Staff updated successfully!'));
     }
 
     /**
@@ -104,21 +104,21 @@ class StaffController extends Controller
     public function destroy(Staff $staff)
     {
         if ($staff->id === (int) Session::get('staff.id')) {
-            return back()->with('error', 'You cannot delete your own account.');
+            return back()->with('error', __('You cannot delete your own account.'));
         }
 
         // orders.staff_id cascades on delete – never lose order history
         if (Order::where('staff_id', $staff->id)->exists()) {
-            return back()->with('error', 'This staff member has orders on record. Deactivate the account instead of deleting it.');
+            return back()->with('error', __('This staff member has orders on record. Deactivate the account instead of deleting it.'));
         }
 
         if ($staff->role === 'admin' && $staff->is_active && $this->activeAdminCount($staff->id) === 0) {
-            return back()->with('error', 'At least one active admin account is required.');
+            return back()->with('error', __('At least one active admin account is required.'));
         }
 
         $staff->delete();
 
-        return back()->with('success', 'Staff deleted successfully!');
+        return back()->with('success', __('Staff deleted successfully!'));
     }
 
     private function activeAdminCount(int $exceptId): int

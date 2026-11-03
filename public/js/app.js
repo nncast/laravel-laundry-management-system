@@ -5,6 +5,12 @@
 
     const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
+    // Translations: window.I18N comes from /lang/{locale}.js (English needs none, its strings are the keys).
+    // t('Order :number saved.', { number }) works like Laravel's __().
+    window.t = (key, replace = {}) => Object.entries(replace).reduce(
+        (text, [name, value]) => text.replaceAll(':' + name, value), (window.I18N || {})[key] || key);
+    const t = window.t;
+
     window.escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => (
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
     ));
@@ -68,7 +74,7 @@
         const close = document.createElement('button');
         close.type = 'button';
         close.className = 'toast-close';
-        close.setAttribute('aria-label', 'Dismiss');
+        close.setAttribute('aria-label', t('Dismiss'));
         close.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i>';
         close.addEventListener('click', remove);
         toast.append(close);
@@ -107,7 +113,7 @@
     // anything else on the page stay as they were. Pages re-bind on "regions:refreshed".
     window.refreshRegions = async function () {
         const response = await fetch(window.location.href, { headers: { 'Accept': 'text/html' } });
-        if (!response.ok) throw new Error('Could not refresh the page.');
+        if (!response.ok) throw new Error(t('Could not refresh the page.'));
         const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
         document.querySelectorAll('[data-refresh][id]').forEach(el => {
             const fresh = doc.getElementById(el.id);
@@ -128,21 +134,21 @@
             el.replaceWith(template.content);
         } catch (e) {
             el.removeAttribute('aria-busy');
-            el.innerHTML = '<p class="alert alert-danger">This part could not be loaded. Refresh the page to try again.</p>';
+            el.innerHTML = `<p class="alert alert-danger">${escapeHtml(t('This part could not be loaded. Refresh the page to try again.'))}</p>`;
         }
     });
 
     // ---------------- Requests ----------------
     // Read a JSON error response (Laravel validation or {message}) into one string
-    window.responseErrorMessage = async function (response, fallback = 'Something went wrong. Please try again.') {
+    window.responseErrorMessage = async function (response, fallback = t('Something went wrong. Please try again.')) {
         try {
             const data = await response.clone().json();
             if (data.errors) return Object.values(data.errors).flat().join('\n');
             if (data.message) return data.message;
         } catch (e) { /* not JSON */ }
-        if (response.status === 419) return 'Your session expired. Please refresh the page.';
-        if (response.status === 401) return 'Your session ended. Please log in again.';
-        if (response.status === 403) return 'You do not have permission to do that.';
+        if (response.status === 419) return t('Your session expired. Please refresh the page.');
+        if (response.status === 401) return t('Your session ended. Please log in again.');
+        if (response.status === 403) return t('You do not have permission to do that.');
         return fallback;
     };
 
@@ -157,7 +163,7 @@
                 body: method === 'GET' ? undefined : JSON.stringify(method === 'POST' ? body : { ...body, _method: method }),
             });
         } catch (e) {
-            throw new Error('Could not reach the server. Check the connection and try again.');
+            throw new Error(t('Could not reach the server. Check the connection and try again.'));
         }
         if (!response.ok) {
             const error = new Error(await window.responseErrorMessage(response));
@@ -228,7 +234,7 @@
     });
 
     // Promise-based replacement for window.confirm(), rendered in the layout's #confirmDialog
-    window.confirmAction = function ({ title = 'Are you sure?', message = '', confirmText = 'Confirm', cancelText = 'Cancel', tone = 'danger' } = {}) {
+    window.confirmAction = function ({ title = t('Are you sure?'), message = '', confirmText = t('Confirm'), cancelText = t('Cancel'), tone = 'danger' } = {}) {
         const d = document.getElementById('confirmDialog');
         if (!d) return Promise.resolve(window.confirm([title, message].filter(Boolean).join('\n\n')));
 
@@ -253,9 +259,9 @@
         e.preventDefault();
         e.stopImmediatePropagation();
         const ok = await window.confirmAction({
-            title: source.dataset.confirmTitle || 'Are you sure?',
+            title: source.dataset.confirmTitle || t('Are you sure?'),
             message: source.dataset.confirm,
-            confirmText: source.dataset.confirmButton || 'Delete',
+            confirmText: source.dataset.confirmButton || t('Delete'),
             tone: source.dataset.confirmTone || 'danger',
         });
         if (!ok) return;
@@ -288,7 +294,7 @@
             });
         } catch (err) {
             done();
-            window.showToast('Could not reach the server. Check the connection and try again.', 'error');
+            window.showToast(t('Could not reach the server. Check the connection and try again.'), 'error');
             return;
         }
 
@@ -314,7 +320,7 @@
         try { data = await response.clone().json(); } catch (err) { /* not JSON */ }
 
         if (response.ok && data?.success !== false) {
-            await finish(data?.message || form.dataset.success || 'Saved.');
+            await finish(data?.message || form.dataset.success || t('Saved.'));
             return;
         }
         done();
@@ -475,7 +481,7 @@
             all.className = 'suggest-item suggest-all';
             all.setAttribute('role', 'option');
             all.id = 'suggest-all';
-            all.textContent = data.orders.length ? 'See all results' : 'No orders found. Search all orders';
+            all.textContent = data.orders.length ? t('See all results') : t('No orders found. Search all orders');
             suggest.append(all);
             suggest.hidden = false;
             lookupInput.setAttribute('aria-expanded', 'true');
