@@ -86,7 +86,7 @@
         <a href="{{ route('dashboard') }}" class="brand">
             <img src="{{ asset('images/brand/mark.svg') }}" alt="" width="36" height="36">
             <span class="brand-text">
-                <span class="brand-name">Soap <em>Opera</em></span>
+                <x-wordmark class="brand-name" />
                 <span class="brand-sub">{{ !empty($system->business_name) && strcasecmp($system->business_name, 'Soap Opera') !== 0 ? $system->business_name : __('Laundry management') }}</span>
             </span>
         </a>
