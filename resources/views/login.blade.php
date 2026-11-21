@@ -73,7 +73,6 @@ body {
 /* Right: form */
 .form-side { display: flex; align-items: center; justify-content: center; padding: 40px 32px; }
 .login-box { width: 100%; max-width: 360px; }
-.login-box .mark { width: 52px; height: 52px; margin-bottom: 18px; filter: drop-shadow(0 8px 14px rgba(31,116,240,0.3)); }
 .login-box h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
 .login-box .lead { margin: 6px 0 26px; color: var(--text-muted); font-size: 14.5px; }
 
@@ -139,12 +138,12 @@ body {
     body { padding: 16px; place-items: start center; }
     .login-shell { grid-template-columns: 1fr; min-height: 0; max-width: 460px; }
     .hero { padding: 24px; min-height: 0; }
+    .hero-brand svg { height: 24px; }
     .hero-art { width: 190px; position: absolute; inset-inline-end: -18px; top: 6px; margin: 0; opacity: 0.95; }
     .hero-copy { margin-top: 64px; max-width: 64%; }
     .hero-copy h1 { font-size: 26px; }
     .hero-copy p { font-size: 13.5px; }
     .form-side { padding: 28px 16px 20px; }
-    .login-box .mark { display: none; }
 }
 @media (max-width: 420px) {
     .hero-art { width: 150px; }
@@ -168,7 +167,6 @@ body {
 
     <section class="form-side">
         <div class="login-box">
-            <img class="mark" src="{{ asset('images/brand/mark.svg') }}" alt="">
             <h2>{{ __('Welcome back') }}</h2>
             <p class="lead">{{ __('Sign in to :business', ['business' => $system->business_name ?? 'Soap Opera']) }}</p>
 

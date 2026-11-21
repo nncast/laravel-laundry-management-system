@@ -69,9 +69,8 @@ fieldset { border: 0; padding: 0; min-width: 0; }
 }
 .sidebar-head { display: flex; align-items: center; gap: var(--s-2); min-height: var(--topbar-h); padding: var(--s-2) var(--s-3) var(--s-2) var(--s-4); }
 .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; min-height: var(--tap); color: var(--text); text-decoration: none; }
-.brand img { width: 36px; height: 36px; flex-shrink: 0; }
 .brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.brand-name { align-self: flex-start; width: auto; height: 21px; margin-bottom: 3px; color: var(--accent); }
+.brand-name { align-self: flex-start; width: auto; height: 26px; margin-bottom: 4px; color: var(--accent); }
 .brand-sub { font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .nav { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-1) var(--s-3) var(--s-4); scrollbar-width: thin; }
@@ -109,10 +108,10 @@ fieldset { border: 0; padding: 0; min-width: 0; }
     background: var(--bg);   /* solid: a blurred backdrop costs too much on entry-level tablets */
     border-bottom: 1px solid var(--border);
 }
-.topbar-brand { display: none; }
-.topbar-brand img { width: 32px; height: 32px; }
+.topbar-brand { display: none; align-items: center; flex-shrink: 0; }
+.topbar-brand svg { width: auto; height: 20px; color: var(--accent); }
 .global-search { position: relative; flex: 1; max-width: 520px; }
-.global-search .input { border-radius: var(--radius-pill); background: var(--surface); }
+.global-search .input { border-radius: var(--radius-pill); background: var(--surface); text-overflow: ellipsis; }
 .global-search kbd { position: absolute; inset-inline-end: 12px; top: 50%; transform: translateY(-50%); }
 .topbar-actions { margin-inline-start: auto; display: flex; align-items: center; gap: var(--s-2); }
 .search-suggest {
