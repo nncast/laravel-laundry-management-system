@@ -1,7 +1,6 @@
-<div align="center"><img src="docs/logo.png" width="100" alt="Soap Opera logo"></div>
-<h1 align="center">Soap Opera</h1>
+<h1 align="center"><img src="docs/logo.png" width="320" alt="Soap Opera"></h1>
 <div align="center">
-<img src="https://img.shields.io/badge/version-2.5.0-1766DC?style=flat-square" alt="version">
+<img src="https://img.shields.io/badge/version-2.5.1-1766DC?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-complete-1766DC?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
@@ -13,7 +12,7 @@
 **Soap Opera** is a web-based **Laravel** laundry management system for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone. It is built for touch screens at the counter: every control is sized for a finger, in a blue-and-white design with the bubble mascot.
 
-> **Current version: v2.5.0** — a new logo: Soap Opera in soft, round letters with a blue S icon. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for what changed in each version.
+> **Current version: v2.5.1** — a new logo: Soap Opera in soft, round letters. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for what changed in each version.
 
 <p align="center">
   <img width="400" alt="Login" src="docs/screenshots/login.png" />
