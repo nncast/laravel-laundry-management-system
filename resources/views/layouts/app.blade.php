@@ -84,7 +84,6 @@
 <aside class="sidebar" id="sidebar" aria-label="{{ __('Main menu') }}">
     <div class="sidebar-head">
         <a href="{{ route('dashboard') }}" class="brand">
-            <img src="{{ asset('images/brand/mark.svg') }}" alt="" width="36" height="36">
             <span class="brand-text">
                 <x-wordmark class="brand-name" />
                 <span class="brand-sub">{{ !empty($system->business_name) && strcasecmp($system->business_name, 'Soap Opera') !== 0 ? $system->business_name : __('Laundry management') }}</span>
@@ -125,7 +124,7 @@
 
 <div class="app-main">
     <header class="topbar">
-        <a href="{{ route('dashboard') }}" class="topbar-brand" aria-label="{{ __('Dashboard') }}"><img src="{{ asset('images/brand/mark.svg') }}" alt="" width="32" height="32"></a>
+        <a href="{{ route('dashboard') }}" class="topbar-brand" aria-label="{{ __('Dashboard') }}"><x-wordmark /></a>
         <form class="global-search search" action="{{ route('orders.index') }}" method="GET" role="search">
             <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
             <input class="input" type="search" name="search" placeholder="{{ __('Search orders or scan a ticket') }}"
