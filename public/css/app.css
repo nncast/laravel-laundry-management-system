@@ -71,8 +71,7 @@ fieldset { border: 0; padding: 0; min-width: 0; }
 .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; min-height: var(--tap); color: var(--text); text-decoration: none; }
 .brand img { width: 36px; height: 36px; flex-shrink: 0; }
 .brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.brand-name { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
-.brand-name em { font-style: normal; color: var(--accent); }
+.brand-name { align-self: flex-start; width: auto; height: 21px; margin-bottom: 3px; color: var(--accent); }
 .brand-sub { font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .nav { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-1) var(--s-3) var(--s-4); scrollbar-width: thin; }

@@ -61,8 +61,8 @@ body {
 }
 .hero::before { width: 380px; height: 380px; inset-inline-end: -140px; top: -140px; }
 .hero::after { width: 300px; height: 300px; inset-inline-start: -120px; bottom: -150px; }
-.hero-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
-.hero-brand img { width: 40px; height: 40px; padding: 4px; border-radius: 50%; background: rgba(255,255,255,0.92); box-shadow: none; }
+.hero-brand { position: relative; z-index: 1; display: flex; }
+.hero-brand svg { width: auto; height: 34px; }
 .hero-art { position: relative; z-index: 1; width: min(380px, 100%); margin: 8px auto; animation: bubble-float 6s ease-in-out infinite; }
 .hero-copy { position: relative; z-index: 1; }
 .hero-copy h1 { font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; }
@@ -158,7 +158,7 @@ body {
 
 <main class="login-shell">
     <section class="hero" aria-hidden="true">
-        <div class="hero-brand"><img src="{{ asset('images/brand/mark.svg') }}" alt=""> Soap Opera</div>
+        <div class="hero-brand"><x-wordmark /></div>
         <x-mascot mood="wave" class="hero-art" />
         <div class="hero-copy">
             <h1>{{ __('Fresh loads.') }}<br>{{ __('Zero drama.') }}</h1>
