@@ -1,6 +1,6 @@
 <h1 align="center"><img src="docs/logo.png" width="320" alt="Soap Opera"></h1>
 <div align="center">
-<img src="https://img.shields.io/badge/version-2.5.2-1766DC?style=flat-square" alt="version">
+<img src="https://img.shields.io/badge/version-2.5.3-1766DC?style=flat-square" alt="version">
 <img src="https://img.shields.io/badge/status-complete-1A7F37?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
@@ -12,7 +12,7 @@
 **Soap Opera** is a web-based **Laravel** laundry management system for running a laundry shop: taking orders at the counter, tracking payments and order status, and reporting daily and monthly sales.
 It replaces paper job orders and notebooks with a **point of sale, order tracking, customer records, inventory and reports** in one place, and works on desktop, tablet and phone. It is built for touch screens at the counter: every control is sized for a finger, in a blue-and-white design with the bubble mascot.
 
-> **Current version: v2.5.2** — security headers on every page (a Content-Security-Policy and the rest securityheaders.com grades). See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for what changed in each version.
+> **Current version: v2.5.3** — security headers on every page, and the browser gets obfuscated JavaScript. See [Releases](https://github.com/nncast/laravel-laundry-management-system/releases) for what changed in each version.
 
 <p align="center">
   <img width="400" alt="Login" src="docs/screenshots/login.png" />
