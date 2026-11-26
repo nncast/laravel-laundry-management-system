@@ -60,6 +60,14 @@ class SecurityHeadersTest extends TestCase
         $this->get(str_replace('http://', 'https://', route('login')))->assertHeader('Strict-Transport-Security', 'max-age=31536000');
     }
 
+    public function test_the_obfuscated_script_evaluates_nothing(): void
+    {
+        // The policy has no 'unsafe-eval': obfuscated code that built functions from strings would stop.
+        $min = file_get_contents(public_path('js/app.min.js'));
+        $this->assertStringNotContainsString('window.openDialog', $min, 'app.min.js is not obfuscated: npm run minify');
+        $this->assertDoesNotMatchRegularExpression('/\beval\s*\(|new Function|\bFunction\s*\(/', $min);
+    }
+
     public function test_no_view_has_an_inline_event_handler(): void
     {
         // The policy runs none: onclick="…" would silently do nothing.
