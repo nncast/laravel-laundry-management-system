@@ -109,7 +109,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     // Search as you type, after a short pause
     const search = document.getElementById('customerSearch');

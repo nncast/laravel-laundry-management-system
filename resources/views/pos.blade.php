@@ -182,7 +182,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
     .quick-cash { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
     window.APP_URL = @json(rtrim(url('/'), '/'));
     window.appUrl = (path = '') => window.APP_URL + '/' + String(path).replace(/^\/+/, '');
     window.CSRF_TOKEN = @json(csrf_token());
@@ -518,7 +518,7 @@ body.pos-body { height: 100vh; height: 100dvh; overflow: hidden; background: var
 <div id="toastRegion" class="toast-region" aria-live="polite"></div>
 
 <script src="{{ asset_v('js/app.js') }}"></script>
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     'use strict';
     const $ = id => document.getElementById(id);

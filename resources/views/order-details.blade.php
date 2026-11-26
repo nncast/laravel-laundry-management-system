@@ -284,7 +284,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     const orderId = {{ $order->id }};
     const orderFmt = @json($orderFmt);

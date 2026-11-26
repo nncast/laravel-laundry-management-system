@@ -220,7 +220,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     const statusLabels = @json($statusLabels);
     const steps = @json($nextStep);

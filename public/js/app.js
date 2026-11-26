@@ -173,6 +173,16 @@
         return response.json();
     };
 
+    // ---------------- Inline handlers' replacements ----------------
+    // The Content-Security-Policy runs no onclick="…" attributes: these do their work.
+    document.addEventListener('click', e => { if (e.target.closest('[data-print-page]')) window.print(); });
+    // An image that can't be shown hides its box (an error that came before this script ran too).
+    const hideBroken = img => { if (img.matches('img[data-hide-if-broken]')) img.parentElement.hidden = true; };
+    document.addEventListener('error', e => { if (e.target instanceof HTMLImageElement) hideBroken(e.target); }, true);
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('img[data-hide-if-broken]').forEach(img => { if (img.complete && !img.naturalWidth) hideBroken(img); });
+    });
+
     // ---------------- Dialogs ----------------
     const dialogFrom = d => (typeof d === 'string' ? document.getElementById(d) : d);
     window.openDialog = d => { d = dialogFrom(d); if (d && !d.open) d.showModal(); return d; };

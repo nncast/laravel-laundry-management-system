@@ -375,7 +375,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     // "Find order" puts the cursor in the search box at the top
     document.querySelector('[data-focus-search]')?.addEventListener('click', () => {

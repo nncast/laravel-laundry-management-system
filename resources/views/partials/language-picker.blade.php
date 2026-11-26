@@ -5,11 +5,14 @@
     @csrf
     <i class="fas fa-language" aria-hidden="true"></i>
     <label class="sr-only" for="languagePicker">{{ __('Language') }}</label>
-    <select class="select" id="languagePicker" name="locale" onchange="this.form.requestSubmit()">
+    <select class="select" id="languagePicker" name="locale">
         @foreach($pickable as $code)
             <option value="{{ $code }}" lang="{{ config("locales.$code.html") }}" @selected($code === app()->getLocale())>{{ config("locales.$code.native") }}</option>
         @endforeach
     </select>
     <noscript><button type="submit" class="btn btn-sm btn-secondary">{{ __('Change') }}</button></noscript>
 </form>
+<script nonce="{{ Vite::cspNonce() }}">
+document.getElementById('languagePicker').addEventListener('change', e => e.target.form.requestSubmit());
+</script>
 @endif
