@@ -210,7 +210,7 @@ body {
     </section>
 </main>
 
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 // Show / hide password
 document.querySelector('.toggle-pass').addEventListener('click', function () {
     const input = document.getElementById('password');

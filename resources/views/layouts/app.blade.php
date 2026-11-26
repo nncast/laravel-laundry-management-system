@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="{{ asset_v('css/app.css') }}">
 @stack('styles')
 
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
     // Base URL of the app – lets AJAX calls work even when the app runs in a sub-folder
     window.APP_URL = @json(rtrim(url('/'), '/'));
     window.appUrl = (path = '') => window.APP_URL + '/' + String(path).replace(/^\/+/, '');
@@ -195,7 +195,7 @@
 @stack('scripts')
 {{-- Chromium browsers render a page in the background as soon as a link is hovered or touched,
      so opening it feels instant. Downloads and print views are left out. --}}
-<script type="speculationrules">
+<script type="speculationrules" nonce="{{ Vite::cspNonce() }}">
 {"prerender": [{"where": {"and": [
     {"href_matches": "/*"},
     {"not": {"href_matches": "*/print/*"}},

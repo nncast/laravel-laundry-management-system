@@ -95,7 +95,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     const search = document.getElementById('staffSearch');
     let timer;

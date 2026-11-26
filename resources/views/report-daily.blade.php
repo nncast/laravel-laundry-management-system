@@ -10,7 +10,7 @@
 
 @section('page-actions')
     <button type="button" class="btn btn-secondary" id="downloadCsv"><i class="fas fa-file-csv" aria-hidden="true"></i> {{ __('Download CSV') }}</button>
-    <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print" aria-hidden="true"></i> {{ __('Print') }}</button>
+    <button type="button" class="btn btn-secondary" data-print-page><i class="fas fa-print" aria-hidden="true"></i> {{ __('Print') }}</button>
 @endsection
 
 @push('styles')
@@ -97,7 +97,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     document.getElementById('date').addEventListener('change', e => e.target.form.submit());
 

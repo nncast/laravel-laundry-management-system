@@ -36,7 +36,7 @@
                 <div class="stack-sm">
                     <x-field name="favicon" :label="__('Browser icon')" type="file" accept=".ico,image/x-icon,image/vnd.microsoft.icon" :help="__('An .ico file (16, 32 or 48 px). Leave empty to keep the current one.')" />
                     @if(!empty($settings->favicon))
-                        <div class="logo-preview"><img src="{{ asset($settings->favicon) }}?v={{ optional($settings->updated_at)->timestamp }}" alt="" onerror="this.parentElement.hidden = true"><span class="muted">{{ __('Current icon') }}</span></div>
+                        <div class="logo-preview"><img src="{{ asset($settings->favicon) }}?v={{ optional($settings->updated_at)->timestamp }}" alt="" data-hide-if-broken><span class="muted">{{ __('Current icon') }}</span></div>
                     @endif
                 </div>
             </div>
@@ -204,7 +204,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     // Live preview of the currency and formats before saving
     const data = @json($previewData);

@@ -108,7 +108,7 @@ body { margin: 0; }
 </main>
 
 @unless($pdf)
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
 (function () {
     document.getElementById('printDoc').addEventListener('click', () => print());
     @if(request()->boolean('autoprint'))

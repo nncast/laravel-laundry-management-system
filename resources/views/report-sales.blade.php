@@ -11,7 +11,7 @@
 
 @section('page-actions')
     <a href="{{ route('reports.sales.download', $filters) }}" class="btn btn-secondary"><i class="fas fa-file-csv" aria-hidden="true"></i> {{ __('Download CSV') }}</a>
-    <button type="button" class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print" aria-hidden="true"></i> {{ __('Print') }}</button>
+    <button type="button" class="btn btn-secondary" data-print-page><i class="fas fa-print" aria-hidden="true"></i> {{ __('Print') }}</button>
 @endsection
 
 @section('content')
