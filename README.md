@@ -1,7 +1,7 @@
 <h1 align="center"><img src="docs/logo.png" width="320" alt="Soap Opera"></h1>
 <div align="center">
 <img src="https://img.shields.io/badge/version-2.5.1-1766DC?style=flat-square" alt="version">
-<img src="https://img.shields.io/badge/status-complete-1766DC?style=flat-square" alt="status">
+<img src="https://img.shields.io/badge/status-complete-1A7F37?style=flat-square" alt="status">
 <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel">
 <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP">
 <img src="https://img.shields.io/badge/MySQL-XAMPP-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL">
